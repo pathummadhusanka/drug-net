@@ -6,13 +6,13 @@ export function Header() {
 	return (
 		<header className="h-14 border-b bg-background px-6 flex items-center justify-between">
 			{/* Left - App Title */}
-			<div className="text-lg font-semibold">Drug Network Manager</div>
+			<div className="text-lg font-semibold">DrugNET</div>
 
 			{/* Center - Global Search */}
 			<div className="flex-1 max-w-md px-6">
 				<div className="relative">
 					<Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-					<Input placeholder="Search people..." className="pl-8" />
+					<Input placeholder="Search profiles..." className="pl-8" />
 				</div>
 			</div>
 

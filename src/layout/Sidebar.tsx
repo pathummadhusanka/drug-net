@@ -12,7 +12,7 @@ export function Sidebar() {
 						className="w-full justify-start"
 					>
 						<Users className="h-4 w-4 mr-2" />
-						People
+						Profiles
 					</Button>
 				)}
 			</NavLink>
@@ -24,7 +24,7 @@ export function Sidebar() {
 						className="w-full justify-start"
 					>
 						<Network className="h-4 w-4 mr-2" />
-						Network View
+						Network
 					</Button>
 				)}
 			</NavLink>
