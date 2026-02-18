@@ -16,6 +16,8 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 
+import { useNavigate } from "react-router-dom";
+
 interface DataTableProps<TData, TValue> {
 	columns: ColumnDef<TData, TValue>[];
 	data: TData[];
@@ -30,6 +32,12 @@ export function DataTable<TData, TValue>({
 		columns,
 		getCoreRowModel: getCoreRowModel(),
 	});
+
+	const navigate = useNavigate();
+
+	function handleRowClick(id: string) {
+		navigate(`/profile/${id}`);
+	}
 
 	return (
 		<div className="overflow-hidden rounded-md border">
@@ -59,6 +67,8 @@ export function DataTable<TData, TValue>({
 							<TableRow
 								key={row.id}
 								data-state={row.getIsSelected() && "selected"}
+								onClick={() => handleRowClick(row.id)}
+								className="cursor-pointer"
 							>
 								{row.getVisibleCells().map((cell) => (
 									<TableCell key={cell.id}>
