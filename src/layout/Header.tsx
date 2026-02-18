@@ -18,14 +18,18 @@ export function Header() {
 
 			{/* Right - Global Actions */}
 			<div className="flex items-center gap-2">
-				<Button variant="outline" size="sm">
+				<Button variant="secondary" size="sm">
 					<Database className="h-4 w-4 mr-2" />
 					Backup
 				</Button>
 
-				<Button variant="ghost" size="icon">
+				<Button variant="secondary" size="icon">
 					<Settings className="h-5 w-5" />
 				</Button>
+
+				{/* <div className="bg-primary text-primary-foreground">
+					This should use neutral colors
+				</div> */}
 			</div>
 		</header>
 	);
