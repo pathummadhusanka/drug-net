@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { columns, DrugDealer } from "./columns";
 import { DataTable } from "./data-table";
+import { useNavigate } from "react-router-dom";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 async function getData(): Promise<DrugDealer[]> {
 	return [
@@ -45,13 +48,24 @@ async function getData(): Promise<DrugDealer[]> {
 
 export default function Profiles() {
 	const [data, setData] = useState<DrugDealer[]>([]);
+	const navigate = useNavigate();
 
 	useEffect(() => {
 		getData().then(setData);
 	}, []);
 
 	return (
-		<div className="container mx-auto py-10">
+		<div className="container mx-auto">
+			<div className="flex justify-end mb-4">
+				<Button
+					onClick={() => navigate(`new-profile/`)}
+					variant="outline"
+					className="cursor-pointer"
+				>
+					<Plus className="h-4 w-4 mr-2" />
+					Add Profile
+				</Button>
+			</div>
 			<DataTable columns={columns} data={data} />
 		</div>
 	);
