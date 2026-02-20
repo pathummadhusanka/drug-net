@@ -52,7 +52,7 @@ export default function NewProfile() {
 			});
 
 			console.log("Inserted profile ID:", id);
-			navigate(`/profiles/${id}`);
+			navigate(`/profile/${id}`);
 		} catch (err) {
 			console.error("Insert failed:", err);
 		}

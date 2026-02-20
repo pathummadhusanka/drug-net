@@ -1,6 +1,9 @@
-use rusqlite::Connection;
+use super::connection::DbConnection;
 
-pub fn run_migrations(conn: &Connection) -> Result<(), String> {
+pub fn run_migrations(db: &DbConnection) -> Result<(), String> {
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+    
     conn.execute_batch(
         "
         PRAGMA foreign_keys = ON;
