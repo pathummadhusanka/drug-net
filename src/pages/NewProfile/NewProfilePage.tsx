@@ -58,6 +58,18 @@ export default function NewProfile() {
 		}
 	};
 
+	function clearFields() {
+		{
+			setFullName("");
+			setAlias("");
+			setNic("");
+			setAddressLine1("");
+			setAddressLine2("");
+			setCity("");
+			setNotes("");
+		}
+	}
+
 	return (
 		<>
 			<div className="flex items-center justify-between mb-4">
@@ -86,6 +98,7 @@ export default function NewProfile() {
 								type="text"
 								placeholder="John Doe"
 								required
+								value={fullName}
 								onChange={(e) => setFullName(e.target.value)}
 							/>
 						</div>
@@ -95,6 +108,7 @@ export default function NewProfile() {
 								id="nic"
 								type="text"
 								placeholder="Optional (must be unique)"
+								value={nic}
 								onChange={(e) => setNic(e.target.value)}
 							/>
 						</div>
@@ -104,6 +118,7 @@ export default function NewProfile() {
 								id="alias"
 								type="text"
 								placeholder="Optional"
+								value={alias}
 								onChange={(e) => setAlias(e.target.value)}
 							/>
 						</div>
@@ -117,6 +132,7 @@ export default function NewProfile() {
 									id="addressLine1"
 									type="text"
 									placeholder="Optional"
+									value={addressLine1}
 									onChange={(e) =>
 										setAddressLine1(e.target.value)
 									}
@@ -130,6 +146,7 @@ export default function NewProfile() {
 									id="addressLine2"
 									type="text"
 									placeholder="Optional"
+									value={addressLine2}
 									onChange={(e) =>
 										setAddressLine2(e.target.value)
 									}
@@ -141,6 +158,7 @@ export default function NewProfile() {
 									id="city"
 									type="text"
 									placeholder="Optional"
+									value={city}
 									onChange={(e) => setCity(e.target.value)}
 								/>
 							</div>
@@ -149,11 +167,15 @@ export default function NewProfile() {
 						<div className="grid gap-2">
 							<Label htmlFor="notes">Notes</Label>
 							<Textarea
-								maxLength={240}
+								maxLength={500}
 								id="notes"
 								placeholder="Include notes"
+								value={notes}
 								onChange={(e) => setNotes(e.target.value)}
 							/>
+							<div className="text-sm text-gray-500">
+								{notes.length}/500
+							</div>
 						</div>
 
 						<div className="flex justify-between mt-6 pb-10 gap-2">
@@ -161,6 +183,7 @@ export default function NewProfile() {
 								type="button"
 								variant="outline"
 								className="cursor-pointer"
+								onClick={clearFields}
 							>
 								Clear
 							</Button>
