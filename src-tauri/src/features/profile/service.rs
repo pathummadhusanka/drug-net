@@ -1,6 +1,6 @@
-use super::model::Person;
-use super::repository;
+use super::model::Profile;
 
-pub fn get_person(id: i64) -> Result<Person, String> {
-    repository::get_by_id(id)
+pub fn create_profile(profile: Profile) -> Result<i64, String> {
+    
+    super::repository::insert_profile(profile)
 }

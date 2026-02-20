@@ -1,23 +1,28 @@
 use rusqlite::{params};
 use crate::database::connection::get_connection;
-use super::model::Person;
+use super::model::Profile;
 
-pub fn get_by_id(id: i64) -> Result<Person, String> {
+pub fn insert_profile(profile: Profile) -> Result<i64, String> {
+    
     let conn = get_connection()?;
 
-    let mut stmt = conn
-        .prepare("SELECT id, full_name, alias FROM persons WHERE id = ?1")
-        .map_err(|e| e.to_string())?;
+    conn.execute(
+        "INSERT INTO profiles 
+        (full_name, alias, nic, address_line1, address_line2 , city, risk_level, status, notes)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+        params![
+            profile.full_name,
+            profile.alias,
+            profile.nic,
+            profile.address_line1,
+            profile.address_line2,
+            profile.city,
+            profile.risk_level,
+            profile.status,
+            profile.notes
+        ],
+    )
+    .map_err(|e| e.to_string())?;
 
-    let person = stmt
-        .query_row(params![id], |row| {
-            Ok(Person {
-                id: row.get(0)?,
-                full_name: row.get(1)?,
-                alias: row.get(2)?,
-            })
-        })
-        .map_err(|e| e.to_string())?;
-
-    Ok(person)
+    Ok(conn.last_insert_rowid())
 }

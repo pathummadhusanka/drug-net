@@ -1,4 +1,7 @@
+use super::model::Profile;
+
 #[tauri::command]
-pub async fn get_person_by_id(id: i64) -> Result<super::model::Person, String> {
-    super::service::get_person(id)
+pub async fn create_profile(profile: Profile) -> Result<i64, String> {
+    
+    super::service::create_profile(profile)
 }

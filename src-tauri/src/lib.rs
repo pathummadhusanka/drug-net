@@ -5,7 +5,7 @@ mod features;
 
 use database::connection::get_connection;
 use database::migrations::run_migrations;
-use features::profile::commands::get_person_by_id;
+use features::profile::commands::create_profile;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -21,7 +21,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, get_person_by_id])
+        .invoke_handler(tauri::generate_handler![greet, create_profile])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -14,9 +14,49 @@ import {
 	FieldTitle,
 } from "@/components/ui/field";
 import { FileCaseModal } from "./FileCaseModal";
+import { invoke } from "@tauri-apps/api/core";
+import { useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function NewProfile() {
 	const navigate = useNavigate();
+
+	const [fullName, setFullName] = useState("");
+	const [alias, setAlias] = useState("");
+	const [nic, setNic] = useState("");
+	const [addressLine1, setAddressLine1] = useState("");
+	const [addressLine2, setAddressLine2] = useState("");
+	const [city, setCity] = useState("");
+	const [notes, setNotes] = useState("");
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+
+		// const address = [addressLine1, addressLine2, city]
+		// 	.filter(Boolean)
+		// 	.join(", ");
+
+		try {
+			const id = await invoke<number>("create_profile", {
+				profile: {
+					full_name: fullName,
+					alias: alias || null,
+					nic: nic || null,
+					address_line1: addressLine1 || null,
+					address_line2: addressLine2 || null,
+					city: city || null,
+					risk_level: null,
+					status: null,
+					notes: notes || null,
+				},
+			});
+
+			console.log("Inserted profile ID:", id);
+			navigate(`/profiles/${id}`);
+		} catch (err) {
+			console.error("Insert failed:", err);
+		}
+	};
 
 	return (
 		<>
@@ -32,7 +72,7 @@ export default function NewProfile() {
 			</div>
 
 			<div className="max-w-[680px] mx-auto">
-				<form>
+				<form onSubmit={handleSubmit}>
 					<div className="flex flex-col gap-6">
 						<span className="text-lg font-medium whitespace-nowrap">
 							Create New Profile
@@ -46,6 +86,7 @@ export default function NewProfile() {
 								type="text"
 								placeholder="John Doe"
 								required
+								onChange={(e) => setFullName(e.target.value)}
 							/>
 						</div>
 						<div className="grid gap-2">
@@ -54,6 +95,7 @@ export default function NewProfile() {
 								id="nic"
 								type="text"
 								placeholder="Optional (must be unique)"
+								onChange={(e) => setNic(e.target.value)}
 							/>
 						</div>
 						<div className="grid gap-2">
@@ -62,6 +104,7 @@ export default function NewProfile() {
 								id="alias"
 								type="text"
 								placeholder="Optional"
+								onChange={(e) => setAlias(e.target.value)}
 							/>
 						</div>
 
@@ -74,6 +117,9 @@ export default function NewProfile() {
 									id="addressLine1"
 									type="text"
 									placeholder="Optional"
+									onChange={(e) =>
+										setAddressLine1(e.target.value)
+									}
 								/>
 							</div>
 							<div className="grid gap-2 mt-6">
@@ -84,6 +130,9 @@ export default function NewProfile() {
 									id="addressLine2"
 									type="text"
 									placeholder="Optional"
+									onChange={(e) =>
+										setAddressLine2(e.target.value)
+									}
 								/>
 							</div>
 							<div className="grid gap-2 mt-6">
@@ -92,8 +141,19 @@ export default function NewProfile() {
 									id="city"
 									type="text"
 									placeholder="Optional"
+									onChange={(e) => setCity(e.target.value)}
 								/>
 							</div>
+						</div>
+
+						<div className="grid gap-2">
+							<Label htmlFor="notes">Notes</Label>
+							<Textarea
+								maxLength={240}
+								id="notes"
+								placeholder="Include notes"
+								onChange={(e) => setNotes(e.target.value)}
+							/>
 						</div>
 
 						<div className="flex justify-between mt-6 pb-10 gap-2">
