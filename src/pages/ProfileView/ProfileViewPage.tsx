@@ -7,6 +7,12 @@ import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "@/components/ui/accordion";
 // import {
 // 	Card,
 // 	CardContent,
@@ -15,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 // 	CardTitle,
 // } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Profile {
 	id: number;
@@ -37,6 +44,7 @@ export default function ProfileView() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [showFileCaseForm, setShowFileCaseForm] = useState(false);
+	const [caseNotes, setCaseNotes] = useState("");
 
 	useEffect(() => {
 		const fetchProfile = async () => {
@@ -190,29 +198,173 @@ export default function ProfileView() {
 											}}
 											className="space-y-4"
 										>
-											<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-												<div className="space-y-2">
-													<Label htmlFor="case-name">
-														Case Name *
-													</Label>
-													<Input
-														id="case-name"
-														name="name"
-														placeholder="Enter case name"
-														required
-													/>
-												</div>
-												<div className="space-y-2">
-													<Label htmlFor="case-number">
-														Case Number
-													</Label>
-													<Input
-														id="case-number"
-														name="caseNumber"
-														placeholder="Optional"
-													/>
-												</div>
-											</div>
+											<Accordion
+												type="single"
+												collapsible
+												defaultValue="case-details"
+												className="w-full"
+											>
+												<AccordionItem value="case-details">
+													<AccordionTrigger className="cursor-pointer">
+														<div className="flex justify-between items-center w-full mr-2">
+															<span>
+																Case Details
+															</span>
+															<span className="text-gray-500 text-sm text-right">
+																Basic
+																information
+																about the case
+															</span>
+														</div>
+													</AccordionTrigger>
+													<AccordionContent>
+														<div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+															<div className="space-y-2">
+																<Label htmlFor="case-name">
+																	Case Name *
+																</Label>
+																<Input
+																	id="case-name"
+																	name="name"
+																	placeholder="Enter case name"
+																	required
+																/>
+															</div>
+															<div className="space-y-2">
+																<Label htmlFor="case-number">
+																	Case Number
+																</Label>
+																<Input
+																	id="case-number"
+																	name="caseNumber"
+																	placeholder="Optional"
+																/>
+															</div>
+															<div className="space-y-2">
+																<Label htmlFor="case-description">
+																	Description
+																</Label>
+																<Input
+																	id="case-description"
+																	name="description"
+																	placeholder="Enter case description"
+																/>
+															</div>
+															<div className="space-y-2">
+																<Label htmlFor="case-date">
+																	Date
+																</Label>
+																<Input
+																	id="case-date"
+																	name="date"
+																	type="date"
+																/>
+															</div>
+														</div>
+													</AccordionContent>
+												</AccordionItem>
+												<AccordionItem value="suspects">
+													<AccordionTrigger className="cursor-pointer">
+														<div className="flex justify-between items-center w-full mr-2">
+															<span>
+																Suspects
+															</span>
+															<span className="text-gray-500 text-sm text-right">
+																Add information
+																about suspects
+																involved
+															</span>
+														</div>
+													</AccordionTrigger>
+													<AccordionContent>
+														<div className="space-y-4 pt-2">
+															<p className="text-sm text-gray-500">
+																Add suspect
+																information here
+															</p>
+														</div>
+													</AccordionContent>
+												</AccordionItem>
+												<AccordionItem value="drugs">
+													<AccordionTrigger className="cursor-pointer">
+														<div className="flex justify-between items-center w-full mr-2">
+															<span>Drugs</span>
+															<span className="text-gray-500 text-sm text-right">
+																Specify types
+																and quantities
+																of drugs
+															</span>
+														</div>
+													</AccordionTrigger>
+													<AccordionContent>
+														<div className="space-y-4 pt-2">
+															<p className="text-sm text-gray-500">
+																Add drug details
+																here
+															</p>
+														</div>
+													</AccordionContent>
+												</AccordionItem>
+												<AccordionItem value="areas">
+													<AccordionTrigger className="cursor-pointer">
+														<div className="flex justify-between items-center w-full mr-2">
+															<span>Areas</span>
+															<span className="text-gray-500 text-sm text-right">
+																Locations
+																related to the
+																case
+															</span>
+														</div>
+													</AccordionTrigger>
+													<AccordionContent>
+														<div className="space-y-4 pt-2">
+															<p className="text-sm text-gray-500">
+																Add area
+																information here
+															</p>
+														</div>
+													</AccordionContent>
+												</AccordionItem>
+												<AccordionItem value="notes">
+													<AccordionTrigger className="cursor-pointer">
+														<div className="flex justify-between items-center w-full mr-2">
+															<span>Notes</span>
+															<span className="text-gray-500 text-sm text-right">
+																Additional
+																observations and
+																remarks
+															</span>
+														</div>
+													</AccordionTrigger>
+													<AccordionContent>
+														<div className="space-y-2 pt-2">
+															<Label htmlFor="case-notes">
+																Notes
+															</Label>
+															<Textarea
+																maxLength={1000}
+																id="case-notes"
+																placeholder="Add additional notes here"
+																value={
+																	caseNotes
+																}
+																onChange={(e) =>
+																	setCaseNotes(
+																		e.target
+																			.value,
+																	)
+																}
+															/>
+															<div className="text-sm text-gray-500">
+																{
+																	caseNotes.length
+																}
+																/1000
+															</div>
+														</div>
+													</AccordionContent>
+												</AccordionItem>
+											</Accordion>
 											<div className="flex justify-between pt-4">
 												<Button
 													type="button"
@@ -224,7 +376,7 @@ export default function ProfileView() {
 														)
 													}
 												>
-													Clear
+													Clear All
 												</Button>
 												<div className="flex gap-4">
 													<Button
