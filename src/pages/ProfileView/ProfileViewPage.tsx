@@ -13,13 +13,6 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion";
-// import {
-// 	Card,
-// 	CardContent,
-// 	CardDescription,
-// 	CardHeader,
-// 	CardTitle,
-// } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -389,7 +382,7 @@ export default function ProfileView() {
 																				of
 																				drugs
 																			</ComboboxItem>
-																			</ComboboxList>
+																		</ComboboxList>
 																	</ComboboxContent>
 																</Combobox>
 															</div>
@@ -583,7 +576,7 @@ export default function ProfileView() {
 																			<ComboboxItem value="critical">
 																				Critical
 																			</ComboboxItem>
-																			</ComboboxList>
+																		</ComboboxList>
 																	</ComboboxContent>
 																</Combobox>
 															</div>
@@ -623,7 +616,7 @@ export default function ProfileView() {
 																			<ComboboxItem value="closed">
 																				Closed
 																			</ComboboxItem>
-																			</ComboboxList>
+																		</ComboboxList>
 																	</ComboboxContent>
 																</Combobox>
 															</div>
@@ -631,10 +624,10 @@ export default function ProfileView() {
 													</AccordionContent>
 												</AccordionItem>
 												<AccordionItem
-													value="suspects"
+													value="connections"
 													className={
 														activeAccordion ===
-														"suspects"
+														"connections"
 															? "border-l-4 border-blue-500 bg-blue-50/50"
 															: ""
 													}
@@ -643,30 +636,26 @@ export default function ProfileView() {
 														<div className="flex justify-between items-center w-full mr-2">
 															<div className="flex items-center gap-2">
 																{completedSections.includes(
-																	"suspects",
+																	"connections",
 																) && (
 																	<Check className="h-4 w-4 text-green-600" />
 																)}
 																<span>
-																	[2] Suspects
-																</span>
-																<span className="text-xs text-gray-400 ml-2">
-																	(0/3)
+																	[2]
+																	Connections
 																</span>
 															</div>
 															<span className="text-gray-500 text-sm text-right">
-																Add information
-																about suspects
-																involved
+																Add connected
+																profiles
 															</span>
 														</div>
 													</AccordionTrigger>
 													<AccordionContent>
-														<div className="space-y-4 pt-2 px-2">
-															<p className="text-sm text-gray-500">
-																Add suspect
-																information here
-															</p>
+														<div className="p-4 text-gray-500 text-sm">
+															Connection details
+															will be implemented
+															here.
 														</div>
 													</AccordionContent>
 												</AccordionItem>
@@ -784,7 +773,7 @@ export default function ProfileView() {
 													<AccordionContent>
 														<div className="space-y-2 pt-2 px-2">
 															<Label htmlFor="case-notes">
-																Notes
+																Remarks
 															</Label>
 															<Textarea
 																ref={
