@@ -205,10 +205,10 @@ export default function ProfileView() {
 												className="w-full"
 											>
 												<AccordionItem value="case-details">
-													<AccordionTrigger className="cursor-pointer">
+													<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors">
 														<div className="flex justify-between items-center w-full mr-2">
 															<span>
-																Case Details
+																[1] Case Details
 															</span>
 															<span className="text-gray-500 text-sm text-right">
 																Basic
@@ -218,7 +218,7 @@ export default function ProfileView() {
 														</div>
 													</AccordionTrigger>
 													<AccordionContent>
-														<div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+														<div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 px-2">
 															<div className="space-y-2">
 																<Label htmlFor="case-name">
 																	Case Name *
@@ -264,10 +264,10 @@ export default function ProfileView() {
 													</AccordionContent>
 												</AccordionItem>
 												<AccordionItem value="suspects">
-													<AccordionTrigger className="cursor-pointer">
+													<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors">
 														<div className="flex justify-between items-center w-full mr-2">
 															<span>
-																Suspects
+																[2] Suspects
 															</span>
 															<span className="text-gray-500 text-sm text-right">
 																Add information
@@ -277,7 +277,7 @@ export default function ProfileView() {
 														</div>
 													</AccordionTrigger>
 													<AccordionContent>
-														<div className="space-y-4 pt-2">
+														<div className="space-y-4 pt-2 px-2">
 															<p className="text-sm text-gray-500">
 																Add suspect
 																information here
@@ -286,9 +286,11 @@ export default function ProfileView() {
 													</AccordionContent>
 												</AccordionItem>
 												<AccordionItem value="drugs">
-													<AccordionTrigger className="cursor-pointer">
+													<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors">
 														<div className="flex justify-between items-center w-full mr-2">
-															<span>Drugs</span>
+															<span>
+																[3] Drugs
+															</span>
 															<span className="text-gray-500 text-sm text-right">
 																Specify types
 																and quantities
@@ -297,7 +299,7 @@ export default function ProfileView() {
 														</div>
 													</AccordionTrigger>
 													<AccordionContent>
-														<div className="space-y-4 pt-2">
+														<div className="space-y-4 pt-2 px-2">
 															<p className="text-sm text-gray-500">
 																Add drug details
 																here
@@ -306,9 +308,11 @@ export default function ProfileView() {
 													</AccordionContent>
 												</AccordionItem>
 												<AccordionItem value="areas">
-													<AccordionTrigger className="cursor-pointer">
+													<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors">
 														<div className="flex justify-between items-center w-full mr-2">
-															<span>Areas</span>
+															<span>
+																[4] Areas
+															</span>
 															<span className="text-gray-500 text-sm text-right">
 																Locations
 																related to the
@@ -317,7 +321,7 @@ export default function ProfileView() {
 														</div>
 													</AccordionTrigger>
 													<AccordionContent>
-														<div className="space-y-4 pt-2">
+														<div className="space-y-4 pt-2 px-2">
 															<p className="text-sm text-gray-500">
 																Add area
 																information here
@@ -326,9 +330,11 @@ export default function ProfileView() {
 													</AccordionContent>
 												</AccordionItem>
 												<AccordionItem value="notes">
-													<AccordionTrigger className="cursor-pointer">
+													<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors">
 														<div className="flex justify-between items-center w-full mr-2">
-															<span>Notes</span>
+															<span>
+																[5] Notes
+															</span>
 															<span className="text-gray-500 text-sm text-right">
 																Additional
 																observations and
@@ -337,7 +343,7 @@ export default function ProfileView() {
 														</div>
 													</AccordionTrigger>
 													<AccordionContent>
-														<div className="space-y-2 pt-2">
+														<div className="space-y-2 pt-2 px-2">
 															<Label htmlFor="case-notes">
 																Notes
 															</Label>
