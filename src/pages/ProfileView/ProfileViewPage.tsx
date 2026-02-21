@@ -1,9 +1,9 @@
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Plus, MoreVertical, X } from "lucide-react";
+import { ChevronLeft, Plus, MoreVertical, X, Check } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -45,6 +45,21 @@ export default function ProfileView() {
 	const [error, setError] = useState<string | null>(null);
 	const [showFileCaseForm, setShowFileCaseForm] = useState(false);
 	const [caseNotes, setCaseNotes] = useState("");
+	const [activeAccordion, setActiveAccordion] = useState("case-details");
+	const [completedSections, setCompletedSections] = useState<string[]>([]);
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+	// Auto-resize textarea based on content
+	const handleTextareaResize = () => {
+		if (textareaRef.current) {
+			textareaRef.current.style.height = "auto";
+			textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+		}
+	};
+
+	useEffect(() => {
+		handleTextareaResize();
+	}, [caseNotes]);
 
 	useEffect(() => {
 		const fetchProfile = async () => {
@@ -186,10 +201,14 @@ export default function ProfileView() {
 								</div>
 								<Separator className="my-4" />
 								{showFileCaseForm ? (
-									<div className="space-y-6">
+									<div className="space-y-1">
 										<h2 className="text-xl font-semibold">
 											File New Case
 										</h2>
+										<p className="text-sm text-gray-500">
+											Complete the following steps to file
+											a new case for this profile.
+										</p>
 										<form
 											onSubmit={(e) => {
 												e.preventDefault();
@@ -201,15 +220,39 @@ export default function ProfileView() {
 											<Accordion
 												type="single"
 												collapsible
-												defaultValue="case-details"
+												value={activeAccordion}
+												onValueChange={(value) =>
+													setActiveAccordion(
+														value || "",
+													)
+												}
 												className="w-full"
 											>
-												<AccordionItem value="case-details">
-													<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors">
+												<AccordionItem
+													value="case-details"
+													className={
+														activeAccordion ===
+														"case-details"
+															? "border-l-4 border-blue-500 bg-blue-50/50"
+															: ""
+													}
+												>
+													<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors px-2">
 														<div className="flex justify-between items-center w-full mr-2">
-															<span>
-																[1] Case Details
-															</span>
+															<div className="flex items-center gap-2">
+																{completedSections.includes(
+																	"case-details",
+																) && (
+																	<Check className="h-4 w-4 text-green-600" />
+																)}
+																<span>
+																	[1] Case
+																	Details
+																</span>
+																<span className="text-xs text-gray-400 ml-2">
+																	(2/4)
+																</span>
+															</div>
 															<span className="text-gray-500 text-sm text-right">
 																Basic
 																information
@@ -263,12 +306,30 @@ export default function ProfileView() {
 														</div>
 													</AccordionContent>
 												</AccordionItem>
-												<AccordionItem value="suspects">
-													<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors">
+												<AccordionItem
+													value="suspects"
+													className={
+														activeAccordion ===
+														"suspects"
+															? "border-l-4 border-blue-500 bg-blue-50/50"
+															: ""
+													}
+												>
+													<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors px-2">
 														<div className="flex justify-between items-center w-full mr-2">
-															<span>
-																[2] Suspects
-															</span>
+															<div className="flex items-center gap-2">
+																{completedSections.includes(
+																	"suspects",
+																) && (
+																	<Check className="h-4 w-4 text-green-600" />
+																)}
+																<span>
+																	[2] Suspects
+																</span>
+																<span className="text-xs text-gray-400 ml-2">
+																	(0/3)
+																</span>
+															</div>
 															<span className="text-gray-500 text-sm text-right">
 																Add information
 																about suspects
@@ -285,12 +346,30 @@ export default function ProfileView() {
 														</div>
 													</AccordionContent>
 												</AccordionItem>
-												<AccordionItem value="drugs">
-													<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors">
+												<AccordionItem
+													value="drugs"
+													className={
+														activeAccordion ===
+														"drugs"
+															? "border-l-4 border-blue-500 bg-blue-50/50"
+															: ""
+													}
+												>
+													<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors px-2">
 														<div className="flex justify-between items-center w-full mr-2">
-															<span>
-																[3] Drugs
-															</span>
+															<div className="flex items-center gap-2">
+																{completedSections.includes(
+																	"drugs",
+																) && (
+																	<Check className="h-4 w-4 text-green-600" />
+																)}
+																<span>
+																	[3] Drugs
+																</span>
+																<span className="text-xs text-gray-400 ml-2">
+																	(1/5)
+																</span>
+															</div>
 															<span className="text-gray-500 text-sm text-right">
 																Specify types
 																and quantities
@@ -307,12 +386,30 @@ export default function ProfileView() {
 														</div>
 													</AccordionContent>
 												</AccordionItem>
-												<AccordionItem value="areas">
-													<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors">
+												<AccordionItem
+													value="areas"
+													className={
+														activeAccordion ===
+														"areas"
+															? "border-l-4 border-blue-500 bg-blue-50/50"
+															: ""
+													}
+												>
+													<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors px-2">
 														<div className="flex justify-between items-center w-full mr-2">
-															<span>
-																[4] Areas
-															</span>
+															<div className="flex items-center gap-2">
+																{completedSections.includes(
+																	"areas",
+																) && (
+																	<Check className="h-4 w-4 text-green-600" />
+																)}
+																<span>
+																	[4] Areas
+																</span>
+																<span className="text-xs text-gray-400 ml-2">
+																	(0/2)
+																</span>
+															</div>
 															<span className="text-gray-500 text-sm text-right">
 																Locations
 																related to the
@@ -329,12 +426,30 @@ export default function ProfileView() {
 														</div>
 													</AccordionContent>
 												</AccordionItem>
-												<AccordionItem value="notes">
-													<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors">
+												<AccordionItem
+													value="notes"
+													className={
+														activeAccordion ===
+														"notes"
+															? "border-l-4 border-blue-500 bg-blue-50/50"
+															: ""
+													}
+												>
+													<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors px-2">
 														<div className="flex justify-between items-center w-full mr-2">
-															<span>
-																[5] Notes
-															</span>
+															<div className="flex items-center gap-2">
+																{completedSections.includes(
+																	"notes",
+																) && (
+																	<Check className="h-4 w-4 text-green-600" />
+																)}
+																<span>
+																	[5] Notes
+																</span>
+																<span className="text-xs text-gray-400 ml-2">
+																	(1/1)
+																</span>
+															</div>
 															<span className="text-gray-500 text-sm text-right">
 																Additional
 																observations and
@@ -348,18 +463,25 @@ export default function ProfileView() {
 																Notes
 															</Label>
 															<Textarea
+																ref={
+																	textareaRef
+																}
 																maxLength={1000}
 																id="case-notes"
 																placeholder="Add additional notes here"
 																value={
 																	caseNotes
 																}
-																onChange={(e) =>
+																onChange={(
+																	e,
+																) => {
 																	setCaseNotes(
 																		e.target
 																			.value,
-																	)
-																}
+																	);
+																	handleTextareaResize();
+																}}
+																className="resize-none overflow-hidden"
 															/>
 															<div className="text-sm text-gray-500">
 																{

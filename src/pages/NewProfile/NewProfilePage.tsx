@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/field";
 import { FileCaseModal } from "./FileCaseModal";
 import { invoke } from "@tauri-apps/api/core";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 
 export default function NewProfile() {
@@ -28,6 +28,19 @@ export default function NewProfile() {
 	const [addressLine2, setAddressLine2] = useState("");
 	const [city, setCity] = useState("");
 	const [notes, setNotes] = useState("");
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+	// Auto-resize textarea based on content
+	const handleTextareaResize = () => {
+		if (textareaRef.current) {
+			textareaRef.current.style.height = "auto";
+			textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+		}
+	};
+
+	useEffect(() => {
+		handleTextareaResize();
+	}, [notes]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -172,11 +185,16 @@ export default function NewProfile() {
 							<div className="grid gap-2">
 								<Label htmlFor="notes">Notes</Label>
 								<Textarea
+									ref={textareaRef}
 									maxLength={500}
 									id="notes"
 									placeholder="Include notes"
 									value={notes}
-									onChange={(e) => setNotes(e.target.value)}
+									onChange={(e) => {
+										setNotes(e.target.value);
+										handleTextareaResize();
+									}}
+									className="resize-none overflow-hidden"
 								/>
 								<div className="text-sm text-gray-500">
 									{notes.length}/500
