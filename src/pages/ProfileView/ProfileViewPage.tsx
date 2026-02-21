@@ -1,10 +1,11 @@
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Plus, MoreVertical } from "lucide-react";
+import { ChevronLeft, Plus, MoreVertical, X } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 // import {
 // 	Card,
@@ -35,6 +36,7 @@ export default function ProfileView() {
 	const [profile, setProfile] = useState<Profile | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [showFileCaseForm, setShowFileCaseForm] = useState(false);
 
 	useEffect(() => {
 		const fetchProfile = async () => {
@@ -110,7 +112,9 @@ export default function ProfileView() {
 								className="w-full mt-2"
 							>
 								<div className="flex justify-between items-center">
-									<TabsList className="flex gap-4">
+									<TabsList
+										className={`flex gap-4 ${showFileCaseForm ? "opacity-50 pointer-events-none" : ""}`}
+									>
 										<TabsTrigger
 											value="overview"
 											className="cursor-pointer"
@@ -147,11 +151,19 @@ export default function ProfileView() {
 											variant="secondary"
 											className="cursor-pointer"
 											onClick={() =>
-												navigate(`/profile/${id}/edit`)
+												setShowFileCaseForm(
+													!showFileCaseForm,
+												)
 											}
 										>
-											<Plus className="h-4 w-4 mr-2" />
-											File Case
+											{showFileCaseForm ? (
+												<X className="h-4 w-4 mr-2" />
+											) : (
+												<Plus className="h-4 w-4 mr-2" />
+											)}
+											{showFileCaseForm
+												? "Cancel"
+												: "File Case"}
 										</Button>
 										<Button
 											variant="secondary"
@@ -165,123 +177,189 @@ export default function ProfileView() {
 									</div>
 								</div>
 								<Separator className="my-4" />
-								<TabsContent value="overview">
-									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-										<div className="space-y-2">
-											<Label className="text-gray-500">
-												Full Name
-											</Label>
-											<p className="text-lg">
-												{profile.full_name}
-											</p>
-										</div>
-
-										{profile.alias && (
-											<div className="space-y-2">
-												<Label className="text-gray-500">
-													Alias
-												</Label>
-												<p className="text-lg">
-													{profile.alias}
-												</p>
+								{showFileCaseForm ? (
+									<div className="space-y-6">
+										<h2 className="text-xl font-semibold">
+											File New Case
+										</h2>
+										<form
+											onSubmit={(e) => {
+												e.preventDefault();
+												console.log("Form submitted");
+												setShowFileCaseForm(false);
+											}}
+											className="space-y-4"
+										>
+											<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+												<div className="space-y-2">
+													<Label htmlFor="case-name">
+														Case Name *
+													</Label>
+													<Input
+														id="case-name"
+														name="name"
+														placeholder="Enter case name"
+														required
+													/>
+												</div>
+												<div className="space-y-2">
+													<Label htmlFor="case-number">
+														Case Number
+													</Label>
+													<Input
+														id="case-number"
+														name="caseNumber"
+														placeholder="Optional"
+													/>
+												</div>
 											</div>
-										)}
-
-										{profile.nic && (
-											<div className="space-y-2">
-												<Label className="text-gray-500">
-													NIC
-												</Label>
-												<p className="text-lg">
-													{profile.nic}
-												</p>
+											<div className="flex gap-4 pt-4">
+												<Button
+													type="button"
+													variant="outline"
+													className="cursor-pointer"
+													onClick={() =>
+														setShowFileCaseForm(
+															false,
+														)
+													}
+												>
+													Cancel
+												</Button>
+												<Button
+													type="submit"
+													className="cursor-pointer"
+												>
+													Save Case
+												</Button>
 											</div>
-										)}
-
-										{profile.address_line1 && (
-											<div className="space-y-2">
-												<Label className="text-gray-500">
-													Address Line 1
-												</Label>
-												<p className="text-lg">
-													{profile.address_line1}
-												</p>
-											</div>
-										)}
-
-										{profile.address_line2 && (
-											<div className="space-y-2">
-												<Label className="text-gray-500">
-													Address Line 2
-												</Label>
-												<p className="text-lg">
-													{profile.address_line2}
-												</p>
-											</div>
-										)}
-
-										{profile.city && (
-											<div className="space-y-2">
-												<Label className="text-gray-500">
-													City
-												</Label>
-												<p className="text-lg">
-													{profile.city}
-												</p>
-											</div>
-										)}
-
-										{profile.risk_level && (
-											<div className="space-y-2">
-												<Label className="text-gray-500">
-													Risk Level
-												</Label>
-												<p className="text-lg">
-													{profile.risk_level}
-												</p>
-											</div>
-										)}
-
-										{profile.status && (
-											<div className="space-y-2">
-												<Label className="text-gray-500">
-													Status
-												</Label>
-												<p className="text-lg">
-													{profile.status}
-												</p>
-											</div>
-										)}
+										</form>
 									</div>
+								) : (
+									<>
+										<TabsContent value="overview">
+											<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+												<div className="space-y-2">
+													<Label className="text-gray-500">
+														Full Name
+													</Label>
+													<p className="text-lg">
+														{profile.full_name}
+													</p>
+												</div>
 
-									{profile.notes && (
-										<div className="space-y-2">
-											<Label className="text-gray-500">
-												Notes
-											</Label>
-											<p className="text-lg whitespace-pre-wrap">
-												{profile.notes}
-											</p>
-										</div>
-									)}
+												{profile.alias && (
+													<div className="space-y-2">
+														<Label className="text-gray-500">
+															Alias
+														</Label>
+														<p className="text-lg">
+															{profile.alias}
+														</p>
+													</div>
+												)}
 
-									{profile.created_at && (
-										<div className="space-y-2 pt-4">
-											<Label className="text-gray-500">
-												Created At
-											</Label>
-											<p className="text-sm text-gray-600">
-												{new Date(
-													profile.created_at,
-												).toLocaleString()}
-											</p>
-										</div>
-									)}
-								</TabsContent>
-								<TabsContent value="analytics"></TabsContent>
-								<TabsContent value="reports"></TabsContent>
-								<TabsContent value="settings"></TabsContent>
-								<TabsContent value="areas"></TabsContent>
+												{profile.nic && (
+													<div className="space-y-2">
+														<Label className="text-gray-500">
+															NIC
+														</Label>
+														<p className="text-lg">
+															{profile.nic}
+														</p>
+													</div>
+												)}
+
+												{profile.address_line1 && (
+													<div className="space-y-2">
+														<Label className="text-gray-500">
+															Address Line 1
+														</Label>
+														<p className="text-lg">
+															{
+																profile.address_line1
+															}
+														</p>
+													</div>
+												)}
+
+												{profile.address_line2 && (
+													<div className="space-y-2">
+														<Label className="text-gray-500">
+															Address Line 2
+														</Label>
+														<p className="text-lg">
+															{
+																profile.address_line2
+															}
+														</p>
+													</div>
+												)}
+
+												{profile.city && (
+													<div className="space-y-2">
+														<Label className="text-gray-500">
+															City
+														</Label>
+														<p className="text-lg">
+															{profile.city}
+														</p>
+													</div>
+												)}
+
+												{profile.risk_level && (
+													<div className="space-y-2">
+														<Label className="text-gray-500">
+															Risk Level
+														</Label>
+														<p className="text-lg">
+															{profile.risk_level}
+														</p>
+													</div>
+												)}
+
+												{profile.status && (
+													<div className="space-y-2">
+														<Label className="text-gray-500">
+															Status
+														</Label>
+														<p className="text-lg">
+															{profile.status}
+														</p>
+													</div>
+												)}
+											</div>
+
+											{profile.notes && (
+												<div className="space-y-2">
+													<Label className="text-gray-500">
+														Notes
+													</Label>
+													<p className="text-lg whitespace-pre-wrap">
+														{profile.notes}
+													</p>
+												</div>
+											)}
+
+											{profile.created_at && (
+												<div className="space-y-2 pt-4">
+													<Label className="text-gray-500">
+														Created At
+													</Label>
+													<p className="text-sm text-gray-600">
+														{new Date(
+															profile.created_at,
+														).toLocaleString()}
+													</p>
+												</div>
+											)}
+										</TabsContent>
+										<TabsContent value="analytics"></TabsContent>
+										<TabsContent value="reports"></TabsContent>
+										<TabsContent value="settings"></TabsContent>
+										<TabsContent value="areas"></TabsContent>
+									</>
+								)}
 							</Tabs>
 						</div>
 					</div>
