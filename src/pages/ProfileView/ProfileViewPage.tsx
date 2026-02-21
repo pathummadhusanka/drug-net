@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Plus, MoreVertical, X, Check } from "lucide-react";
+import { Plus, MoreVertical, X, Check, Calendar, Clock } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState, useRef } from "react";
 import { Label } from "@/components/ui/label";
@@ -23,6 +23,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import {
+	Combobox,
+	ComboboxContent,
+	ComboboxInput,
+	ComboboxItem,
+	ComboboxList,
+} from "@/components/ui/combobox";
 
 interface Profile {
 	id: number;
@@ -46,21 +53,35 @@ export default function ProfileView() {
 	const [error, setError] = useState<string | null>(null);
 	const [showFileCaseForm, setShowFileCaseForm] = useState(false);
 	const [caseNotes, setCaseNotes] = useState("");
+	const [caseTitle, setCaseTitle] = useState("");
+	const [caseDescription, setCaseDescription] = useState("");
+	const [severityLevel, setSeverityLevel] = useState("");
+	const [caseType, setCaseType] = useState("");
+	const [caseStatus, setCaseStatus] = useState("");
+	const [caseDate, setCaseDate] = useState("");
+	const [caseTime, setCaseTime] = useState("");
 	const [activeAccordion, setActiveAccordion] = useState("case-details");
-	const [completedSections, setCompletedSections] = useState<string[]>([]);
+	const [completedSections] = useState<string[]>([]);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
 
 	// Auto-resize textarea based on content
-	const handleTextareaResize = () => {
-		if (textareaRef.current) {
-			textareaRef.current.style.height = "auto";
-			textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+	const handleTextareaResize = (
+		ref: React.RefObject<HTMLTextAreaElement | null>,
+	) => {
+		if (ref.current) {
+			ref.current.style.height = "auto";
+			ref.current.style.height = `${ref.current.scrollHeight}px`;
 		}
 	};
 
 	useEffect(() => {
-		handleTextareaResize();
+		handleTextareaResize(textareaRef);
 	}, [caseNotes]);
+
+	useEffect(() => {
+		handleTextareaResize(descriptionTextareaRef);
+	}, [caseDescription]);
 
 	useEffect(() => {
 		const fetchProfile = async () => {
@@ -251,7 +272,7 @@ export default function ProfileView() {
 																	Details
 																</span>
 																<span className="text-xs text-gray-400 ml-2">
-																	(2/4)
+																	(0/7)
 																</span>
 															</div>
 															<span className="text-gray-500 text-sm text-right">
@@ -264,45 +285,347 @@ export default function ProfileView() {
 													<AccordionContent>
 														<div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 px-2">
 															<div className="space-y-2">
-																<Label htmlFor="case-name">
-																	Case Name *
+																<Label htmlFor="case-id">
+																	Case ID *
 																</Label>
 																<Input
-																	id="case-name"
-																	name="name"
-																	placeholder="Enter case name"
+																	id="case-id"
+																	name="caseId"
+																	placeholder="Enter case ID"
 																	required
 																/>
 															</div>
 															<div className="space-y-2">
-																<Label htmlFor="case-number">
-																	Case Number
+																<Label htmlFor="case-type">
+																	Case Type *
+																</Label>
+																<Combobox
+																	value={
+																		caseType
+																	}
+																	onValueChange={(
+																		value,
+																	) =>
+																		setCaseType(
+																			value ||
+																				"",
+																		)
+																	}
+																>
+																	<ComboboxInput
+																		placeholder="Select case type"
+																		showClear={
+																			!!caseType
+																		}
+																	/>
+																	<ComboboxContent>
+																		<ComboboxList>
+																			<ComboboxItem value="trafficking">
+																				Trafficking
+																				-
+																				Large
+																				scale
+																				transportation
+																				or
+																				movement
+																				of
+																				illegal
+																				drugs
+																				across
+																				regions
+																				or
+																				borders
+																			</ComboboxItem>
+																			<ComboboxItem value="distribution">
+																				Distribution
+																				-
+																				Supplying
+																				or
+																				selling
+																				drugs
+																				within
+																				a
+																				network
+																			</ComboboxItem>
+																			<ComboboxItem value="possession">
+																				Possession
+																				-
+																				Individual
+																				found
+																				holding
+																				illegal
+																				drugs
+																				(personal
+																				or
+																				commercial
+																				quantity)
+																			</ComboboxItem>
+																			<ComboboxItem value="manufacturing">
+																				Manufacturing
+																				-
+																				Production
+																				or
+																				processing
+																				of
+																				narcotics
+																			</ComboboxItem>
+																			<ComboboxItem value="cultivation">
+																				Cultivation
+																				-
+																				Growing
+																				illegal
+																				drug
+																				producing
+																				plants
+																			</ComboboxItem>
+																			<ComboboxItem value="import-export">
+																				Import
+																				/
+																				Export
+																				-
+																				Cross
+																				border
+																				smuggling
+																				of
+																				drugs
+																			</ComboboxItem>
+																			</ComboboxList>
+																	</ComboboxContent>
+																</Combobox>
+															</div>
+															<div className="space-y-2 md:col-span-2">
+																<Label htmlFor="case-title">
+																	Title *
 																</Label>
 																<Input
-																	id="case-number"
-																	name="caseNumber"
-																	placeholder="Optional"
+																	id="case-title"
+																	name="title"
+																	placeholder="Enter case title"
+																	maxLength={
+																		100
+																	}
+																	value={
+																		caseTitle
+																	}
+																	onChange={(
+																		e,
+																	) =>
+																		setCaseTitle(
+																			e
+																				.target
+																				.value,
+																		)
+																	}
+																	required
 																/>
+																<div className="text-sm text-gray-500">
+																	{
+																		caseTitle.length
+																	}
+																	/100
+																</div>
 															</div>
-															<div className="space-y-2">
+															<div className="space-y-2 md:col-span-2">
 																<Label htmlFor="case-description">
 																	Description
 																</Label>
-																<Input
+																<Textarea
+																	ref={
+																		descriptionTextareaRef
+																	}
+																	maxLength={
+																		250
+																	}
 																	id="case-description"
 																	name="description"
 																	placeholder="Enter case description"
+																	value={
+																		caseDescription
+																	}
+																	onChange={(
+																		e,
+																	) => {
+																		setCaseDescription(
+																			e
+																				.target
+																				.value,
+																		);
+																		handleTextareaResize(
+																			descriptionTextareaRef,
+																		);
+																	}}
+																	className="resize-none overflow-hidden"
 																/>
+																<div className="text-sm text-gray-500">
+																	{
+																		caseDescription.length
+																	}
+																	/250
+																</div>
 															</div>
 															<div className="space-y-2">
 																<Label htmlFor="case-date">
-																	Date
+																	Date *
 																</Label>
-																<Input
-																	id="case-date"
-																	name="date"
-																	type="date"
-																/>
+																<div className="relative">
+																	<Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+																	<Input
+																		id="case-date"
+																		name="date"
+																		type="date"
+																		value={
+																			caseDate
+																		}
+																		onChange={(
+																			e,
+																		) =>
+																			setCaseDate(
+																				e
+																					.target
+																					.value,
+																			)
+																		}
+																		required
+																		className={`pl-8 ${caseDate ? "pr-8" : ""}`}
+																	/>
+																	{caseDate && (
+																		<button
+																			type="button"
+																			aria-label="Clear date"
+																			onClick={() =>
+																				setCaseDate(
+																					"",
+																				)
+																			}
+																			className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+																		>
+																			<X className="h-4 w-4" />
+																		</button>
+																	)}
+																</div>
+															</div>
+															<div className="space-y-2">
+																<Label htmlFor="case-time">
+																	Time *
+																</Label>
+																<div className="relative">
+																	<Clock className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+																	<Input
+																		id="case-time"
+																		name="time"
+																		type="time"
+																		value={
+																			caseTime
+																		}
+																		onChange={(
+																			e,
+																		) =>
+																			setCaseTime(
+																				e
+																					.target
+																					.value,
+																			)
+																		}
+																		required
+																		className={`pl-8 ${caseTime ? "pr-8" : ""}`}
+																	/>
+																	{caseTime && (
+																		<button
+																			type="button"
+																			aria-label="Clear time"
+																			onClick={() =>
+																				setCaseTime(
+																					"",
+																				)
+																			}
+																			className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+																		>
+																			<X className="h-4 w-4" />
+																		</button>
+																	)}
+																</div>
+															</div>
+															<div className="space-y-2">
+																<Label htmlFor="severity-level">
+																	Severity
+																	Level *
+																</Label>
+																<Combobox
+																	value={
+																		severityLevel
+																	}
+																	onValueChange={(
+																		value,
+																	) =>
+																		setSeverityLevel(
+																			value ||
+																				"",
+																		)
+																	}
+																>
+																	<ComboboxInput
+																		placeholder="Select severity level"
+																		showClear={
+																			!!severityLevel
+																		}
+																	/>
+																	<ComboboxContent>
+																		<ComboboxList>
+																			<ComboboxItem value="low">
+																				Low
+																			</ComboboxItem>
+																			<ComboboxItem value="medium">
+																				Medium
+																			</ComboboxItem>
+																			<ComboboxItem value="high">
+																				High
+																			</ComboboxItem>
+																			<ComboboxItem value="critical">
+																				Critical
+																			</ComboboxItem>
+																			</ComboboxList>
+																	</ComboboxContent>
+																</Combobox>
+															</div>
+															<div className="space-y-2">
+																<Label htmlFor="case-status">
+																	Case Status
+																	*
+																</Label>
+																<Combobox
+																	value={
+																		caseStatus
+																	}
+																	onValueChange={(
+																		value,
+																	) =>
+																		setCaseStatus(
+																			value ||
+																				"",
+																		)
+																	}
+																>
+																	<ComboboxInput
+																		placeholder="Select case status"
+																		showClear={
+																			!!caseStatus
+																		}
+																	/>
+																	<ComboboxContent>
+																		<ComboboxList>
+																			<ComboboxItem value="active">
+																				Active
+																			</ComboboxItem>
+																			<ComboboxItem value="under-surveillance">
+																				Under
+																				Surveillance
+																			</ComboboxItem>
+																			<ComboboxItem value="closed">
+																				Closed
+																			</ComboboxItem>
+																			</ComboboxList>
+																	</ComboboxContent>
+																</Combobox>
 															</div>
 														</div>
 													</AccordionContent>
@@ -480,7 +803,9 @@ export default function ProfileView() {
 																		e.target
 																			.value,
 																	);
-																	handleTextareaResize();
+																	handleTextareaResize(
+																		textareaRef,
+																	);
 																}}
 																className="resize-none overflow-hidden"
 															/>
