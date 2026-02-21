@@ -3,6 +3,7 @@
 // import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import { AppRouter } from "@/routes/AppRouter";
+import { Toaster } from "@/components/ui/sonner";
 
 // import { Button } from "@/components/ui/button";
 
@@ -15,7 +16,12 @@ function App() {
 	// 	setGreetMsg(await invoke("greet", { name }));
 	// }
 
-	return <AppRouter />;
+	return (
+		<>
+			<AppRouter />
+			<Toaster />
+		</>
+	);
 
 	// return (
 	// 	<main className="container">

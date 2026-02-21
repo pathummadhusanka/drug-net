@@ -22,6 +22,7 @@ import {
 // } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 interface Profile {
 	id: number;
@@ -522,6 +523,16 @@ export default function ProfileView() {
 													<Button
 														type="submit"
 														className="cursor-pointer"
+														onClick={(e) => {
+															e.preventDefault();
+															toast.success(
+																"Case has been filed successfully!",
+																{
+																	position:
+																		"top-center",
+																},
+															);
+														}}
 													>
 														Save Case
 													</Button>
