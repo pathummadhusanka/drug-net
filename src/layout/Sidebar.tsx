@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Users, Network } from "lucide-react";
+import { Users, Network, Library } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 export function Sidebar() {
@@ -9,7 +9,7 @@ export function Sidebar() {
 				{({ isActive }) => (
 					<Button
 						variant={isActive ? "secondary" : "ghost"}
-						className="w-full justify-start"
+						className="w-full justify-start cursor-pointer"
 					>
 						<Users className="h-4 w-4 mr-2" />
 						Profiles
@@ -21,10 +21,22 @@ export function Sidebar() {
 				{({ isActive }) => (
 					<Button
 						variant={isActive ? "secondary" : "ghost"}
-						className="w-full justify-start"
+						className="w-full justify-start cursor-pointer"
 					>
 						<Network className="h-4 w-4 mr-2" />
 						Network
+					</Button>
+				)}
+			</NavLink>
+
+			<NavLink to="/cases">
+				{({ isActive }) => (
+					<Button
+						variant={isActive ? "secondary" : "ghost"}
+						className="w-full justify-start cursor-pointer"
+					>
+						<Library className="h-4 w-4 mr-2" />
+						Cases
 					</Button>
 				)}
 			</NavLink>
