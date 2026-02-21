@@ -213,7 +213,7 @@ export default function ProfileView() {
 													/>
 												</div>
 											</div>
-											<div className="flex gap-4 pt-4">
+											<div className="flex justify-between pt-4">
 												<Button
 													type="button"
 													variant="outline"
@@ -224,14 +224,28 @@ export default function ProfileView() {
 														)
 													}
 												>
-													Cancel
+													Clear
 												</Button>
-												<Button
-													type="submit"
-													className="cursor-pointer"
-												>
-													Save Case
-												</Button>
+												<div className="flex gap-4">
+													<Button
+														type="button"
+														variant="outline"
+														className="cursor-pointer"
+														onClick={() => {
+															console.log(
+																"Save draft",
+															);
+														}}
+													>
+														Save Draft
+													</Button>
+													<Button
+														type="submit"
+														className="cursor-pointer"
+													>
+														Save Case
+													</Button>
+												</div>
 											</div>
 										</form>
 									</div>
