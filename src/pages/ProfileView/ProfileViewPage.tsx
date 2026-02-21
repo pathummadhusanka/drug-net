@@ -71,16 +71,16 @@ export default function ProfileView() {
 
 	return (
 		<>
-			<Button
+			{/* <Button
 				onClick={() => navigate(-1)}
 				variant="outline"
 				className="mb-4 cursor-pointer"
 			>
 				<ChevronLeft className="h-4 w-4 mr-2" />
 				All Profiles
-			</Button>
+			</Button> */}
 
-			<div className="w-full mx-auto px-6">
+			<div className="w-full mx-auto">
 				{loading && (
 					<div className="text-center py-8">
 						<p className="text-gray-500">Loading profile...</p>
