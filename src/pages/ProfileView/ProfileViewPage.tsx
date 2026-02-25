@@ -57,6 +57,50 @@ export default function ProfileView() {
 	const [completedSections] = useState<string[]>([]);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
+	const [selectedDrugs, setSelectedDrugs] = useState<{
+		[key: string]: string;
+	}>({});
+	const [drugSearch, setDrugSearch] = useState("");
+
+	// List of available drugs
+	const availableDrugs = [
+		{ name: "Heroin", unit: "grams" },
+		{ name: "Cocaine", unit: "grams" },
+		{ name: "Methamphetamine", unit: "grams" },
+		{ name: "Cannabis", unit: "grams" },
+		{ name: "MDMA (Ecstasy)", unit: "pills" },
+		{ name: "LSD", unit: "tabs" },
+		{ name: "Fentanyl", unit: "grams" },
+		{ name: "Amphetamine", unit: "grams" },
+		{ name: "Ketamine", unit: "grams" },
+		{ name: "PCP", unit: "grams" },
+		{ name: "Morphine", unit: "grams" },
+		{ name: "Codeine", unit: "pills" },
+		{ name: "Oxycodone", unit: "pills" },
+		{ name: "Hydrocodone", unit: "pills" },
+		{ name: "Methadone", unit: "mg" },
+	];
+
+	const getDrugDisplayName = (name: string, unit: string) => {
+		return `${name} (${unit})`;
+	};
+
+	const handleDrugSelect = (drugName: string) => {
+		if (!selectedDrugs[drugName]) {
+			setSelectedDrugs({ ...selectedDrugs, [drugName]: "" });
+		}
+		setDrugSearch("");
+	};
+
+	const handleDrugQuantityChange = (drugName: string, quantity: string) => {
+		setSelectedDrugs({ ...selectedDrugs, [drugName]: quantity });
+	};
+
+	const handleRemoveDrug = (drugName: string) => {
+		const updatedDrugs = { ...selectedDrugs };
+		delete updatedDrugs[drugName];
+		setSelectedDrugs(updatedDrugs);
+	};
 
 	// Auto-resize textarea based on content
 	const handleTextareaResize = (
@@ -692,10 +736,162 @@ export default function ProfileView() {
 													</AccordionTrigger>
 													<AccordionContent>
 														<div className="space-y-4 pt-2 px-2">
-															<p className="text-sm text-gray-500">
-																Add drug details
-																here
-															</p>
+															<div className="space-y-2 max-w-180 ml-4">
+																<Label>
+																	Select Drug
+																</Label>
+																<Combobox>
+																	<ComboboxInput
+																		placeholder="Search and select a drug..."
+																		showTrigger
+																		value={
+																			drugSearch
+																		}
+																		onChange={(
+																			e,
+																		) =>
+																			setDrugSearch(
+																				e
+																					.target
+																					.value,
+																			)
+																		}
+																	/>
+																	<ComboboxContent>
+																		<ComboboxList>
+																			{availableDrugs
+																				.filter(
+																					(
+																						drug,
+																					) => {
+																						const displayName =
+																							getDrugDisplayName(
+																								drug.name,
+																								drug.unit,
+																							);
+																						return (
+																							!(
+																								displayName in
+																								selectedDrugs
+																							) &&
+																							displayName
+																								.toLowerCase()
+																								.includes(
+																									drugSearch.toLowerCase(),
+																								)
+																						);
+																					},
+																				)
+																				.map(
+																					(
+																						drug,
+																					) => {
+																						const displayName =
+																							getDrugDisplayName(
+																								drug.name,
+																								drug.unit,
+																							);
+																						return (
+																							<ComboboxItem
+																								key={
+																									displayName
+																								}
+																								value={
+																									displayName
+																								}
+																								onClick={() => {
+																									handleDrugSelect(
+																										displayName,
+																									);
+																									setDrugSearch(
+																										"",
+																									);
+																								}}
+																								className="cursor-pointer"
+																							>
+																								{
+																									displayName
+																								}
+																							</ComboboxItem>
+																						);
+																					},
+																				)}
+																		</ComboboxList>
+																	</ComboboxContent>
+																</Combobox>
+															</div>
+
+															{/* Selected Drugs List */}
+															{Object.keys(
+																selectedDrugs,
+															).length > 0 && (
+																<div className="space-y-3 mt-4 max-w-180 ml-4">
+																	<Label className="text-base">
+																		Selected
+																		Drugs
+																	</Label>
+																	{Object.entries(
+																		selectedDrugs,
+																	).map(
+																		([
+																			drugName,
+																			quantity,
+																		]) => (
+																			<div
+																				key={
+																					drugName
+																				}
+																				className="flex items-center gap-3"
+																			>
+																				<div className="flex-1 flex items-center gap-3">
+																					<Label
+																						htmlFor={`quantity-${drugName}`}
+																						className="text-sm font-medium min-w-fit whitespace-nowrap"
+																					>
+																						{
+																							drugName
+																						}
+
+																						:
+																					</Label>
+																					<Input
+																						id={`quantity-${drugName}`}
+																						type="text"
+																						placeholder="Enter quantity"
+																						value={
+																							quantity
+																						}
+																						onChange={(
+																							e,
+																						) =>
+																							handleDrugQuantityChange(
+																								drugName,
+																								e
+																									.target
+																									.value,
+																							)
+																						}
+																						className="flex-1"
+																					/>
+																				</div>
+																				<Button
+																					type="button"
+																					variant="ghost"
+																					size="icon"
+																					onClick={() =>
+																						handleRemoveDrug(
+																							drugName,
+																						)
+																					}
+																					className="cursor-pointer"
+																				>
+																					<X className="h-4 w-4" />
+																				</Button>
+																			</div>
+																		),
+																	)}
+																</div>
+															)}
 														</div>
 													</AccordionContent>
 												</AccordionItem>
