@@ -61,6 +61,8 @@ export default function ProfileView() {
 		[key: string]: string;
 	}>({});
 	const [drugSearch, setDrugSearch] = useState("");
+	const [areas, setAreas] = useState<string[]>([]);
+	const [pendingArea, setPendingArea] = useState("");
 
 	// List of available drugs
 	const availableDrugs = [
@@ -928,10 +930,152 @@ export default function ProfileView() {
 													</AccordionTrigger>
 													<AccordionContent>
 														<div className="space-y-4 pt-2 px-2">
-															<p className="text-sm text-gray-500">
-																Add area
-																information here
-															</p>
+															<div className="space-y-2 max-w-180 ml-4">
+																<Label>
+																	Add Area
+																</Label>
+																<div className="flex">
+																	<Input
+																		value={
+																			pendingArea
+																		}
+																		onChange={(
+																			e,
+																		) =>
+																			setPendingArea(
+																				e
+																					.target
+																					.value,
+																			)
+																		}
+																		onKeyDown={(
+																			e,
+																		) => {
+																			if (
+																				e.key ===
+																				"Enter"
+																			) {
+																				e.preventDefault();
+																				if (
+																					pendingArea.trim()
+																				) {
+																					const newAreas =
+																						new Set(
+																							[
+																								...areas,
+																								pendingArea.trim(),
+																							],
+																						);
+																					setAreas(
+																						Array.from(
+																							newAreas,
+																						),
+																					);
+																					setPendingArea(
+																						"",
+																					);
+																				}
+																			} else if (
+																				e.key ===
+																					"," ||
+																				e.key ===
+																					" "
+																			) {
+																				e.preventDefault();
+																				if (
+																					pendingArea.trim()
+																				) {
+																					const newAreas =
+																						new Set(
+																							[
+																								...areas,
+																								pendingArea.trim(),
+																							],
+																						);
+																					setAreas(
+																						Array.from(
+																							newAreas,
+																						),
+																					);
+																					setPendingArea(
+																						"",
+																					);
+																				}
+																			}
+																		}}
+																		placeholder="Enter area name (press Enter, comma, or space to add)"
+																		className="rounded-r-none"
+																	/>
+																	<Button
+																		type="button"
+																		variant="secondary"
+																		className="rounded-l-none border border-l-0 cursor-pointer"
+																		onClick={() => {
+																			if (
+																				pendingArea.trim()
+																			) {
+																				const newAreas =
+																					new Set(
+																						[
+																							...areas,
+																							pendingArea.trim(),
+																						],
+																					);
+																				setAreas(
+																					Array.from(
+																						newAreas,
+																					),
+																				);
+																				setPendingArea(
+																					"",
+																				);
+																			}
+																		}}
+																	>
+																		Add
+																	</Button>
+																</div>
+																{areas.length >
+																	0 && (
+																	<div className="border rounded-md min-h-10 overflow-y-auto p-2 flex gap-2 flex-wrap items-center">
+																		{areas.map(
+																			(
+																				area,
+																				idx,
+																			) => (
+																				<div
+																					key={
+																						idx
+																					}
+																					className="inline-flex items-center rounded-md bg-secondary px-2.5 py-0.5 text-sm font-medium text-secondary-foreground"
+																				>
+																					{
+																						area
+																					}
+																					<button
+																						type="button"
+																						aria-label={`Remove ${area}`}
+																						className="ml-2 inline-flex items-center justify-center hover:text-destructive cursor-pointer"
+																						onClick={() => {
+																							setAreas(
+																								areas.filter(
+																									(
+																										i,
+																									) =>
+																										i !==
+																										area,
+																								),
+																							);
+																						}}
+																					>
+																						<X className="h-3 w-3" />
+																					</button>
+																				</div>
+																			),
+																		)}
+																	</div>
+																)}
+															</div>
 														</div>
 													</AccordionContent>
 												</AccordionItem>
