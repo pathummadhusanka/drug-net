@@ -53,7 +53,7 @@ export default function ProfileView() {
 	const [caseStatus, setCaseStatus] = useState("");
 	const [caseDate, setCaseDate] = useState("");
 	const [caseTime, setCaseTime] = useState("");
-	const [activeAccordion, setActiveAccordion] = useState("case-details");
+	const [activeAccordion, setActiveAccordion] = useState("");
 	const [completedSections] = useState<string[]>([]);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
