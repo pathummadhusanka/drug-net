@@ -15,10 +15,38 @@ import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { invoke } from "@tauri-apps/api/core";
+import { useState } from "react";
 
 export function FileCaseModal() {
+	const [caseName, setCaseName] = useState("");
+	const [caseId, setCaseId] = useState("");
+	const [isOpen, setIsOpen] = useState(false);
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+
+		try {
+			const id = await invoke<number>("create_case", {
+				case: {
+					case_name: caseName,
+					case_id: caseId || null,
+				},
+			});
+
+			console.log("Case created with ID:", id);
+
+			// Clear fields and close modal
+			setCaseName("");
+			setCaseId("");
+			setIsOpen(false);
+		} catch (err) {
+			console.error("Failed to create case:", err);
+		}
+	};
+
 	return (
-		<Dialog>
+		<Dialog open={isOpen} onOpenChange={setIsOpen}>
 			<DialogTrigger asChild>
 				<div className="flex flex-row items-center gap-4">
 					<Button
@@ -32,18 +60,13 @@ export function FileCaseModal() {
 				</div>
 			</DialogTrigger>
 			<DialogContent className="max-w-[620px]">
-				<form
-					onSubmit={(e) => {
-						e.preventDefault();
-						// Handle form submission here
-						console.log("Form submitted");
-					}}
-				>
+				<form onSubmit={handleSubmit}>
 					<DialogHeader className="pb-2">
 						<DialogTitle>File Case</DialogTitle>
 						<DialogDescription>
 							Enter case details below. Fields marked with * are
-							required.
+							required. A unique case number (CNO) will be
+							auto-generated.
 						</DialogDescription>
 					</DialogHeader>
 					<FieldGroup>
@@ -53,15 +76,19 @@ export function FileCaseModal() {
 								id="case-name"
 								name="name"
 								placeholder="Enter case name"
+								value={caseName}
+								onChange={(e) => setCaseName(e.target.value)}
 								required
 							/>
 						</Field>
 						<Field>
-							<Label htmlFor="case-number">Case Number</Label>
+							<Label htmlFor="case-number">Case ID</Label>
 							<Input
 								id="case-number"
 								name="caseNumber"
-								placeholder="Optional"
+								placeholder="Optional user-defined ID"
+								value={caseId}
+								onChange={(e) => setCaseId(e.target.value)}
 							/>
 						</Field>
 					</FieldGroup>

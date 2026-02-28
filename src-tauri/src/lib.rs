@@ -5,6 +5,7 @@ mod features;
 
 use database::connection::{init_connection, DbConnection};
 use database::migrations::run_migrations;
+use features::case::commands::{create_case, get_case, get_all_cases};
 use features::profile::commands::{create_profile, get_profile};
 
 /// Application state containing shared database connection
@@ -33,7 +34,14 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(app_state)
-        .invoke_handler(tauri::generate_handler![greet, create_profile, get_profile])
+        .invoke_handler(tauri::generate_handler![
+            greet, 
+            create_profile, 
+            get_profile,
+            create_case,
+            get_case,
+            get_all_cases
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
