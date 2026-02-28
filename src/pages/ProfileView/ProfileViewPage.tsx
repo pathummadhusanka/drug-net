@@ -91,7 +91,9 @@ export default function ProfileView() {
 
 	// Connection dialog state
 	const [isConnectionDialogOpen, setIsConnectionDialogOpen] = useState(false);
-	const [pendingConnection, setPendingConnection] = useState<Connection | Edge | null>(null);
+	const [pendingConnection, setPendingConnection] = useState<
+		Connection | Edge | null
+	>(null);
 	const [connectionLabel, setConnectionLabel] = useState("");
 
 	// React Flow state
@@ -153,23 +155,20 @@ export default function ProfileView() {
 	};
 
 	// React Flow handlers
-	const onConnect = useCallback(
-		(params: Connection | Edge) => {
-			// Prevent self-loops
-			if (params.source === params.target) {
-				toast.error("A profile cannot connect to itself", {
-					position: "top-center",
-				});
-				return;
-			}
+	const onConnect = useCallback((params: Connection | Edge) => {
+		// Prevent self-loops
+		if (params.source === params.target) {
+			toast.error("A profile cannot connect to itself", {
+				position: "top-center",
+			});
+			return;
+		}
 
-			// Open dialog for edge label/name
-			setPendingConnection(params);
-			setConnectionLabel("");
-			setIsConnectionDialogOpen(true);
-		},
-		[],
-	);
+		// Open dialog for edge label/name
+		setPendingConnection(params);
+		setConnectionLabel("");
+		setIsConnectionDialogOpen(true);
+	}, []);
 
 	const handleConnectionSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -913,13 +912,31 @@ export default function ProfileView() {
 															</div>
 
 															{/* Connection Dialog */}
-															<Dialog open={isConnectionDialogOpen} onOpenChange={setIsConnectionDialogOpen}>
+															<Dialog
+																open={
+																	isConnectionDialogOpen
+																}
+																onOpenChange={
+																	setIsConnectionDialogOpen
+																}
+															>
 																<DialogContent className="sm:max-w-md">
-																	<form onSubmit={handleConnectionSubmit}>
+																	<form
+																		onSubmit={
+																			handleConnectionSubmit
+																		}
+																	>
 																		<DialogHeader>
-																			<DialogTitle>Add Connection</DialogTitle>
+																			<DialogTitle>
+																				Add
+																				Connection
+																			</DialogTitle>
 																			<DialogDescription>
-																				Create a connection between profiles
+																				Create
+																				a
+																				connection
+																				between
+																				profiles
 																			</DialogDescription>
 																		</DialogHeader>
 																		<div className="space-y-4 py-4">
@@ -927,33 +944,78 @@ export default function ProfileView() {
 																				<div className="bg-muted p-3 rounded-md text-sm">
 																					<div className="flex items-center gap-2">
 																						<span className="font-medium">
-																							{nodes.find(n => n.id === pendingConnection.source)?.data.label}
+																							{
+																								nodes.find(
+																									(
+																										n,
+																									) =>
+																										n.id ===
+																										pendingConnection.source,
+																								)
+																									?.data
+																									.label
+																							}
 																						</span>
-																						<span className="text-muted-foreground">→</span>
+																						<span className="text-muted-foreground">
+																							→
+																						</span>
 																						<span className="font-medium">
-																							{nodes.find(n => n.id === pendingConnection.target)?.data.label}
+																							{
+																								nodes.find(
+																									(
+																										n,
+																									) =>
+																										n.id ===
+																										pendingConnection.target,
+																								)
+																									?.data
+																									.label
+																							}
 																						</span>
 																					</div>
 																				</div>
 																			)}
 																			<Field>
-																				<Label htmlFor="connection-type">Connection Type</Label>
+																				<Label htmlFor="connection-type">
+																					Connection
+																					Type
+																				</Label>
 																				<Input
 																					id="connection-type"
 																					name="connectionType"
 																					placeholder="e.g., Supplier, Associate, Family, Known Contact"
-																					value={connectionLabel}
-																					onChange={(e) => setConnectionLabel(e.target.value)}
+																					value={
+																						connectionLabel
+																					}
+																					onChange={(
+																						e,
+																					) =>
+																						setConnectionLabel(
+																							e
+																								.target
+																								.value,
+																						)
+																					}
 																					required
 																					autoFocus
 																				/>
 																			</Field>
 																		</div>
 																		<DialogFooter>
-																			<DialogClose asChild>
-																				<Button variant="outline" type="button">Cancel</Button>
+																			<DialogClose
+																				asChild
+																			>
+																				<Button
+																					variant="outline"
+																					type="button"
+																				>
+																					Cancel
+																				</Button>
 																			</DialogClose>
-																			<Button type="submit">Add Connection</Button>
+																			<Button type="submit">
+																				Add
+																				Connection
+																			</Button>
 																		</DialogFooter>
 																	</form>
 																</DialogContent>
