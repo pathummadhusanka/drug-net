@@ -388,7 +388,7 @@ export default function ProfileView() {
 														</div>
 													</AccordionTrigger>
 													<AccordionContent>
-														<div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 px-2">
+														<div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 px-2 ml-4">
 															<div className="space-y-2">
 																<Label htmlFor="case-id">
 																	Case ID *
@@ -776,7 +776,7 @@ export default function ProfileView() {
 														</div>
 													</AccordionTrigger>
 													<AccordionContent>
-														<div className="space-y-4 pt-2 px-2">
+														<div className="space-y-4 pt-2 px-2 ml-4">
 															<div className="flex justify-between items-center">
 																<div className="space-y-1">
 																	<Label className="text-base">
@@ -1270,7 +1270,7 @@ export default function ProfileView() {
 														</div>
 													</AccordionTrigger>
 													<AccordionContent>
-														<div className="space-y-2 pt-2 px-2">
+														<div className="space-y-2 pt-2 px-2 ml-4">
 															<Label htmlFor="case-notes">
 																Remarks
 															</Label>
