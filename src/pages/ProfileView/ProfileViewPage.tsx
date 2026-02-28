@@ -46,6 +46,7 @@ export default function ProfileView() {
 	const [error, setError] = useState<string | null>(null);
 	const [showFileCaseForm, setShowFileCaseForm] = useState(false);
 	const [caseNotes, setCaseNotes] = useState("");
+	const [caseId, setCaseId] = useState("");
 	const [caseTitle, setCaseTitle] = useState("");
 	const [caseDescription, setCaseDescription] = useState("");
 	const [severityLevel, setSeverityLevel] = useState("");
@@ -331,6 +332,18 @@ export default function ProfileView() {
 																	id="case-id"
 																	name="caseId"
 																	placeholder="Enter case ID"
+																	value={
+																		caseId
+																	}
+																	onChange={(
+																		e,
+																	) =>
+																		setCaseId(
+																			e
+																				.target
+																				.value,
+																		)
+																	}
 																	required
 																/>
 															</div>
