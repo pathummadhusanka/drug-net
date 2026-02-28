@@ -32,6 +32,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import {
 	Combobox,
 	ComboboxContent,
 	ComboboxInput,
@@ -79,6 +88,11 @@ export default function ProfileView() {
 	const [drugSearch, setDrugSearch] = useState("");
 	const [areas, setAreas] = useState<string[]>([]);
 	const [pendingArea, setPendingArea] = useState("");
+
+	// Connection dialog state
+	const [isConnectionDialogOpen, setIsConnectionDialogOpen] = useState(false);
+	const [pendingConnection, setPendingConnection] = useState<Connection | Edge | null>(null);
+	const [connectionLabel, setConnectionLabel] = useState("");
 
 	// React Flow state
 	const initialNodes: Node[] = [
@@ -149,24 +163,32 @@ export default function ProfileView() {
 				return;
 			}
 
-			// Prompt for edge label/name
-			const edgeLabel = prompt("Enter connection type/relationship (e.g., 'Supplier', 'Associate', 'Family'):");
-			
-			if (edgeLabel !== null) {
-				const newEdge = {
-					...params,
-					label: edgeLabel,
-					type: 'default',
-					markerEnd: {
-						type: MarkerType.ArrowClosed,
-					},
-					style: { strokeWidth: 2 },
-				};
-				setEdges((eds) => addEdge(newEdge, eds));
-			}
+			// Open dialog for edge label/name
+			setPendingConnection(params);
+			setConnectionLabel("");
+			setIsConnectionDialogOpen(true);
 		},
-		[setEdges],
+		[],
 	);
+
+	const handleConnectionSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		if (pendingConnection && connectionLabel.trim()) {
+			const newEdge = {
+				...pendingConnection,
+				label: connectionLabel.trim(),
+				type: "default",
+				markerEnd: {
+					type: MarkerType.ArrowClosed,
+				},
+				style: { strokeWidth: 2 },
+			};
+			setEdges((eds) => addEdge(newEdge, eds));
+			setIsConnectionDialogOpen(false);
+			setPendingConnection(null);
+			setConnectionLabel("");
+		}
+	};
 
 	const addNode = useCallback(() => {
 		const newNode: Node = {
@@ -862,11 +884,19 @@ export default function ProfileView() {
 																		onConnect
 																	}
 																	defaultEdgeOptions={{
-																		type: 'default',
-																		markerEnd: {
-																			type: MarkerType.ArrowClosed,
+																		type: "default",
+																		markerEnd:
+																			{
+																				type: MarkerType.ArrowClosed,
+																			},
+																		style: {
+																			strokeWidth: 2,
 																		},
-																		style: { strokeWidth: 2 },
+																	}}
+																	defaultViewport={{
+																		x: 0,
+																		y: 0,
+																		zoom: 0.5,
 																	}}
 																	fitView
 																>
@@ -881,6 +911,54 @@ export default function ProfileView() {
 																	/>
 																</ReactFlow>
 															</div>
+
+															{/* Connection Dialog */}
+															<Dialog open={isConnectionDialogOpen} onOpenChange={setIsConnectionDialogOpen}>
+																<DialogContent className="sm:max-w-md">
+																	<form onSubmit={handleConnectionSubmit}>
+																		<DialogHeader>
+																			<DialogTitle>Add Connection</DialogTitle>
+																			<DialogDescription>
+																				Create a connection between profiles
+																			</DialogDescription>
+																		</DialogHeader>
+																		<div className="space-y-4 py-4">
+																			{pendingConnection && (
+																				<div className="bg-muted p-3 rounded-md text-sm">
+																					<div className="flex items-center gap-2">
+																						<span className="font-medium">
+																							{nodes.find(n => n.id === pendingConnection.source)?.data.label}
+																						</span>
+																						<span className="text-muted-foreground">→</span>
+																						<span className="font-medium">
+																							{nodes.find(n => n.id === pendingConnection.target)?.data.label}
+																						</span>
+																					</div>
+																				</div>
+																			)}
+																			<Field>
+																				<Label htmlFor="connection-type">Connection Type</Label>
+																				<Input
+																					id="connection-type"
+																					name="connectionType"
+																					placeholder="e.g., Supplier, Associate, Family, Known Contact"
+																					value={connectionLabel}
+																					onChange={(e) => setConnectionLabel(e.target.value)}
+																					required
+																					autoFocus
+																				/>
+																			</Field>
+																		</div>
+																		<DialogFooter>
+																			<DialogClose asChild>
+																				<Button variant="outline" type="button">Cancel</Button>
+																			</DialogClose>
+																			<Button type="submit">Add Connection</Button>
+																		</DialogFooter>
+																	</form>
+																</DialogContent>
+															</Dialog>
+
 															<p className="text-sm text-gray-500">
 																Click "Add
 																Profile" to
