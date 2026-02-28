@@ -51,6 +51,17 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
 	Combobox,
 	ComboboxContent,
 	ComboboxInput,
@@ -81,6 +92,7 @@ const CustomNode = ({
 		label: string;
 		isCurrentProfile?: boolean;
 		onDelete?: (id: string) => void;
+		edges?: Edge[];
 	};
 	id: string;
 }) => {
@@ -89,6 +101,12 @@ const CustomNode = ({
 	const borderColor = data.isCurrentProfile
 		? "border-indigo-700"
 		: "border-gray-400";
+
+	// Count connections for this node
+	const connectionCount = data.edges
+		? data.edges.filter((edge) => edge.source === id || edge.target === id)
+				.length
+		: 0;
 
 	return (
 		<div
@@ -103,17 +121,60 @@ const CustomNode = ({
 			<Handle type="source" position={Position.Bottom} id="bottom" />
 			<Handle type="source" position={Position.Left} id="left" />
 			{!data.isCurrentProfile && data.onDelete && (
-				<button
-					onClick={(e) => {
-						e.stopPropagation();
-						data.onDelete?.(id);
-					}}
-					className="absolute -top-1 -right-1 bg-white hover:bg-red-50 border border-gray-300 hover:border-red-400 text-gray-500 hover:text-red-600 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer leading-none p-0"
-					title="Delete profile"
-					style={{ fontSize: '12px' }}
-				>
-					×
-				</button>
+				<AlertDialog>
+					<AlertDialogTrigger asChild>
+						<button
+							onClick={(e) => {
+								e.stopPropagation();
+							}}
+							className="absolute -top-1 -right-1 bg-white hover:bg-red-50 border border-gray-300 hover:border-red-400 text-gray-500 hover:text-red-600 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer leading-none p-0"
+							title="Delete profile"
+							style={{ fontSize: "12px" }}
+						>
+							×
+						</button>
+					</AlertDialogTrigger>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>Delete Profile</AlertDialogTitle>
+							<AlertDialogDescription>
+								<div>
+									Are you sure you want to delete this
+									profile?
+								</div>
+								{connectionCount > 0 && (
+									<div className="mt-2">
+										This profile has{" "}
+										<span className="font-semibold">
+											{connectionCount}{" "}
+											{connectionCount === 1
+												? "connection"
+												: "connections"}
+										</span>{" "}
+										that will also be removed.
+									</div>
+								)}
+								<div className="mt-2">
+									This action cannot be undone.
+								</div>
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel className="cursor-pointer">
+								Cancel
+							</AlertDialogCancel>
+							<AlertDialogAction
+								className="cursor-pointer"
+								onClick={(e: React.MouseEvent) => {
+									e.stopPropagation();
+									data.onDelete?.(id);
+								}}
+							>
+								Delete
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
 			)}
 			<div className="font-medium">{data.label}</div>
 		</div>
@@ -168,6 +229,7 @@ export default function ProfileView() {
 			data: {
 				label: profile?.full_name || "Current Profile",
 				isCurrentProfile: true,
+				edges: [],
 			},
 			position: { x: 400, y: 200 },
 		},
@@ -350,7 +412,11 @@ export default function ProfileView() {
 		const newNode: Node = {
 			id: `${nodeId}`,
 			type: "custom",
-			data: { label: `Profile ${nodeId}`, onDelete: handleNodeDelete },
+			data: {
+				label: `Profile ${nodeId}`,
+				onDelete: handleNodeDelete,
+				edges,
+			},
 			position: {
 				x: Math.random() * 400 + 100,
 				y: Math.random() * 400 + 50,
@@ -358,7 +424,7 @@ export default function ProfileView() {
 		};
 		setNodes((nds) => [...nds, newNode]);
 		setNodeId((id) => id + 1);
-	}, [nodeId, setNodes, handleNodeDelete]);
+	}, [nodeId, setNodes, handleNodeDelete, edges]);
 
 	// Update initial node when profile loads
 	useEffect(() => {
@@ -371,13 +437,27 @@ export default function ProfileView() {
 								data: {
 									label: profile.full_name,
 									isCurrentProfile: true,
+									edges,
 								},
 							}
 						: node,
 				),
 			);
 		}
-	}, [profile, setNodes]);
+	}, [profile, setNodes, edges]);
+
+	// Update all nodes with current edges whenever edges change
+	useEffect(() => {
+		setNodes((nds) =>
+			nds.map((node) => ({
+				...node,
+				data: {
+					...node.data,
+					edges,
+				},
+			})),
+		);
+	}, [edges, setNodes]);
 
 	// Auto-resize textarea based on content
 	const handleTextareaResize = (
