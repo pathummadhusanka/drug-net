@@ -6,6 +6,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState, useRef } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Field } from "@/components/ui/field";
 import { Separator } from "@/components/ui/separator";
 import {
 	Accordion,
@@ -947,7 +948,7 @@ export default function ProfileView() {
 																<Label>
 																	Add Area
 																</Label>
-																<div className="flex">
+																<Field orientation="horizontal">
 																	<Input
 																		value={
 																			pendingArea
@@ -1017,12 +1018,11 @@ export default function ProfileView() {
 																			}
 																		}}
 																		placeholder="Enter area name (press Enter, comma, or space to add)"
-																		className="rounded-r-none"
 																	/>
 																	<Button
 																		type="button"
-																		variant="secondary"
-																		className="rounded-l-none border border-l-0 cursor-pointer"
+																		variant="outline"
+																		className="cursor-pointer"
 																		onClick={() => {
 																			if (
 																				pendingArea.trim()
@@ -1047,7 +1047,7 @@ export default function ProfileView() {
 																	>
 																		Add
 																	</Button>
-																</div>
+																</Field>
 																{areas.length >
 																	0 && (
 																	<div className="border rounded-md min-h-10 overflow-y-auto p-2 flex gap-2 flex-wrap items-center">
