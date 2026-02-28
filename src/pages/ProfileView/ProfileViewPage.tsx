@@ -3,8 +3,21 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus, MoreVertical, X, Check, Calendar, Clock } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Label } from "@/components/ui/label";
+import ReactFlow, {
+	MiniMap,
+	Controls,
+	Background,
+	BackgroundVariant,
+	addEdge,
+	Connection,
+	Edge,
+	Node,
+	useNodesState,
+	useEdgesState,
+} from "reactflow";
+import "reactflow/dist/style.css";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { Separator } from "@/components/ui/separator";
@@ -66,6 +79,24 @@ export default function ProfileView() {
 	const [areas, setAreas] = useState<string[]>([]);
 	const [pendingArea, setPendingArea] = useState("");
 
+	// React Flow state
+	const initialNodes: Node[] = [
+		{
+			id: "1",
+			type: "default",
+			data: { label: profile?.full_name || "Current Profile" },
+			position: { x: 400, y: 200 },
+			style: {
+				background: "#4F46E5",
+				color: "white",
+				border: "2px solid #4338CA",
+			},
+		},
+	];
+	const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+	const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+	const [nodeId, setNodeId] = useState(2);
+
 	// List of available drugs
 	const availableDrugs = [
 		{ name: "Heroin", unit: "grams" },
@@ -105,6 +136,39 @@ export default function ProfileView() {
 		delete updatedDrugs[drugName];
 		setSelectedDrugs(updatedDrugs);
 	};
+
+	// React Flow handlers
+	const onConnect = useCallback(
+		(params: Connection | Edge) => setEdges((eds) => addEdge(params, eds)),
+		[setEdges],
+	);
+
+	const addNode = useCallback(() => {
+		const newNode: Node = {
+			id: `${nodeId}`,
+			type: "default",
+			data: { label: `Person ${nodeId}` },
+			position: {
+				x: Math.random() * 400 + 100,
+				y: Math.random() * 400 + 50,
+			},
+		};
+		setNodes((nds) => [...nds, newNode]);
+		setNodeId((id) => id + 1);
+	}, [nodeId, setNodes]);
+
+	// Update initial node when profile loads
+	useEffect(() => {
+		if (profile) {
+			setNodes((nds) =>
+				nds.map((node) =>
+					node.id === "1"
+						? { ...node, data: { label: profile.full_name } }
+						: node,
+				),
+			);
+		}
+	}, [profile, setNodes]);
 
 	// Auto-resize textarea based on content
 	const handleTextareaResize = (
@@ -712,10 +776,73 @@ export default function ProfileView() {
 														</div>
 													</AccordionTrigger>
 													<AccordionContent>
-														<div className="p-4 text-gray-500 text-sm">
-															Connection details
-															will be implemented
-															here.
+														<div className="space-y-4 pt-2 px-2">
+															<div className="flex justify-between items-center">
+																<Label className="text-base">
+																	Connection
+																	Network
+																</Label>
+																<Button
+																	type="button"
+																	variant="outline"
+																	size="sm"
+																	className="cursor-pointer"
+																	onClick={
+																		addNode
+																	}
+																>
+																	<Plus className="h-4 w-4 mr-2" />
+																	Add Person
+																</Button>
+															</div>
+															<div
+																className="border rounded-lg"
+																style={{
+																	height: "500px",
+																}}
+															>
+																<ReactFlow
+																	nodes={
+																		nodes
+																	}
+																	edges={
+																		edges
+																	}
+																	onNodesChange={
+																		onNodesChange
+																	}
+																	onEdgesChange={
+																		onEdgesChange
+																	}
+																	onConnect={
+																		onConnect
+																	}
+																	fitView
+																>
+																	<Controls />
+																	<MiniMap />
+																	<Background
+																		variant={
+																			BackgroundVariant.Dots
+																		}
+																		gap={12}
+																		size={1}
+																	/>
+																</ReactFlow>
+															</div>
+															<p className="text-sm text-gray-500">
+																Click "Add
+																Person" to
+																create new
+																nodes. Drag
+																nodes to
+																reposition them,
+																and drag from
+																one node's edge
+																to another to
+																create
+																connections.
+															</p>
 														</div>
 													</AccordionContent>
 												</AccordionItem>
