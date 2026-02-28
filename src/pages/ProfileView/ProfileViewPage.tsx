@@ -1,7 +1,15 @@
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Plus, MoreVertical, X, Check, Calendar, Clock } from "lucide-react";
+import {
+	Plus,
+	MoreVertical,
+	X,
+	Check,
+	Calendar,
+	Clock,
+	Trash2,
+} from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Label } from "@/components/ui/label";
@@ -17,6 +25,8 @@ import ReactFlow, {
 	useNodesState,
 	useEdgesState,
 	MarkerType,
+	Handle,
+	Position,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { Input } from "@/components/ui/input";
@@ -62,6 +72,39 @@ interface Profile {
 	created_at: string | null;
 }
 
+// Custom node component with 4 connection handles
+const CustomNode = ({
+	data,
+}: {
+	data: { label: string; isCurrentProfile?: boolean };
+}) => {
+	const bgColor = data.isCurrentProfile ? "bg-indigo-600" : "bg-white";
+	const textColor = data.isCurrentProfile ? "text-white" : "text-black";
+	const borderColor = data.isCurrentProfile
+		? "border-indigo-700"
+		: "border-gray-400";
+
+	return (
+		<div
+			className={`px-4 py-2 shadow-md rounded-md ${bgColor} ${textColor} border-2 ${borderColor}`}
+		>
+			<Handle type="target" position={Position.Top} id="top" />
+			<Handle type="target" position={Position.Right} id="right" />
+			<Handle type="target" position={Position.Bottom} id="bottom" />
+			<Handle type="target" position={Position.Left} id="left" />
+			<Handle type="source" position={Position.Top} id="top" />
+			<Handle type="source" position={Position.Right} id="right" />
+			<Handle type="source" position={Position.Bottom} id="bottom" />
+			<Handle type="source" position={Position.Left} id="left" />
+			<div className="font-medium">{data.label}</div>
+		</div>
+	);
+};
+
+const nodeTypes = {
+	custom: CustomNode,
+};
+
 export default function ProfileView() {
 	const { id } = useParams();
 	const navigate = useNavigate();
@@ -102,14 +145,12 @@ export default function ProfileView() {
 	const initialNodes: Node[] = [
 		{
 			id: "1",
-			type: "default",
-			data: { label: profile?.full_name || "Current Profile" },
-			position: { x: 400, y: 200 },
-			style: {
-				background: "#4F46E5",
-				color: "white",
-				border: "2px solid #4338CA",
+			type: "custom",
+			data: {
+				label: profile?.full_name || "Current Profile",
+				isCurrentProfile: true,
 			},
+			position: { x: 400, y: 200 },
 		},
 	];
 	const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -260,10 +301,20 @@ export default function ProfileView() {
 		}
 	};
 
+	const handleConnectionDelete = () => {
+		if (editingEdgeId) {
+			setEdges((eds) => eds.filter((edge) => edge.id !== editingEdgeId));
+			setIsConnectionDialogOpen(false);
+			setPendingConnection(null);
+			setConnectionLabel("");
+			setEditingEdgeId(null);
+		}
+	};
+
 	const addNode = useCallback(() => {
 		const newNode: Node = {
 			id: `${nodeId}`,
-			type: "default",
+			type: "custom",
 			data: { label: `Profile ${nodeId}` },
 			position: {
 				x: Math.random() * 400 + 100,
@@ -280,7 +331,13 @@ export default function ProfileView() {
 			setNodes((nds) =>
 				nds.map((node) =>
 					node.id === "1"
-						? { ...node, data: { label: profile.full_name } }
+						? {
+								...node,
+								data: {
+									label: profile.full_name,
+									isCurrentProfile: true,
+								},
+							}
 						: node,
 				),
 			);
@@ -960,6 +1017,9 @@ export default function ProfileView() {
 																	edges={
 																		edges
 																	}
+																	nodeTypes={
+																		nodeTypes
+																	}
 																	onNodesChange={
 																		onNodesChange
 																	}
@@ -980,6 +1040,9 @@ export default function ProfileView() {
 																	}
 																	isValidConnection={
 																		isValidConnectionCheck
+																	}
+																	connectionRadius={
+																		50
 																	}
 																	connectionLineStyle={{
 																		stroke: isValidConnection
@@ -1050,36 +1113,46 @@ export default function ProfileView() {
 																		<div className="space-y-4 py-4">
 																			{pendingConnection && (
 																				<div className="bg-muted p-3 rounded-md text-sm">
-																					<div className="flex items-center gap-2">
-																						<span className="font-medium">
-																							{
-																								nodes.find(
-																									(
-																										n,
-																									) =>
-																										n.id ===
-																										pendingConnection.source,
-																								)
-																									?.data
-																									.label
-																							}
-																						</span>
-																						<span className="text-muted-foreground">
-																							→
-																						</span>
-																						<span className="font-medium">
-																							{
-																								nodes.find(
-																									(
-																										n,
-																									) =>
-																										n.id ===
-																										pendingConnection.target,
-																								)
-																									?.data
-																									.label
-																							}
-																						</span>
+																					<div className="flex items-center justify-between gap-2">
+																						<div className="flex items-center gap-2">
+																							<span className="font-medium">
+																								{
+																									nodes.find(
+																										(
+																											n,
+																										) =>
+																											n.id ===
+																											pendingConnection.source,
+																									)
+																										?.data
+																										.label
+																								}
+																							</span>
+																							<span className="text-muted-foreground">
+																								→
+																							</span>
+																							<span className="font-medium">
+																								{
+																									nodes.find(
+																										(
+																											n,
+																										) =>
+																											n.id ===
+																											pendingConnection.target,
+																									)
+																										?.data
+																										.label
+																								}
+																							</span>
+																						</div>
+																						{editingEdgeId && (
+																							<Trash2
+																								className="h-4 w-4 text-destructive cursor-pointer hover:text-destructive/80"
+																								onClick={
+																									handleConnectionDelete
+																								}
+																							/>
+																						)}
 																					</div>
 																				</div>
 																			)}
