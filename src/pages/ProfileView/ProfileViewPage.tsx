@@ -155,20 +155,40 @@ export default function ProfileView() {
 	};
 
 	// React Flow handlers
-	const onConnect = useCallback((params: Connection | Edge) => {
-		// Prevent self-loops
-		if (params.source === params.target) {
-			toast.error("A profile cannot connect to itself", {
-				position: "top-center",
-			});
-			return;
-		}
+	const onConnect = useCallback(
+		(params: Connection | Edge) => {
+			// Prevent self-loops
+			if (params.source === params.target) {
+				toast.error("A profile cannot connect to itself", {
+					position: "top-center",
+				});
+				return;
+			}
 
-		// Open dialog for edge label/name
-		setPendingConnection(params);
-		setConnectionLabel("");
-		setIsConnectionDialogOpen(true);
-	}, []);
+			// Check if connection already exists
+			const connectionExists = edges.some(
+				(edge) =>
+					edge.source === params.source &&
+					edge.target === params.target,
+			);
+
+			if (connectionExists) {
+				toast.error(
+					"A connection already exists between these profiles",
+					{
+						position: "top-center",
+					},
+				);
+				return;
+			}
+
+			// Open dialog for edge label/name
+			setPendingConnection(params);
+			setConnectionLabel("");
+			setIsConnectionDialogOpen(true);
+		},
+		[edges],
+	);
 
 	const handleConnectionSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
