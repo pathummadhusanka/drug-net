@@ -1183,22 +1183,28 @@ export default function ProfileView() {
 																			</Field>
 																		</div>
 																		<DialogFooter>
-																			<DialogClose
-																				asChild
-																			>
-																				<Button
-																					variant="outline"
-																					type="button"
+																			<div className="flex w-full justify-between">
+																				<DialogClose
+																					asChild
 																				>
-																					Cancel
+																					<Button
+																						variant="outline"
+																						type="button"
+																						className="cursor-pointer"
+																					>
+																						Cancel
+																					</Button>
+																				</DialogClose>
+																				<Button
+																					type="submit"
+																					className="cursor-pointer"
+																				>
+																					{editingEdgeId
+																						? "Update"
+																						: "Add"}{" "}
+																					Connection
 																				</Button>
-																			</DialogClose>
-																			<Button type="submit">
-																				{editingEdgeId
-																					? "Update"
-																					: "Add"}{" "}
-																				Connection
-																			</Button>
+																			</div>
 																		</DialogFooter>
 																	</form>
 																</DialogContent>
