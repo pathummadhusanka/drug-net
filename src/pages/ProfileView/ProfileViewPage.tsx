@@ -75,8 +75,14 @@ interface Profile {
 // Custom node component with 4 connection handles
 const CustomNode = ({
 	data,
+	id,
 }: {
-	data: { label: string; isCurrentProfile?: boolean };
+	data: {
+		label: string;
+		isCurrentProfile?: boolean;
+		onDelete?: (id: string) => void;
+	};
+	id: string;
 }) => {
 	const bgColor = data.isCurrentProfile ? "bg-indigo-600" : "bg-white";
 	const textColor = data.isCurrentProfile ? "text-white" : "text-black";
@@ -86,7 +92,7 @@ const CustomNode = ({
 
 	return (
 		<div
-			className={`px-4 py-2 shadow-md rounded-md ${bgColor} ${textColor} border-2 ${borderColor}`}
+			className={`px-4 py-2 shadow-md rounded-md ${bgColor} ${textColor} border-2 ${borderColor} relative`}
 		>
 			<Handle type="target" position={Position.Top} id="top" />
 			<Handle type="target" position={Position.Right} id="right" />
@@ -96,6 +102,19 @@ const CustomNode = ({
 			<Handle type="source" position={Position.Right} id="right" />
 			<Handle type="source" position={Position.Bottom} id="bottom" />
 			<Handle type="source" position={Position.Left} id="left" />
+			{!data.isCurrentProfile && data.onDelete && (
+				<button
+					onClick={(e) => {
+						e.stopPropagation();
+						data.onDelete?.(id);
+					}}
+					className="absolute -top-1 -right-1 bg-white hover:bg-red-50 border border-gray-300 hover:border-red-400 text-gray-500 hover:text-red-600 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer leading-none p-0"
+					title="Delete profile"
+					style={{ fontSize: '12px' }}
+				>
+					×
+				</button>
+			)}
 			<div className="font-medium">{data.label}</div>
 		</div>
 	);
@@ -311,11 +330,27 @@ export default function ProfileView() {
 		}
 	};
 
+	const handleNodeDelete = useCallback(
+		(nodeIdToDelete: string) => {
+			// Remove the node
+			setNodes((nds) => nds.filter((node) => node.id !== nodeIdToDelete));
+			// Remove any edges connected to this node
+			setEdges((eds) =>
+				eds.filter(
+					(edge) =>
+						edge.source !== nodeIdToDelete &&
+						edge.target !== nodeIdToDelete,
+				),
+			);
+		},
+		[setNodes, setEdges],
+	);
+
 	const addNode = useCallback(() => {
 		const newNode: Node = {
 			id: `${nodeId}`,
 			type: "custom",
-			data: { label: `Profile ${nodeId}` },
+			data: { label: `Profile ${nodeId}`, onDelete: handleNodeDelete },
 			position: {
 				x: Math.random() * 400 + 100,
 				y: Math.random() * 400 + 50,
@@ -323,7 +358,7 @@ export default function ProfileView() {
 		};
 		setNodes((nds) => [...nds, newNode]);
 		setNodeId((id) => id + 1);
-	}, [nodeId, setNodes]);
+	}, [nodeId, setNodes, handleNodeDelete]);
 
 	// Update initial node when profile loads
 	useEffect(() => {
