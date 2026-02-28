@@ -147,7 +147,7 @@ export default function ProfileView() {
 		const newNode: Node = {
 			id: `${nodeId}`,
 			type: "default",
-			data: { label: `Person ${nodeId}` },
+			data: { label: `Profile ${nodeId}` },
 			position: {
 				x: Math.random() * 400 + 100,
 				y: Math.random() * 400 + 50,
@@ -778,10 +778,29 @@ export default function ProfileView() {
 													<AccordionContent>
 														<div className="space-y-4 pt-2 px-2">
 															<div className="flex justify-between items-center">
-																<Label className="text-base">
-																	Connection
-																	Network
-																</Label>
+																<div className="space-y-1">
+																	<Label className="text-base">
+																		Connection
+																		Network
+																	</Label>
+																	<p className="text-sm text-gray-500">
+																		{
+																			nodes.length
+																		}{" "}
+																		{nodes.length ===
+																		1
+																			? "profile"
+																			: "profiles"}{" "}
+																		•{" "}
+																		{
+																			edges.length
+																		}{" "}
+																		{edges.length ===
+																		1
+																			? "connection"
+																			: "connections"}
+																	</p>
+																</div>
 																<Button
 																	type="button"
 																	variant="outline"
@@ -792,7 +811,7 @@ export default function ProfileView() {
 																	}
 																>
 																	<Plus className="h-4 w-4 mr-2" />
-																	Add Person
+																	Add Profile
 																</Button>
 															</div>
 															<div
@@ -832,15 +851,15 @@ export default function ProfileView() {
 															</div>
 															<p className="text-sm text-gray-500">
 																Click "Add
-																Person" to
+																Profile" to
 																create new
-																nodes. Drag
-																nodes to
+																profiles. Drag
+																profiles to
 																reposition them,
 																and drag from
-																one node's edge
-																to another to
-																create
+																one profile's
+																edge to another
+																to create
 																connections.
 															</p>
 														</div>
