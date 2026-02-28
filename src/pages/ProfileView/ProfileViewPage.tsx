@@ -95,6 +95,8 @@ export default function ProfileView() {
 		Connection | Edge | null
 	>(null);
 	const [connectionLabel, setConnectionLabel] = useState("");
+	const [editingEdgeId, setEditingEdgeId] = useState<string | null>(null);
+	const [isValidConnection, setIsValidConnection] = useState(false);
 
 	// React Flow state
 	const initialNodes: Node[] = [
@@ -190,22 +192,71 @@ export default function ProfileView() {
 		[edges],
 	);
 
+	const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+		event.preventDefault();
+		setEditingEdgeId(edge.id);
+		setConnectionLabel((edge.label as string) || "");
+		setPendingConnection({
+			source: edge.source,
+			target: edge.target,
+			sourceHandle: edge.sourceHandle ?? null,
+			targetHandle: edge.targetHandle ?? null,
+		});
+		setIsConnectionDialogOpen(true);
+	}, []);
+
+	const onConnectStart = useCallback(() => {
+		setIsValidConnection(false);
+	}, []);
+
+	const onConnectEnd = useCallback(() => {
+		setIsValidConnection(false);
+	}, []);
+
+	const isValidConnectionCheck = useCallback(
+		(connection: Connection | Edge) => {
+			const isValid =
+				connection.source !== connection.target &&
+				!edges.some(
+					(edge) =>
+						edge.source === connection.source &&
+						edge.target === connection.target,
+				);
+			setIsValidConnection(isValid);
+			return isValid;
+		},
+		[edges],
+	);
+
 	const handleConnectionSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
-		if (pendingConnection && connectionLabel.trim()) {
-			const newEdge = {
-				...pendingConnection,
-				label: connectionLabel.trim(),
-				type: "default",
-				markerEnd: {
-					type: MarkerType.ArrowClosed,
-				},
-				style: { strokeWidth: 2 },
-			};
-			setEdges((eds) => addEdge(newEdge, eds));
+		if (connectionLabel.trim()) {
+			if (editingEdgeId) {
+				// Update existing edge
+				setEdges((eds) =>
+					eds.map((edge) =>
+						edge.id === editingEdgeId
+							? { ...edge, label: connectionLabel.trim() }
+							: edge,
+					),
+				);
+			} else if (pendingConnection) {
+				// Create new edge
+				const newEdge = {
+					...pendingConnection,
+					label: connectionLabel.trim(),
+					type: "default",
+					markerEnd: {
+						type: MarkerType.ArrowClosed,
+					},
+					style: { strokeWidth: 2 },
+				};
+				setEdges((eds) => addEdge(newEdge, eds));
+			}
 			setIsConnectionDialogOpen(false);
 			setPendingConnection(null);
 			setConnectionLabel("");
+			setEditingEdgeId(null);
 		}
 	};
 
@@ -881,11 +932,27 @@ export default function ProfileView() {
 																</Button>
 															</div>
 															<div
-																className="border rounded-lg"
+																className="border rounded-lg connection-canvas"
 																style={{
 																	height: "500px",
 																}}
 															>
+																<style>{`
+																	/* Green glow on valid target nodes during connection */
+																	.connection-canvas .react-flow__node.connectingto {
+																		box-shadow: 0 0 0 3px #22c55e !important;
+																	}
+																	/* Edge label background with border */
+																	.connection-canvas .react-flow__edge-textbg {
+																		fill: white;
+																		stroke: #6b7280;
+																		stroke-width: 1px;
+																	}
+																	/* Edge label text styling */
+																	.connection-canvas .react-flow__edge-text {
+																		font-weight: 500;
+																	}
+																`}</style>
 																<ReactFlow
 																	nodes={
 																		nodes
@@ -902,6 +969,24 @@ export default function ProfileView() {
 																	onConnect={
 																		onConnect
 																	}
+																	onEdgeClick={
+																		onEdgeClick
+																	}
+																	onConnectStart={
+																		onConnectStart
+																	}
+																	onConnectEnd={
+																		onConnectEnd
+																	}
+																	isValidConnection={
+																		isValidConnectionCheck
+																	}
+																	connectionLineStyle={{
+																		stroke: isValidConnection
+																			? "#22c55e"
+																			: "#ef4444",
+																		strokeWidth: 2,
+																	}}
 																	defaultEdgeOptions={{
 																		type: "default",
 																		markerEnd:
@@ -948,12 +1033,15 @@ export default function ProfileView() {
 																	>
 																		<DialogHeader>
 																			<DialogTitle>
-																				Add
+																				{editingEdgeId
+																					? "Edit"
+																					: "Add"}{" "}
 																				Connection
 																			</DialogTitle>
 																			<DialogDescription>
-																				Create
-																				a
+																				{editingEdgeId
+																					? "Update the"
+																					: "Create a"}{" "}
 																				connection
 																				between
 																				profiles
@@ -1033,7 +1121,9 @@ export default function ProfileView() {
 																				</Button>
 																			</DialogClose>
 																			<Button type="submit">
-																				Add
+																				{editingEdgeId
+																					? "Update"
+																					: "Add"}{" "}
 																				Connection
 																			</Button>
 																		</DialogFooter>
