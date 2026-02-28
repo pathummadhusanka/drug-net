@@ -16,6 +16,7 @@ import ReactFlow, {
 	Node,
 	useNodesState,
 	useEdgesState,
+	MarkerType,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { Input } from "@/components/ui/input";
@@ -139,7 +140,31 @@ export default function ProfileView() {
 
 	// React Flow handlers
 	const onConnect = useCallback(
-		(params: Connection | Edge) => setEdges((eds) => addEdge(params, eds)),
+		(params: Connection | Edge) => {
+			// Prevent self-loops
+			if (params.source === params.target) {
+				toast.error("A profile cannot connect to itself", {
+					position: "top-center",
+				});
+				return;
+			}
+
+			// Prompt for edge label/name
+			const edgeLabel = prompt("Enter connection type/relationship (e.g., 'Supplier', 'Associate', 'Family'):");
+			
+			if (edgeLabel !== null) {
+				const newEdge = {
+					...params,
+					label: edgeLabel,
+					type: 'default',
+					markerEnd: {
+						type: MarkerType.ArrowClosed,
+					},
+					style: { strokeWidth: 2 },
+				};
+				setEdges((eds) => addEdge(newEdge, eds));
+			}
+		},
 		[setEdges],
 	);
 
@@ -836,6 +861,13 @@ export default function ProfileView() {
 																	onConnect={
 																		onConnect
 																	}
+																	defaultEdgeOptions={{
+																		type: 'default',
+																		markerEnd: {
+																			type: MarkerType.ArrowClosed,
+																		},
+																		style: { strokeWidth: 2 },
+																	}}
 																	fitView
 																>
 																	<Controls />
