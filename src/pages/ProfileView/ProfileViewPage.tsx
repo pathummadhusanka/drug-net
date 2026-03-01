@@ -1243,7 +1243,7 @@ export default function ProfileView() {
 															<Label className="text-base font-semibold mb-4 block">
 																Status
 															</Label>
-															<FieldGroup className="max-w-sm px-2">
+															<FieldGroup className="flex flex-row gap-2 px-2">
 																{[
 																	"Active",
 																	"Inactive",
