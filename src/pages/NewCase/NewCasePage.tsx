@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -167,6 +167,14 @@ const nodeTypes = {
 
 export default function NewCasePage() {
 	const navigate = useNavigate();
+	const location = useLocation();
+	type NewCaseLocationState = {
+		defaultProfileLabel?: string;
+	} | null;
+	const defaultProfileLabel = (
+		location.state as NewCaseLocationState
+	)?.defaultProfileLabel?.trim();
+	const hasDefaultProfile = Boolean(defaultProfileLabel);
 	const [caseNotes, setCaseNotes] = useState("");
 	const [caseId, setCaseId] = useState("");
 	const [caseTitle, setCaseTitle] = useState("");
@@ -195,21 +203,23 @@ export default function NewCasePage() {
 	const [editingEdgeId, setEditingEdgeId] = useState<string | null>(null);
 	const [isValidConnection, setIsValidConnection] = useState(false);
 
-	const initialNodes: Node[] = [
-		{
-			id: "1",
-			type: "custom",
-			data: {
-				label: "Current Profile",
-				isCurrentProfile: true,
-				edges: [],
-			},
-			position: { x: 400, y: 200 },
-		},
-	];
+	const initialNodes: Node[] = hasDefaultProfile
+		? [
+				{
+					id: "1",
+					type: "custom",
+					data: {
+						label: defaultProfileLabel || "Current Profile",
+						isCurrentProfile: true,
+						edges: [],
+					},
+					position: { x: 400, y: 200 },
+				},
+			]
+		: [];
 	const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
 	const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-	const [nodeId, setNodeId] = useState(2);
+	const [nodeId, setNodeId] = useState(hasDefaultProfile ? 2 : 1);
 
 	const availableDrugs = [
 		{ name: "Heroin", unit: "grams" },

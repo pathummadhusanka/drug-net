@@ -589,7 +589,13 @@ export default function ProfileView() {
 											variant="secondary"
 											className="cursor-pointer"
 											onClick={() =>
-												navigate("/new-case")
+												navigate("/new-case", {
+													state: {
+														defaultProfileLabel:
+															profile?.full_name ||
+															"Current Profile",
+													},
+												})
 											}
 										>
 											<Plus className="h-4 w-4 mr-2" />
