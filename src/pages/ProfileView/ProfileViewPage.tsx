@@ -2802,31 +2802,35 @@ export default function ProfileView() {
 													</div>
 												</div>
 
-												{profile.created_at && (
-													<div className="space-y-1">
-														<Label className="text-xs text-gray-500">
-															Created At
-														</Label>
-														<p className="text-xs font-medium text-gray-600">
-															{new Date(
-																profile.created_at,
-															).toLocaleString()}
-														</p>
-													</div>
-												)}
+												<Separator />
 
-												{profile.updated_at && (
-													<div className="space-y-1">
-														<Label className="text-xs text-gray-500">
-															Updated At
-														</Label>
-														<p className="text-xs font-medium text-gray-600">
-															{new Date(
-																profile.updated_at,
-															).toLocaleString()}
-														</p>
-													</div>
-												)}
+												<div className="flex flex-col gap-2">
+													{profile.created_at && (
+														<div className="flex flex-row items-center gap-3">
+															<Label className="text-xs text-gray-500 w-20">
+																Created At
+															</Label>
+															<p className="text-xs font-medium text-gray-600">
+																{new Date(
+																	profile.created_at,
+																).toLocaleString()}
+															</p>
+														</div>
+													)}
+
+													{profile.updated_at && (
+														<div className="flex flex-row items-center gap-3">
+															<Label className="text-xs text-gray-500 w-20">
+																Updated At
+															</Label>
+															<p className="text-xs font-medium text-gray-600">
+																{new Date(
+																	profile.updated_at,
+																).toLocaleString()}
+															</p>
+														</div>
+													)}
+												</div>
 											</div>
 										</TabsContent>
 										<TabsContent value="analytics">
