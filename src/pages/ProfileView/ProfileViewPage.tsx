@@ -1164,11 +1164,10 @@ export default function ProfileView() {
 											open={isEditingRightSide}
 											onOpenChange={setIsEditingRightSide}
 										>
-											<DialogContent className="max-w-md">
+											<DialogContent className="max-w-md max-h-[90vh] flex flex-col">
 												<DialogHeader>
 													<DialogTitle>
-														Edit Risk Level, Status
-														& Notes
+														Additional Details
 													</DialogTitle>
 												</DialogHeader>
 												<form
@@ -1176,140 +1175,155 @@ export default function ProfileView() {
 														e.preventDefault();
 														void handleSaveRightSide();
 													}}
-													className="space-y-4"
+													className="flex flex-col flex-1 overflow-hidden"
 												>
-													<div className="mt-4">
-														<Label className="text-base font-semibold mb-4 block">
-															Risk Level
-														</Label>
-														<div className="flex gap-3">
-															{[
-																"Low",
-																"Medium",
-																"High",
-															].map((level) => (
-																<button
-																	key={level}
-																	type="button"
-																	onClick={() =>
-																		setEditRiskLevel(
-																			editRiskLevel ===
+													<div className="overflow-y-auto flex-1 space-y-4 pr-2">
+														<div className="mt-4">
+															<Label className="text-base font-semibold mb-4 block">
+																Risk Level
+															</Label>
+															<div className="flex gap-3">
+																{[
+																	"Low",
+																	"Medium",
+																	"High",
+																].map(
+																	(level) => (
+																		<button
+																			key={
 																				level
-																				? null
-																				: level,
-																		)
-																	}
-																	className="flex items-center gap-2 relative"
-																>
-																	<Badge
-																		variant={
-																			editRiskLevel ===
-																			level
-																				? level ===
-																					"Low"
-																					? "default"
-																					: level ===
-																						  "Medium"
-																						? "secondary"
-																						: "destructive"
-																				: "outline"
-																		}
-																		className="px-3 py-1 cursor-pointer transition-all"
-																	>
-																		{level}
-																	</Badge>
-																	{editRiskLevel ===
-																		level && (
-																		<Check className="absolute -top-1 -right-1 h-4 w-4 bg-white rounded-full" />
-																	)}
-																</button>
-															))}
+																			}
+																			type="button"
+																			onClick={() =>
+																				setEditRiskLevel(
+																					editRiskLevel ===
+																						level
+																						? null
+																						: level,
+																				)
+																			}
+																			className="flex items-center gap-2 relative"
+																		>
+																			<Badge
+																				variant={
+																					editRiskLevel ===
+																					level
+																						? level ===
+																							"Low"
+																							? "default"
+																							: level ===
+																								  "Medium"
+																								? "secondary"
+																								: "destructive"
+																						: "outline"
+																				}
+																				className="px-3 py-1 cursor-pointer transition-all"
+																			>
+																				{
+																					level
+																				}
+																			</Badge>
+																			{editRiskLevel ===
+																				level && (
+																				<Check className="absolute -top-1 -right-1 h-4 w-4 bg-white rounded-full" />
+																			)}
+																		</button>
+																	),
+																)}
+															</div>
 														</div>
-													</div>
 
-													<div className="mt-4">
-														<Label className="text-base font-semibold mb-4 block">
-															Status
-														</Label>
-														<FieldGroup className="max-w-sm">
-															{[
-																"Active",
-																"Inactive",
-																"Suspended",
-															].map(
-																(
-																	statusOption,
-																) => (
-																	<Field
-																		key={
-																			statusOption
-																		}
-																		orientation="horizontal"
-																	>
-																		<Checkbox
-																			id={`right-status-${statusOption}`}
-																			name={`right-status-${statusOption}`}
-																			checked={
-																				editStatus ===
+														<div className="mt-4">
+															<Label className="text-base font-semibold mb-4 block">
+																Status
+															</Label>
+															<FieldGroup className="max-w-sm">
+																{[
+																	"Active",
+																	"Inactive",
+																	"Suspended",
+																].map(
+																	(
+																		statusOption,
+																	) => (
+																		<Field
+																			key={
 																				statusOption
 																			}
-																			onCheckedChange={(
-																				checked,
-																			) => {
-																				if (
-																					checked
-																				) {
-																					setEditStatus(
-																						statusOption,
-																					);
-																				} else if (
+																			orientation="horizontal"
+																		>
+																			<Checkbox
+																				id={`right-status-${statusOption}`}
+																				name={`right-status-${statusOption}`}
+																				checked={
 																					editStatus ===
 																					statusOption
-																				) {
-																					setEditStatus(
-																						null,
-																					);
 																				}
-																			}}
-																		/>
-																		<FieldLabel
-																			htmlFor={`right-status-${statusOption}`}
-																			className="cursor-pointer"
-																		>
-																			{
-																				statusOption
-																			}
-																		</FieldLabel>
-																	</Field>
-																),
-															)}
-														</FieldGroup>
-													</div>
+																				onCheckedChange={(
+																					checked,
+																				) => {
+																					if (
+																						checked
+																					) {
+																						setEditStatus(
+																							statusOption,
+																						);
+																					} else if (
+																						editStatus ===
+																						statusOption
+																					) {
+																						setEditStatus(
+																							null,
+																						);
+																					}
+																				}}
+																			/>
+																			<FieldLabel
+																				htmlFor={`right-status-${statusOption}`}
+																				className="cursor-pointer"
+																			>
+																				{
+																					statusOption
+																				}
+																			</FieldLabel>
+																		</Field>
+																	),
+																)}
+															</FieldGroup>
+														</div>
 
-													<div className="grid gap-2">
-														<Label htmlFor="right-notes">
-															Notes
-														</Label>
-														<Textarea
-															id="right-notes"
-															maxLength={500}
-															value={editNotes}
-															onChange={(event) =>
-																setEditNotes(
-																	event.target
-																		.value,
-																)
-															}
-															placeholder="Add notes"
-															className="resize-none"
-														/>
-														<div className="text-sm text-gray-500">
-															{editNotes.length}
-															/500
+														<div className="grid gap-2">
+															<Label htmlFor="right-notes">
+																Notes
+															</Label>
+															<Textarea
+																id="right-notes"
+																maxLength={500}
+																value={
+																	editNotes
+																}
+																onChange={(
+																	event,
+																) =>
+																	setEditNotes(
+																		event
+																			.target
+																			.value,
+																	)
+																}
+																placeholder="Add notes"
+																className="resize-none"
+															/>
+															<div className="text-sm text-gray-500">
+																{
+																	editNotes.length
+																}
+																/500
+															</div>
 														</div>
 													</div>
 
-													<DialogFooter>
+													<DialogFooter className="mt-4">
 														<DialogClose asChild>
 															<Button
 																type="button"
