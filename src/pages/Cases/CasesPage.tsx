@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
 	Table,
 	TableBody,
@@ -7,7 +8,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { FileCaseModal } from "../NewProfile/FileCaseModal";
+import { useNavigate } from "react-router-dom";
 
 const dummyCases = [
 	{
@@ -45,6 +46,7 @@ const dummyCases = [
 ];
 
 export default function CasesPage() {
+	const navigate = useNavigate();
 	const openCount = dummyCases.filter(
 		(caseItem) => caseItem.status === "Open",
 	).length;
@@ -58,7 +60,12 @@ export default function CasesPage() {
 	return (
 		<div className="container mx-auto space-y-4">
 			<div className="flex justify-end items-center">
-				<FileCaseModal />
+				<Button
+					className="cursor-pointer"
+					onClick={() => navigate("/new-case")}
+				>
+					File Case
+				</Button>
 			</div>
 
 			<div className="grid gap-4 grid-cols-1 md:grid-cols-3">
