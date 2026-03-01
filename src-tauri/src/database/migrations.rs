@@ -19,7 +19,8 @@ pub fn run_migrations(db: &DbConnection) -> Result<(), String> {
             risk_level TEXT,
             status TEXT,
             notes TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
         CREATE TABLE IF NOT EXISTS drugs (
@@ -74,6 +75,20 @@ pub fn run_migrations(db: &DbConnection) -> Result<(), String> {
             FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE
         );
         "
+    )
+    .map_err(|e| e.to_string())?;
+
+    match conn.execute("ALTER TABLE profiles ADD COLUMN updated_at TEXT", []) {
+        Ok(_) => {}
+        Err(e) if e.to_string().contains("duplicate column name") => {}
+        Err(e) => return Err(e.to_string()),
+    }
+
+    conn.execute(
+        "UPDATE profiles
+         SET updated_at = COALESCE(updated_at, created_at, CURRENT_TIMESTAMP)
+         WHERE updated_at IS NULL",
+        [],
     )
     .map_err(|e| e.to_string())?;
 

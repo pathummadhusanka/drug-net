@@ -89,6 +89,7 @@ interface Profile {
 	status: string | null;
 	notes: string | null;
 	created_at: string | null;
+	updated_at: string | null;
 }
 
 interface ProfileDrug {
@@ -2123,121 +2124,154 @@ export default function ProfileView() {
 								) : (
 									<>
 										<TabsContent value="overview">
-											<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-												<div className="space-y-2">
-													<Label className="text-gray-500">
-														Full Name
-													</Label>
-													<p className="text-lg">
-														{profile.full_name}
-													</p>
+											<div className="space-y-6">
+												<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+													<div className="space-y-4">
+														<div className="space-y-1">
+															<Label className="text-xs text-gray-500">
+																Full Name
+															</Label>
+															<p className="text-sm font-medium text-gray-900">
+																{
+																	profile.full_name
+																}
+															</p>
+														</div>
+
+														{profile.alias && (
+															<div className="space-y-1">
+																<Label className="text-xs text-gray-500">
+																	Alias
+																</Label>
+																<p className="text-sm font-medium text-gray-900">
+																	{
+																		profile.alias
+																	}
+																</p>
+															</div>
+														)}
+
+														{profile.nic && (
+															<div className="space-y-1">
+																<Label className="text-xs text-gray-500">
+																	NIC
+																</Label>
+																<p className="text-sm font-medium text-gray-900">
+																	{
+																		profile.nic
+																	}
+																</p>
+															</div>
+														)}
+
+														{profile.risk_level && (
+															<div className="space-y-1">
+																<Label className="text-xs text-gray-500">
+																	Risk Level
+																</Label>
+																<p className="text-sm font-medium text-gray-900">
+																	{
+																		profile.risk_level
+																	}
+																</p>
+															</div>
+														)}
+
+														{profile.status && (
+															<div className="space-y-1">
+																<Label className="text-xs text-gray-500">
+																	Status
+																</Label>
+																<p className="text-sm font-medium text-gray-900">
+																	{
+																		profile.status
+																	}
+																</p>
+															</div>
+														)}
+													</div>
+
+													<div className="space-y-4">
+														{profile.address_line1 && (
+															<div className="space-y-1">
+																<Label className="text-xs text-gray-500">
+																	Address Line
+																	1
+																</Label>
+																<p className="text-sm font-medium text-gray-900">
+																	{
+																		profile.address_line1
+																	}
+																</p>
+															</div>
+														)}
+
+														{profile.address_line2 && (
+															<div className="space-y-1">
+																<Label className="text-xs text-gray-500">
+																	Address Line
+																	2
+																</Label>
+																<p className="text-sm font-medium text-gray-900">
+																	{
+																		profile.address_line2
+																	}
+																</p>
+															</div>
+														)}
+
+														{profile.city && (
+															<div className="space-y-1">
+																<Label className="text-xs text-gray-500">
+																	City
+																</Label>
+																<p className="text-sm font-medium text-gray-900">
+																	{
+																		profile.city
+																	}
+																</p>
+															</div>
+														)}
+													</div>
 												</div>
 
-												{profile.alias && (
-													<div className="space-y-2">
-														<Label className="text-gray-500">
-															Alias
+												{profile.notes && (
+													<div className="space-y-1">
+														<Label className="text-xs text-gray-500">
+															Notes
 														</Label>
-														<p className="text-lg">
-															{profile.alias}
+														<p className="text-sm font-medium text-gray-900 whitespace-pre-wrap">
+															{profile.notes}
 														</p>
 													</div>
 												)}
 
-												{profile.nic && (
-													<div className="space-y-2">
-														<Label className="text-gray-500">
-															NIC
+												{profile.created_at && (
+													<div className="space-y-1">
+														<Label className="text-xs text-gray-500">
+															Created At
 														</Label>
-														<p className="text-lg">
-															{profile.nic}
+														<p className="text-sm font-medium text-gray-600">
+															{new Date(
+																profile.created_at,
+															).toLocaleString()}
 														</p>
 													</div>
 												)}
 
-												{profile.address_line1 && (
-													<div className="space-y-2">
-														<Label className="text-gray-500">
-															Address Line 1
+												{profile.updated_at && (
+													<div className="space-y-1">
+														<Label className="text-xs text-gray-500">
+															Updated At
 														</Label>
-														<p className="text-lg">
-															{
-																profile.address_line1
-															}
-														</p>
-													</div>
-												)}
-
-												{profile.address_line2 && (
-													<div className="space-y-2">
-														<Label className="text-gray-500">
-															Address Line 2
-														</Label>
-														<p className="text-lg">
-															{
-																profile.address_line2
-															}
-														</p>
-													</div>
-												)}
-
-												{profile.city && (
-													<div className="space-y-2">
-														<Label className="text-gray-500">
-															City
-														</Label>
-														<p className="text-lg">
-															{profile.city}
-														</p>
-													</div>
-												)}
-
-												{profile.risk_level && (
-													<div className="space-y-2">
-														<Label className="text-gray-500">
-															Risk Level
-														</Label>
-														<p className="text-lg">
-															{profile.risk_level}
-														</p>
-													</div>
-												)}
-
-												{profile.status && (
-													<div className="space-y-2">
-														<Label className="text-gray-500">
-															Status
-														</Label>
-														<p className="text-lg">
-															{profile.status}
+														<p className="text-sm font-medium text-gray-600">
+															{new Date(
+																profile.updated_at,
+															).toLocaleString()}
 														</p>
 													</div>
 												)}
 											</div>
-
-											{profile.notes && (
-												<div className="space-y-2">
-													<Label className="text-gray-500">
-														Notes
-													</Label>
-													<p className="text-lg whitespace-pre-wrap">
-														{profile.notes}
-													</p>
-												</div>
-											)}
-
-											{profile.created_at && (
-												<div className="space-y-2 pt-4">
-													<Label className="text-gray-500">
-														Created At
-													</Label>
-													<p className="text-sm text-gray-600">
-														{new Date(
-															profile.created_at,
-														).toLocaleString()}
-													</p>
-												</div>
-											)}
 										</TabsContent>
 										<TabsContent value="analytics">
 											<div className="space-y-2">

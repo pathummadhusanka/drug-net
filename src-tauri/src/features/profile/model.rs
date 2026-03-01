@@ -26,6 +26,7 @@ pub struct ProfileWithId {
     pub status: Option<String>,
     pub notes: Option<String>,
     pub created_at: Option<String>,
+    pub updated_at: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

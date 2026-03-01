@@ -14,8 +14,8 @@ pub fn insert_profile(db: &DbConnection, profile: Profile) -> Result<i64, String
 
     conn.execute(
         "INSERT INTO profiles 
-        (full_name, alias, nic, address_line1, address_line2, city, risk_level, status, notes)
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+        (full_name, alias, nic, address_line1, address_line2, city, risk_level, status, notes, updated_at)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, CURRENT_TIMESTAMP)",
         params![
             profile.full_name,
             profile.alias,
@@ -38,7 +38,7 @@ pub fn get_profile_by_id(db: &DbConnection, id: i64) -> Result<Option<ProfileWit
         .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
 
     let mut stmt = conn.prepare(
-        "SELECT id, full_name, alias, nic, address_line1, address_line2, city, risk_level, status, notes, created_at 
+        "SELECT id, full_name, alias, nic, address_line1, address_line2, city, risk_level, status, notes, created_at, updated_at
          FROM profiles 
          WHERE id = ?1"
     )
@@ -57,6 +57,7 @@ pub fn get_profile_by_id(db: &DbConnection, id: i64) -> Result<Option<ProfileWit
             status: row.get(8)?,
             notes: row.get(9)?,
             created_at: row.get(10)?,
+            updated_at: row.get(11)?,
         })
     });
 
@@ -170,7 +171,7 @@ pub fn get_all_profiles(db: &DbConnection) -> Result<Vec<ProfileWithId>, String>
         .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
 
     let mut stmt = conn.prepare(
-        "SELECT id, full_name, alias, nic, address_line1, address_line2, city, risk_level, status, notes, created_at
+        "SELECT id, full_name, alias, nic, address_line1, address_line2, city, risk_level, status, notes, created_at, updated_at
          FROM profiles
          ORDER BY created_at DESC, id DESC"
     )
@@ -190,6 +191,7 @@ pub fn get_all_profiles(db: &DbConnection) -> Result<Vec<ProfileWithId>, String>
                 status: row.get(8)?,
                 notes: row.get(9)?,
                 created_at: row.get(10)?,
+                updated_at: row.get(11)?,
             })
         })
         .map_err(|e| format!("Database error: {}", e))?;
