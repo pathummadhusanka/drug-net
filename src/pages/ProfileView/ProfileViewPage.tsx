@@ -2659,9 +2659,6 @@ export default function ProfileView() {
 														)}
 
 														<div className="mt-6">
-															<h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-4">
-																Address
-															</h4>
 															{profile.address_line1 && (
 																<div className="space-y-1 mb-3">
 																	<Label className="text-xs text-gray-500">
@@ -2765,7 +2762,7 @@ export default function ProfileView() {
 															)}
 
 															<div>
-																<h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+																<h4 className="text-xs font-semibold text-gray-600 tracking-wide mb-2">
 																	Notes
 																</h4>
 																{profile.notes ? (
