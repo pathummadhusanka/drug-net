@@ -2749,12 +2749,11 @@ export default function ProfileView() {
 														</div>
 
 														<div className="space-y-4">
-															{profile.risk_level && (
-																<div className="space-y-1">
-																	<Label className="text-xs text-gray-500">
-																		Risk
-																		Level
-																	</Label>
+															<div className="space-y-1">
+																<Label className="text-xs text-gray-500">
+																	Risk Level
+																</Label>
+																{profile.risk_level ? (
 																	<Badge
 																		variant={
 																			profile.risk_level ===
@@ -2771,21 +2770,23 @@ export default function ProfileView() {
 																			profile.risk_level
 																		}
 																	</Badge>
-																</div>
-															)}
-
-															{profile.status && (
-																<div className="space-y-1">
-																	<Label className="text-xs text-gray-500">
-																		Status
-																	</Label>
+																) : (
 																	<p className="text-base font-medium text-gray-900">
-																		{
-																			profile.status
-																		}
+																		_
 																	</p>
-																</div>
-															)}
+																)}
+															</div>
+
+															<div className="space-y-1">
+																<Label className="text-xs text-gray-500">
+																	Status
+																</Label>
+																<p className="text-base font-medium text-gray-900">
+																	{profile.status
+																		? profile.status
+																		: "_"}
+																</p>
+															</div>
 
 															<div>
 																<h4 className="text-xs font-semibold text-gray-600 tracking-wide mb-2">
