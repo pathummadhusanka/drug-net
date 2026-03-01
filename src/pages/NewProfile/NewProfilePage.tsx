@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { invoke } from "@tauri-apps/api/core";
 import { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
+import { ChevronLeft } from "lucide-react";
 
 export default function NewProfile() {
 	const navigate = useNavigate();
@@ -74,23 +75,25 @@ export default function NewProfile() {
 
 	return (
 		<>
-			{/* <div className="flex items-center justify-between mb-4">
-				<Button
-					onClick={() => navigate(-1)}
-					variant="outline"
-					className="cursor-pointer"
-				>
-					<ChevronLeft className="h-4 w-4 mr-2" />
-					All Profiles
-				</Button>
-			</div> */}
-
-			<div className="w-full mx-auto">
-				<span className="text-lg font-medium whitespace-nowrap">
-					Create New Profile
-				</span>
-
-				<Separator className="mt-2 mb-10" />
+			<div className="w-full mx-auto space-y-1">
+				<div className="flex items-center justify-between">
+					<h2 className="text-xl font-semibold">
+						Create New Profile
+					</h2>
+					<Button
+						type="button"
+						variant="outline"
+						className="cursor-pointer"
+						onClick={() => navigate(-1)}
+					>
+						<ChevronLeft className="h-4 w-4 mr-2" />
+						Back
+					</Button>
+				</div>
+				<p className="text-sm text-gray-500">
+					Complete the following steps to create a new profile.
+				</p>{" "}
+				<Separator className="mt-2 mb-10" />{" "}
 				<form onSubmit={handleSubmit}>
 					<div className="max-w-170 mx-auto">
 						<div className=" w-full flex flex-col gap-6">
