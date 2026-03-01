@@ -1176,7 +1176,6 @@ export default function ProfileView() {
 														Additional Details
 													</DialogTitle>
 												</DialogHeader>
-												<Separator />
 												<form
 													onSubmit={(e) => {
 														e.preventDefault();
@@ -2748,8 +2747,6 @@ export default function ProfileView() {
 																<Edit2 className="h-4 w-4" />
 															</Button>
 														</div>
-
-														<Separator />
 
 														<div className="space-y-4">
 															{profile.risk_level && (
