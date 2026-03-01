@@ -2131,7 +2131,7 @@ export default function ProfileView() {
 															<Label className="text-xs text-gray-500">
 																Full Name
 															</Label>
-															<p className="text-sm font-medium text-gray-900">
+															<p className="text-base font-medium text-gray-900">
 																{
 																	profile.full_name
 																}
@@ -2143,7 +2143,7 @@ export default function ProfileView() {
 																<Label className="text-xs text-gray-500">
 																	Alias
 																</Label>
-																<p className="text-sm font-medium text-gray-900">
+																<p className="text-base font-medium text-gray-900">
 																	{
 																		profile.alias
 																	}
@@ -2156,7 +2156,7 @@ export default function ProfileView() {
 																<Label className="text-xs text-gray-500">
 																	NIC
 																</Label>
-																<p className="text-sm font-medium text-gray-900">
+																<p className="text-base font-medium text-gray-900">
 																	{
 																		profile.nic
 																	}
@@ -2169,7 +2169,7 @@ export default function ProfileView() {
 																<Label className="text-xs text-gray-500">
 																	Risk Level
 																</Label>
-																<p className="text-sm font-medium text-gray-900">
+																<p className="text-base font-medium text-gray-900">
 																	{
 																		profile.risk_level
 																	}
@@ -2182,7 +2182,7 @@ export default function ProfileView() {
 																<Label className="text-xs text-gray-500">
 																	Status
 																</Label>
-																<p className="text-sm font-medium text-gray-900">
+																<p className="text-base font-medium text-gray-900">
 																	{
 																		profile.status
 																	}
@@ -2198,7 +2198,7 @@ export default function ProfileView() {
 																	Address Line
 																	1
 																</Label>
-																<p className="text-sm font-medium text-gray-900">
+																<p className="text-base font-medium text-gray-900">
 																	{
 																		profile.address_line1
 																	}
@@ -2212,7 +2212,7 @@ export default function ProfileView() {
 																	Address Line
 																	2
 																</Label>
-																<p className="text-sm font-medium text-gray-900">
+																<p className="text-base font-medium text-gray-900">
 																	{
 																		profile.address_line2
 																	}
@@ -2225,7 +2225,7 @@ export default function ProfileView() {
 																<Label className="text-xs text-gray-500">
 																	City
 																</Label>
-																<p className="text-sm font-medium text-gray-900">
+																<p className="text-base font-medium text-gray-900">
 																	{
 																		profile.city
 																	}
@@ -2240,7 +2240,7 @@ export default function ProfileView() {
 														<Label className="text-xs text-gray-500">
 															Notes
 														</Label>
-														<p className="text-sm font-medium text-gray-900 whitespace-pre-wrap">
+														<p className="text-base font-medium text-gray-900 whitespace-pre-wrap">
 															{profile.notes}
 														</p>
 													</div>
@@ -2251,7 +2251,7 @@ export default function ProfileView() {
 														<Label className="text-xs text-gray-500">
 															Created At
 														</Label>
-														<p className="text-sm font-medium text-gray-600">
+														<p className="text-xs font-medium text-gray-600">
 															{new Date(
 																profile.created_at,
 															).toLocaleString()}
@@ -2264,7 +2264,7 @@ export default function ProfileView() {
 														<Label className="text-xs text-gray-500">
 															Updated At
 														</Label>
-														<p className="text-sm font-medium text-gray-600">
+														<p className="text-xs font-medium text-gray-600">
 															{new Date(
 																profile.updated_at,
 															).toLocaleString()}
