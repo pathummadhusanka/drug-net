@@ -6,7 +6,10 @@ import { Separator } from "@/components/ui/separator";
 import { invoke } from "@tauri-apps/api/core";
 import { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Check } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 
 export default function NewProfile() {
 	const navigate = useNavigate();
@@ -18,6 +21,8 @@ export default function NewProfile() {
 	const [addressLine2, setAddressLine2] = useState("");
 	const [city, setCity] = useState("");
 	const [notes, setNotes] = useState("");
+	const [riskLevel, setRiskLevel] = useState<string | null>(null);
+	const [status, setStatus] = useState<string | null>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
 	// Auto-resize textarea based on content
@@ -48,8 +53,8 @@ export default function NewProfile() {
 					address_line1: addressLine1 || null,
 					address_line2: addressLine2 || null,
 					city: city || null,
-					risk_level: null,
-					status: null,
+					risk_level: riskLevel,
+					status: status,
 					notes: notes || null,
 				},
 			});
@@ -70,6 +75,8 @@ export default function NewProfile() {
 			setAddressLine2("");
 			setCity("");
 			setNotes("");
+			setRiskLevel(null);
+			setStatus(null);
 		}
 	}
 
@@ -172,6 +179,90 @@ export default function NewProfile() {
 										}
 									/>
 								</div>
+							</div>
+
+							<div className="mt-6">
+								<Label className="text-base font-semibold mb-4 block">
+									Risk Level
+								</Label>
+								<div className="flex gap-3">
+									{["Low", "Medium", "High"].map((level) => (
+										<button
+											key={level}
+											type="button"
+											onClick={() =>
+												setRiskLevel(
+													riskLevel === level
+														? null
+														: level,
+												)
+											}
+											className="flex items-center gap-2 relative"
+										>
+											<Badge
+												variant={
+													riskLevel === level
+														? level === "Low"
+															? "default"
+															: level === "Medium"
+																? "secondary"
+																: "destructive"
+														: "outline"
+												}
+												className="px-3 py-1 cursor-pointer transition-all"
+											>
+												{level}
+											</Badge>
+											{riskLevel === level && (
+												<Check className="absolute -top-1 -right-1 h-4 w-4 bg-white rounded-full" />
+											)}
+										</button>
+									))}
+								</div>
+							</div>
+
+							<div className="mt-6">
+								<Label className="text-base font-semibold mb-4 block">
+									Status
+								</Label>
+								<FieldGroup className="max-w-sm">
+									{["Active", "Inactive", "Suspended"].map(
+										(statusOption) => (
+											<Field
+												key={statusOption}
+												orientation="horizontal"
+											>
+												<Checkbox
+													id={`status-${statusOption}`}
+													name={`status-${statusOption}`}
+													checked={
+														status === statusOption
+													}
+													onCheckedChange={(
+														checked,
+													) => {
+														if (checked) {
+															setStatus(
+																statusOption,
+															);
+														} else if (
+															status ===
+															statusOption
+														) {
+															setStatus(null);
+														}
+													}}
+												/>
+												<FieldLabel
+													htmlFor={`status-${statusOption}`}
+													className="cursor-pointer"
+												>
+													{statusOption}
+												</FieldLabel>
+											</Field>
+										),
+									)}
+								</FieldGroup>
 							</div>
 
 							<div className="grid gap-2">

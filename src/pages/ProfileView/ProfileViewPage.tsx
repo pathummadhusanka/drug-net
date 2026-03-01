@@ -10,10 +10,15 @@ import {
 	Clock,
 	Trash2,
 	ChevronLeft,
+	Edit2,
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Label } from "@/components/ui/label";
+import { Field } from "@/components/ui/field";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { FieldGroup, FieldLabel } from "@/components/ui/field";
 import ReactFlow, {
 	MiniMap,
 	Controls,
@@ -31,7 +36,6 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { Input } from "@/components/ui/input";
-import { Field } from "@/components/ui/field";
 import { Separator } from "@/components/ui/separator";
 import {
 	Accordion,
@@ -240,6 +244,9 @@ export default function ProfileView() {
 	const [editAddressLine1, setEditAddressLine1] = useState("");
 	const [editAddressLine2, setEditAddressLine2] = useState("");
 	const [editCity, setEditCity] = useState("");
+	const [isEditingRightSide, setIsEditingRightSide] = useState(false);
+	const [editRiskLevel, setEditRiskLevel] = useState<string | null>(null);
+	const [editStatus, setEditStatus] = useState<string | null>(null);
 	const [editNotes, setEditNotes] = useState("");
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -640,7 +647,6 @@ export default function ProfileView() {
 		setEditAddressLine1(profile.address_line1 ?? "");
 		setEditAddressLine2(profile.address_line2 ?? "");
 		setEditCity(profile.city ?? "");
-		setEditNotes(profile.notes ?? "");
 		setIsEditDialogOpen(true);
 	};
 
@@ -673,7 +679,7 @@ export default function ProfileView() {
 					city: editCity.trim() || null,
 					risk_level: profile.risk_level,
 					status: profile.status,
-					notes: editNotes.trim() || null,
+					notes: profile.notes,
 				},
 			});
 
@@ -696,6 +702,74 @@ export default function ProfileView() {
 			}
 
 			setIsEditDialogOpen(false);
+			toast.success("Profile updated successfully", {
+				position: "top-center",
+			});
+		} catch (err) {
+			console.error("Failed to update profile:", err);
+			toast.error("Failed to update profile", {
+				position: "top-center",
+			});
+		} finally {
+			setIsUpdatingProfile(false);
+		}
+	};
+
+	const openEditRightSideModal = () => {
+		if (!profile) {
+			return;
+		}
+		setEditRiskLevel(profile.risk_level ?? null);
+		setEditStatus(profile.status ?? null);
+		setEditNotes(profile.notes ?? "");
+		setIsEditingRightSide(true);
+	};
+
+	const handleSaveRightSide = async () => {
+		if (!id || !profile) {
+			toast.error("Profile data is missing", {
+				position: "top-center",
+			});
+			return;
+		}
+
+		try {
+			setIsUpdatingProfile(true);
+			const profileId = parseInt(id, 10);
+			const updated = await invoke<boolean>("update_profile", {
+				id: profileId,
+				profile: {
+					full_name: profile.full_name,
+					alias: profile.alias,
+					nic: profile.nic,
+					address_line1: profile.address_line1,
+					address_line2: profile.address_line2,
+					city: profile.city,
+					risk_level: editRiskLevel,
+					status: editStatus,
+					notes: editNotes.trim() || null,
+				},
+			});
+
+			if (!updated) {
+				toast.error("Profile not found", {
+					position: "top-center",
+				});
+				return;
+			}
+
+			const refreshedProfile = await invoke<Profile | null>(
+				"get_profile",
+				{
+					id: profileId,
+				},
+			);
+
+			if (refreshedProfile) {
+				setProfile(refreshedProfile);
+			}
+
+			setIsEditingRightSide(false);
 			toast.success("Profile updated successfully", {
 				position: "top-center",
 			});
@@ -1059,28 +1133,6 @@ export default function ProfileView() {
 															placeholder="Optional"
 														/>
 													</div>
-													<div className="grid gap-2">
-														<Label htmlFor="edit-notes">
-															Notes
-														</Label>
-														<Textarea
-															id="edit-notes"
-															maxLength={500}
-															value={editNotes}
-															onChange={(event) =>
-																setEditNotes(
-																	event.target
-																		.value,
-																)
-															}
-															placeholder="Include notes"
-															className="resize-none"
-														/>
-														<div className="text-sm text-gray-500">
-															{editNotes.length}
-															/500
-														</div>
-													</div>
 													<DialogFooter>
 														<DialogClose asChild>
 															<Button
@@ -1106,6 +1158,183 @@ export default function ProfileView() {
 												</form>
 											</DialogContent>
 										</Dialog>
+
+										{/* Edit Right Side Modal (Risk Level, Status, Notes) */}
+										<Dialog
+											open={isEditingRightSide}
+											onOpenChange={setIsEditingRightSide}
+										>
+											<DialogContent className="max-w-md">
+												<DialogHeader>
+													<DialogTitle>
+														Edit Risk Level, Status
+														& Notes
+													</DialogTitle>
+												</DialogHeader>
+												<form
+													onSubmit={(e) => {
+														e.preventDefault();
+														void handleSaveRightSide();
+													}}
+													className="space-y-4"
+												>
+													<div className="mt-4">
+														<Label className="text-base font-semibold mb-4 block">
+															Risk Level
+														</Label>
+														<div className="flex gap-3">
+															{[
+																"Low",
+																"Medium",
+																"High",
+															].map((level) => (
+																<button
+																	key={level}
+																	type="button"
+																	onClick={() =>
+																		setEditRiskLevel(
+																			editRiskLevel ===
+																				level
+																				? null
+																				: level,
+																		)
+																	}
+																	className="flex items-center gap-2 relative"
+																>
+																	<Badge
+																		variant={
+																			editRiskLevel ===
+																			level
+																				? level ===
+																					"Low"
+																					? "default"
+																					: level ===
+																						  "Medium"
+																						? "secondary"
+																						: "destructive"
+																				: "outline"
+																		}
+																		className="px-3 py-1 cursor-pointer transition-all"
+																	>
+																		{level}
+																	</Badge>
+																	{editRiskLevel ===
+																		level && (
+																		<Check className="absolute -top-1 -right-1 h-4 w-4 bg-white rounded-full" />
+																	)}
+																</button>
+															))}
+														</div>
+													</div>
+
+													<div className="mt-4">
+														<Label className="text-base font-semibold mb-4 block">
+															Status
+														</Label>
+														<FieldGroup className="max-w-sm">
+															{[
+																"Active",
+																"Inactive",
+																"Suspended",
+															].map(
+																(
+																	statusOption,
+																) => (
+																	<Field
+																		key={
+																			statusOption
+																		}
+																		orientation="horizontal"
+																	>
+																		<Checkbox
+																			id={`right-status-${statusOption}`}
+																			name={`right-status-${statusOption}`}
+																			checked={
+																				editStatus ===
+																				statusOption
+																			}
+																			onCheckedChange={(
+																				checked,
+																			) => {
+																				if (
+																					checked
+																				) {
+																					setEditStatus(
+																						statusOption,
+																					);
+																				} else if (
+																					editStatus ===
+																					statusOption
+																				) {
+																					setEditStatus(
+																						null,
+																					);
+																				}
+																			}}
+																		/>
+																		<FieldLabel
+																			htmlFor={`right-status-${statusOption}`}
+																			className="cursor-pointer"
+																		>
+																			{
+																				statusOption
+																			}
+																		</FieldLabel>
+																	</Field>
+																),
+															)}
+														</FieldGroup>
+													</div>
+
+													<div className="grid gap-2">
+														<Label htmlFor="right-notes">
+															Notes
+														</Label>
+														<Textarea
+															id="right-notes"
+															maxLength={500}
+															value={editNotes}
+															onChange={(event) =>
+																setEditNotes(
+																	event.target
+																		.value,
+																)
+															}
+															placeholder="Add notes"
+															className="resize-none"
+														/>
+														<div className="text-sm text-gray-500">
+															{editNotes.length}
+															/500
+														</div>
+													</div>
+
+													<DialogFooter>
+														<DialogClose asChild>
+															<Button
+																type="button"
+																variant="outline"
+																className="cursor-pointer"
+															>
+																Cancel
+															</Button>
+														</DialogClose>
+														<Button
+															type="submit"
+															className="cursor-pointer"
+															disabled={
+																isUpdatingProfile
+															}
+														>
+															{isUpdatingProfile
+																? "Saving..."
+																: "Save Changes"}
+														</Button>
+													</DialogFooter>
+												</form>
+											</DialogContent>
+										</Dialog>
+
 										<AlertDialog
 											open={isDeleteDialogOpen}
 											onOpenChange={setIsDeleteDialogOpen}
@@ -2390,6 +2619,7 @@ export default function ProfileView() {
 										<TabsContent value="overview">
 											<div className="space-y-6">
 												<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+													{/* Left Column: Full Name, Alias, NIC, Address Fields */}
 													<div className="space-y-4">
 														<div className="space-y-1">
 															<Label className="text-xs text-gray-500">
@@ -2428,87 +2658,131 @@ export default function ProfileView() {
 															</div>
 														)}
 
-														{profile.risk_level && (
-															<div className="space-y-1">
-																<Label className="text-xs text-gray-500">
-																	Risk Level
-																</Label>
-																<p className="text-base font-medium text-gray-900">
-																	{
-																		profile.risk_level
-																	}
-																</p>
-															</div>
-														)}
+														<div className="mt-6">
+															<h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-4">
+																Address
+															</h4>
+															{profile.address_line1 && (
+																<div className="space-y-1 mb-3">
+																	<Label className="text-xs text-gray-500">
+																		Address
+																		Line 1
+																	</Label>
+																	<p className="text-base font-medium text-gray-900">
+																		{
+																			profile.address_line1
+																		}
+																	</p>
+																</div>
+															)}
 
-														{profile.status && (
-															<div className="space-y-1">
-																<Label className="text-xs text-gray-500">
-																	Status
-																</Label>
-																<p className="text-base font-medium text-gray-900">
-																	{
-																		profile.status
-																	}
-																</p>
-															</div>
-														)}
+															{profile.address_line2 && (
+																<div className="space-y-1 mb-3">
+																	<Label className="text-xs text-gray-500">
+																		Address
+																		Line 2
+																	</Label>
+																	<p className="text-base font-medium text-gray-900">
+																		{
+																			profile.address_line2
+																		}
+																	</p>
+																</div>
+															)}
+
+															{profile.city && (
+																<div className="space-y-1">
+																	<Label className="text-xs text-gray-500">
+																		City
+																	</Label>
+																	<p className="text-base font-medium text-gray-900">
+																		{
+																			profile.city
+																		}
+																	</p>
+																</div>
+															)}
+														</div>
 													</div>
 
+													{/* Right Column: Risk Level, Status, Notes with Edit Button */}
 													<div className="space-y-4">
-														{profile.address_line1 && (
-															<div className="space-y-1">
-																<Label className="text-xs text-gray-500">
-																	Address Line
-																	1
-																</Label>
-																<p className="text-base font-medium text-gray-900">
-																	{
-																		profile.address_line1
-																	}
-																</p>
-															</div>
-														)}
+														<div className="flex items-center justify-between mb-4">
+															<h4 className="text-sm font-semibold text-gray-700">
+																Additional
+																Details
+															</h4>
+															<Button
+																type="button"
+																variant="ghost"
+																size="sm"
+																onClick={
+																	openEditRightSideModal
+																}
+																className="cursor-pointer"
+															>
+																<Edit2 className="h-4 w-4" />
+															</Button>
+														</div>
 
-														{profile.address_line2 && (
-															<div className="space-y-1">
-																<Label className="text-xs text-gray-500">
-																	Address Line
-																	2
-																</Label>
-																<p className="text-base font-medium text-gray-900">
-																	{
-																		profile.address_line2
-																	}
-																</p>
-															</div>
-														)}
+														<div className="space-y-4">
+															{profile.risk_level && (
+																<div className="space-y-1">
+																	<Label className="text-xs text-gray-500">
+																		Risk
+																		Level
+																	</Label>
+																	<Badge
+																		variant={
+																			profile.risk_level ===
+																			"Low"
+																				? "default"
+																				: profile.risk_level ===
+																					  "Medium"
+																					? "secondary"
+																					: "destructive"
+																		}
+																		className="w-fit"
+																	>
+																		{
+																			profile.risk_level
+																		}
+																	</Badge>
+																</div>
+															)}
 
-														{profile.city && (
-															<div className="space-y-1">
-																<Label className="text-xs text-gray-500">
-																	City
-																</Label>
-																<p className="text-base font-medium text-gray-900">
-																	{
-																		profile.city
-																	}
-																</p>
+															{profile.status && (
+																<div className="space-y-1">
+																	<Label className="text-xs text-gray-500">
+																		Status
+																	</Label>
+																	<p className="text-base font-medium text-gray-900">
+																		{
+																			profile.status
+																		}
+																	</p>
+																</div>
+															)}
+
+															<div>
+																<h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+																	Notes
+																</h4>
+																{profile.notes ? (
+																	<p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded">
+																		{
+																			profile.notes
+																		}
+																	</p>
+																) : (
+																	<p className="text-sm text-gray-400 italic">
+																		No notes
+																	</p>
+																)}
 															</div>
-														)}
+														</div>
 													</div>
 												</div>
-
-												{profile.notes && (
-													<div className="space-y-1">
-														<Label className="text-xs text-gray-500">
-															Notes
-														</Label>
-														<p className="text-base font-medium text-gray-900 whitespace-pre-wrap">
-															{profile.notes}
-														</p>
-													</div>
-												)}
 
 												{profile.created_at && (
 													<div className="space-y-1">
