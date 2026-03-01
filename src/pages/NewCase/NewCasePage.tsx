@@ -748,6 +748,16 @@ export default function NewCasePage() {
 										<Check className="h-4 w-4 text-green-600" />
 									)}
 									<span>[2] Connections</span>
+									<span className="text-xs text-gray-400 ml-2">
+										{nodes.length}{" "}
+										{nodes.length === 1
+											? "profile"
+											: "profiles"}
+										, {edges.length}{" "}
+										{edges.length === 1
+											? "connection"
+											: "connections"}
+									</span>
 								</div>
 								<span className="text-gray-500 text-sm text-right">
 									Add connected profiles
