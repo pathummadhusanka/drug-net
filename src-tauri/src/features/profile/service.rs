@@ -34,3 +34,7 @@ pub fn list_profiles(db: &DbConnection) -> Result<Vec<ProfileWithId>, String> {
     super::repository::get_all_profiles(db)
 }
 
+pub fn delete_profile(db: &DbConnection, id: i64) -> Result<bool, String> {
+    super::repository::delete_profile_by_id(db, id)
+}
+

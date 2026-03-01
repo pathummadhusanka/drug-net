@@ -198,3 +198,14 @@ pub fn get_all_profiles(db: &DbConnection) -> Result<Vec<ProfileWithId>, String>
         .collect::<Result<Vec<ProfileWithId>, _>>()
         .map_err(|e| format!("Database error: {}", e))
 }
+
+pub fn delete_profile_by_id(db: &DbConnection, id: i64) -> Result<bool, String> {
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    let rows_affected = conn
+        .execute("DELETE FROM profiles WHERE id = ?1", params![id])
+        .map_err(|e| format!("Database error: {}", e))?;
+
+    Ok(rows_affected > 0)
+}

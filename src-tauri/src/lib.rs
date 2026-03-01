@@ -19,6 +19,7 @@ use features::profile::commands::{
     get_profile_areas,
     get_profile_relationships,
     get_all_profiles,
+    delete_profile,
 };
 
 /// Application state containing shared database connection
@@ -55,6 +56,7 @@ pub fn run() {
             get_profile_areas,
             get_profile_relationships,
             get_all_profiles,
+            delete_profile,
             create_case,
             get_case,
             get_all_cases,

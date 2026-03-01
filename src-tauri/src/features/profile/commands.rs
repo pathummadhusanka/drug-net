@@ -41,3 +41,8 @@ pub async fn get_all_profiles(state: State<'_, AppState>) -> Result<Vec<ProfileW
     super::service::list_profiles(&state.db)
 }
 
+#[tauri::command]
+pub async fn delete_profile(state: State<'_, AppState>, id: i64) -> Result<bool, String> {
+    super::service::delete_profile(&state.db, id)
+}
+

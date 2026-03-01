@@ -69,6 +69,13 @@ import {
 	ComboboxItem,
 	ComboboxList,
 } from "@/components/ui/combobox";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Profile {
 	id: number;
@@ -222,6 +229,8 @@ export default function ProfileView() {
 	>([]);
 	const [profileCases, setProfileCases] = useState<CaseWithDetails[]>([]);
 	const [isSavingCase, setIsSavingCase] = useState(false);
+	const [isDeletingProfile, setIsDeletingProfile] = useState(false);
+	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [showFileCaseForm, setShowFileCaseForm] = useState(false);
@@ -574,6 +583,42 @@ export default function ProfileView() {
 		}
 	};
 
+	const handleDeleteProfile = async () => {
+		if (!id) {
+			toast.error("Profile ID is missing", {
+				position: "top-center",
+			});
+			return;
+		}
+
+		try {
+			setIsDeletingProfile(true);
+			const profileId = parseInt(id, 10);
+			const deleted = await invoke<boolean>("delete_profile", {
+				id: profileId,
+			});
+
+			if (!deleted) {
+				toast.error("Profile not found", {
+					position: "top-center",
+				});
+				return;
+			}
+
+			toast.success("Profile deleted successfully", {
+				position: "top-center",
+			});
+			navigate("/");
+		} catch (err) {
+			console.error("Failed to delete profile:", err);
+			toast.error("Failed to delete profile", {
+				position: "top-center",
+			});
+		} finally {
+			setIsDeletingProfile(false);
+		}
+	};
+
 	useEffect(() => {
 		const fetchProfile = async () => {
 			if (!id) {
@@ -758,15 +803,83 @@ export default function ProfileView() {
 											<Plus className="h-4 w-4 mr-2" />
 											File Case
 										</Button>
-										<Button
-											variant="secondary"
-											className="cursor-pointer"
-											onClick={() =>
-												navigate(`/profile/${id}/edit`)
-											}
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild>
+												<Button
+													variant="secondary"
+													className="cursor-pointer"
+												>
+													<MoreVertical className="h-4 w-4" />
+												</Button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent
+												align="end"
+												className="w-44"
+											>
+												<DropdownMenuItem
+													onClick={() =>
+														navigate(
+															`/profile/${id}/edit`,
+														)
+													}
+												>
+													Edit Profile
+												</DropdownMenuItem>
+												<DropdownMenuSeparator />
+												<DropdownMenuItem
+													variant="destructive"
+													onSelect={(event) => {
+														event.preventDefault();
+														setIsDeleteDialogOpen(
+															true,
+														);
+													}}
+													disabled={isDeletingProfile}
+												>
+													<Trash2 className="h-4 w-4" />
+													Delete Profile
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
+										<AlertDialog
+											open={isDeleteDialogOpen}
+											onOpenChange={setIsDeleteDialogOpen}
 										>
-											<MoreVertical className="h-4 w-4" />
-										</Button>
+											<AlertDialogContent>
+												<AlertDialogHeader>
+													<AlertDialogTitle>
+														Delete Profile
+													</AlertDialogTitle>
+													<AlertDialogDescription>
+														Are you sure you want to
+														delete this profile?
+														This action cannot be
+														undone.
+													</AlertDialogDescription>
+												</AlertDialogHeader>
+												<AlertDialogFooter>
+													<AlertDialogCancel className="cursor-pointer">
+														Cancel
+													</AlertDialogCancel>
+													<AlertDialogAction
+														className="cursor-pointer"
+														onClick={() => {
+															setIsDeleteDialogOpen(
+																false,
+															);
+															void handleDeleteProfile();
+														}}
+														disabled={
+															isDeletingProfile
+														}
+													>
+														{isDeletingProfile
+															? "Deleting..."
+															: "Delete"}
+													</AlertDialogAction>
+												</AlertDialogFooter>
+											</AlertDialogContent>
+										</AlertDialog>
 									</div>
 								</div>
 								<Separator className="my-4" />
