@@ -1014,7 +1014,12 @@ export default function ProfileView() {
 											open={isEditDialogOpen}
 											onOpenChange={setIsEditDialogOpen}
 										>
-											<DialogContent className="max-w-2xl">
+											<DialogContent
+												className="max-w-2xl"
+												onOpenAutoFocus={(e) =>
+													e.preventDefault()
+												}
+											>
 												<DialogHeader>
 													<DialogTitle>
 														Edit Profile

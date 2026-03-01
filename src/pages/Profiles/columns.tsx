@@ -1,6 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import { Badge } from "@/components/ui/badge";
 
 export type DrugDealer = {
 	id: number;
@@ -30,7 +31,23 @@ export const columns: ColumnDef<DrugDealer>[] = [
 	{
 		accessorKey: "risk",
 		header: "Risk",
-		cell: ({ row }) => row.original.risk || "-",
+		cell: ({ row }) =>
+			row.original.risk ? (
+				<Badge
+					variant={
+						row.original.risk === "Low"
+							? "secondary"
+							: row.original.risk === "Medium"
+								? "default"
+								: "destructive"
+					}
+					className={row.original.risk === "High" ? "text-white" : ""}
+				>
+					{row.original.risk}
+				</Badge>
+			) : (
+				"-"
+			),
 	},
 	{
 		accessorKey: "cases",
