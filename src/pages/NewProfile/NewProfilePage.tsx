@@ -1,19 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronLeft, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Separator } from "@/components/ui/separator";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-	Field,
-	FieldContent,
-	FieldDescription,
-	FieldGroup,
-	FieldLabel,
-	FieldTitle,
-} from "@/components/ui/field";
-import { FileCaseModal } from "./FileCaseModal";
 import { invoke } from "@tauri-apps/api/core";
 import { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
@@ -103,7 +92,7 @@ export default function NewProfile() {
 
 				<Separator className="mt-2 mb-10" />
 				<form onSubmit={handleSubmit}>
-					<div className="max-w-[680px] mx-auto">
+					<div className="max-w-170 mx-auto">
 						<div className=" w-full flex flex-col gap-6">
 							<div className="grid gap-2">
 								<Label htmlFor="fullName">Full Name</Label>

@@ -5,6 +5,7 @@ import Network from "@/pages/Network/NetworkPage";
 import ProfileView from "@/pages/ProfileView/ProfileViewPage";
 import NewProfile from "@/pages/NewProfile/NewProfilePage";
 import Cases from "@/pages/Cases/CasesPage";
+import NewCasePage from "@/pages/NewCase/NewCasePage";
 export function AppRouter() {
 	return (
 		<Routes>
@@ -13,7 +14,8 @@ export function AppRouter() {
 				<Route path="/network" element={<Network />} />
 				<Route path="/profile/:id" element={<ProfileView />} />
 				<Route path="/new-profile" element={<NewProfile />} />
-				<Route path="/cases" element={<Cases />} />☻
+				<Route path="/cases" element={<Cases />} />
+				<Route path="/new-case" element={<NewCasePage />} />
 			</Route>
 		</Routes>
 	);

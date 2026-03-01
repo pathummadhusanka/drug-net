@@ -127,9 +127,8 @@ const CustomNode = ({
 							onClick={(e) => {
 								e.stopPropagation();
 							}}
-							className="absolute -top-1 -right-1 bg-white hover:bg-red-50 border border-gray-300 hover:border-red-400 text-gray-500 hover:text-red-600 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer leading-none p-0"
+							className="absolute -top-1 -right-1 bg-white hover:bg-red-50 border border-gray-300 hover:border-red-400 text-gray-500 hover:text-red-600 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer leading-none p-0 text-[12px]"
 							title="Delete profile"
-							style={{ fontSize: "12px" }}
 						>
 							×
 						</button>
@@ -590,19 +589,11 @@ export default function ProfileView() {
 											variant="secondary"
 											className="cursor-pointer"
 											onClick={() =>
-												setShowFileCaseForm(
-													!showFileCaseForm,
-												)
+												navigate("/new-case")
 											}
 										>
-											{showFileCaseForm ? (
-												<X className="h-4 w-4 mr-2" />
-											) : (
-												<Plus className="h-4 w-4 mr-2" />
-											)}
-											{showFileCaseForm
-												? "Cancel"
-												: "File Case"}
+											<Plus className="h-4 w-4 mr-2" />
+											File Case
 										</Button>
 										<Button
 											variant="secondary"
@@ -1103,12 +1094,7 @@ export default function ProfileView() {
 																	Add Profile
 																</Button>
 															</div>
-															<div
-																className="border rounded-lg connection-canvas"
-																style={{
-																	height: "500px",
-																}}
-															>
+															<div className="border rounded-lg connection-canvas h-125">
 																<style>{`
 																	/* Green glow on valid target nodes during connection */
 																	.connection-canvas .react-flow__node.connectingto {

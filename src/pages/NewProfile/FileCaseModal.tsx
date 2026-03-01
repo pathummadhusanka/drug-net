@@ -13,8 +13,6 @@ import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import { Checkbox } from "@/components/ui/checkbox";
 import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
 
@@ -59,7 +57,7 @@ export function FileCaseModal() {
 					</Button>
 				</div>
 			</DialogTrigger>
-			<DialogContent className="max-w-[620px]">
+			<DialogContent className="max-w-155">
 				<form onSubmit={handleSubmit}>
 					<DialogHeader className="pb-2">
 						<DialogTitle>File Case</DialogTitle>
