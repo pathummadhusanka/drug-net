@@ -9,6 +9,7 @@ import {
 	Calendar,
 	Clock,
 	Trash2,
+	ChevronLeft,
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState, useRef, useCallback } from "react";
@@ -523,16 +524,7 @@ export default function ProfileView() {
 
 	return (
 		<>
-			{/* <Button
-				onClick={() => navigate(-1)}
-				variant="outline"
-				className="mb-4 cursor-pointer"
-			>
-				<ChevronLeft className="h-4 w-4 mr-2" />
-				All Profiles
-			</Button> */}
-
-			<div className="w-full mx-auto">
+			<div className="w-full mx-auto space-y-1">
 				{loading && (
 					<div className="text-center py-8">
 						<p className="text-gray-500">Loading profile...</p>
@@ -548,15 +540,25 @@ export default function ProfileView() {
 				)}
 
 				{!loading && !error && profile && (
-					<div className="space-y-6">
-						<div className="flex items-left flex-col gap-2">
-							<h1 className="text-2xl font-bold">
+					<>
+						<div className="flex items-center justify-between">
+							<h2 className="text-xl font-semibold">
 								{profile.full_name}
-							</h1>
-							<span className="text-lg font-bold">
-								[ {profile.alias} ]
-							</span>
-
+							</h2>
+							<Button
+								type="button"
+								variant="outline"
+								className="cursor-pointer"
+								onClick={() => navigate("/")}
+							>
+								<ChevronLeft className="h-4 w-4 mr-2" />
+								All Profiles
+							</Button>
+						</div>
+						<p className="text-sm font-semibold text-gray-700">
+							{profile.alias || "No alias"}
+						</p>
+						<div className="space-y-6">
 							<Tabs
 								defaultValue="overview"
 								className="w-full mt-2"
@@ -1997,7 +1999,7 @@ export default function ProfileView() {
 								)}
 							</Tabs>
 						</div>
-					</div>
+					</>
 				)}
 			</div>
 		</>
