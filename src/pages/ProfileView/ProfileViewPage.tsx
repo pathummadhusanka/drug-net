@@ -1216,14 +1216,21 @@ export default function ProfileView() {
 																					level
 																						? level ===
 																							"Low"
-																							? "default"
+																							? "secondary"
 																							: level ===
 																								  "Medium"
-																								? "secondary"
+																								? "default"
 																								: "destructive"
 																						: "outline"
 																				}
-																				className="px-3 py-1 cursor-pointer transition-all"
+																				className={`px-3 py-1 cursor-pointer transition-all ${
+																					editRiskLevel ===
+																						level &&
+																					level ===
+																						"High"
+																						? "text-white"
+																						: ""
+																				}`}
 																			>
 																				{
 																					level
@@ -2758,13 +2765,18 @@ export default function ProfileView() {
 																		variant={
 																			profile.risk_level ===
 																			"Low"
-																				? "default"
+																				? "secondary"
 																				: profile.risk_level ===
 																					  "Medium"
-																					? "secondary"
+																					? "default"
 																					: "destructive"
 																		}
-																		className="w-fit"
+																		className={`w-fit ${
+																			profile.risk_level ===
+																			"High"
+																				? "text-white"
+																				: ""
+																		}`}
 																	>
 																		{
 																			profile.risk_level
