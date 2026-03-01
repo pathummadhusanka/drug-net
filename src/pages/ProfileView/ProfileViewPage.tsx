@@ -1170,6 +1170,7 @@ export default function ProfileView() {
 														Additional Details
 													</DialogTitle>
 												</DialogHeader>
+												<Separator />
 												<form
 													onSubmit={(e) => {
 														e.preventDefault();
@@ -1182,7 +1183,7 @@ export default function ProfileView() {
 															<Label className="text-base font-semibold mb-4 block">
 																Risk Level
 															</Label>
-															<div className="flex gap-3">
+															<div className="flex gap-3 px-2">
 																{[
 																	"Low",
 																	"Medium",
@@ -1237,7 +1238,7 @@ export default function ProfileView() {
 															<Label className="text-base font-semibold mb-4 block">
 																Status
 															</Label>
-															<FieldGroup className="max-w-sm">
+															<FieldGroup className="max-w-sm px-2">
 																{[
 																	"Active",
 																	"Inactive",
@@ -1296,29 +1297,33 @@ export default function ProfileView() {
 															<Label htmlFor="right-notes">
 																Notes
 															</Label>
-															<Textarea
-																id="right-notes"
-																maxLength={500}
-																value={
-																	editNotes
-																}
-																onChange={(
-																	event,
-																) =>
-																	setEditNotes(
-																		event
-																			.target
-																			.value,
-																	)
-																}
-																placeholder="Add notes"
-																className="resize-none"
-															/>
-															<div className="text-sm text-gray-500">
-																{
-																	editNotes.length
-																}
-																/500
+															<div className="px-2">
+																<Textarea
+																	id="right-notes"
+																	maxLength={
+																		500
+																	}
+																	value={
+																		editNotes
+																	}
+																	onChange={(
+																		event,
+																	) =>
+																		setEditNotes(
+																			event
+																				.target
+																				.value,
+																		)
+																	}
+																	placeholder="Add notes"
+																	className="resize-none"
+																/>
+																<div className="text-sm text-gray-500">
+																	{
+																		editNotes.length
+																	}
+																	/500
+																</div>
 															</div>
 														</div>
 													</div>
@@ -2735,6 +2740,8 @@ export default function ProfileView() {
 																<Edit2 className="h-4 w-4" />
 															</Button>
 														</div>
+
+														<Separator />
 
 														<div className="space-y-4">
 															{profile.risk_level && (
