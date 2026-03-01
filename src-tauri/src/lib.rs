@@ -14,6 +14,7 @@ use features::case::commands::{
 };
 use features::profile::commands::{
     create_profile,
+    update_profile,
     get_profile,
     get_profile_drugs,
     get_profile_areas,
@@ -50,7 +51,8 @@ pub fn run() {
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
             greet, 
-            create_profile, 
+            create_profile,
+            update_profile,
             get_profile,
             get_profile_drugs,
             get_profile_areas,

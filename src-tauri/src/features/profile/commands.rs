@@ -14,6 +14,15 @@ pub async fn create_profile(state: State<'_, AppState>, profile: Profile) -> Res
 }
 
 #[tauri::command]
+pub async fn update_profile(
+    state: State<'_, AppState>,
+    id: i64,
+    profile: Profile,
+) -> Result<bool, String> {
+    super::service::update_profile(&state.db, id, profile)
+}
+
+#[tauri::command]
 pub async fn get_profile(state: State<'_, AppState>, id: i64) -> Result<Option<ProfileWithId>, String> {
     super::service::get_profile(&state.db, id)
 }

@@ -231,7 +231,16 @@ export default function ProfileView() {
 	const [profileCases, setProfileCases] = useState<CaseWithDetails[]>([]);
 	const [isSavingCase, setIsSavingCase] = useState(false);
 	const [isDeletingProfile, setIsDeletingProfile] = useState(false);
+	const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+	const [editFullName, setEditFullName] = useState("");
+	const [editAlias, setEditAlias] = useState("");
+	const [editNic, setEditNic] = useState("");
+	const [editAddressLine1, setEditAddressLine1] = useState("");
+	const [editAddressLine2, setEditAddressLine2] = useState("");
+	const [editCity, setEditCity] = useState("");
+	const [editNotes, setEditNotes] = useState("");
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [showFileCaseForm, setShowFileCaseForm] = useState(false);
@@ -620,6 +629,86 @@ export default function ProfileView() {
 		}
 	};
 
+	const openEditProfileModal = () => {
+		if (!profile) {
+			return;
+		}
+
+		setEditFullName(profile.full_name ?? "");
+		setEditAlias(profile.alias ?? "");
+		setEditNic(profile.nic ?? "");
+		setEditAddressLine1(profile.address_line1 ?? "");
+		setEditAddressLine2(profile.address_line2 ?? "");
+		setEditCity(profile.city ?? "");
+		setEditNotes(profile.notes ?? "");
+		setIsEditDialogOpen(true);
+	};
+
+	const handleUpdateProfile = async () => {
+		if (!id || !profile) {
+			toast.error("Profile data is missing", {
+				position: "top-center",
+			});
+			return;
+		}
+
+		if (!editFullName.trim()) {
+			toast.error("Full name is required", {
+				position: "top-center",
+			});
+			return;
+		}
+
+		try {
+			setIsUpdatingProfile(true);
+			const profileId = parseInt(id, 10);
+			const updated = await invoke<boolean>("update_profile", {
+				id: profileId,
+				profile: {
+					full_name: editFullName.trim(),
+					alias: editAlias.trim() || null,
+					nic: editNic.trim() || null,
+					address_line1: editAddressLine1.trim() || null,
+					address_line2: editAddressLine2.trim() || null,
+					city: editCity.trim() || null,
+					risk_level: profile.risk_level,
+					status: profile.status,
+					notes: editNotes.trim() || null,
+				},
+			});
+
+			if (!updated) {
+				toast.error("Profile not found", {
+					position: "top-center",
+				});
+				return;
+			}
+
+			const refreshedProfile = await invoke<Profile | null>(
+				"get_profile",
+				{
+					id: profileId,
+				},
+			);
+
+			if (refreshedProfile) {
+				setProfile(refreshedProfile);
+			}
+
+			setIsEditDialogOpen(false);
+			toast.success("Profile updated successfully", {
+				position: "top-center",
+			});
+		} catch (err) {
+			console.error("Failed to update profile:", err);
+			toast.error("Failed to update profile", {
+				position: "top-center",
+			});
+		} finally {
+			setIsUpdatingProfile(false);
+		}
+	};
+
 	useEffect(() => {
 		const fetchProfile = async () => {
 			if (!id) {
@@ -818,11 +907,10 @@ export default function ProfileView() {
 												className="w-44"
 											>
 												<DropdownMenuItem
-													onClick={() =>
-														navigate(
-															`/profile/${id}/edit`,
-														)
-													}
+													onSelect={(event) => {
+														event.preventDefault();
+														openEditProfileModal();
+													}}
 												>
 													Edit Profile
 												</DropdownMenuItem>
@@ -842,6 +930,182 @@ export default function ProfileView() {
 												</DropdownMenuItem>
 											</DropdownMenuContent>
 										</DropdownMenu>
+										<Dialog
+											open={isEditDialogOpen}
+											onOpenChange={setIsEditDialogOpen}
+										>
+											<DialogContent className="max-w-2xl">
+												<DialogHeader>
+													<DialogTitle>
+														Edit Profile
+													</DialogTitle>
+													<DialogDescription>
+														Update profile details
+														and save your changes.
+													</DialogDescription>
+												</DialogHeader>
+												<form
+													onSubmit={(event) => {
+														event.preventDefault();
+														void handleUpdateProfile();
+													}}
+													className="space-y-4"
+												>
+													<div className="grid gap-2">
+														<Label htmlFor="edit-full-name">
+															Full Name
+														</Label>
+														<Input
+															id="edit-full-name"
+															value={editFullName}
+															onChange={(event) =>
+																setEditFullName(
+																	event.target
+																		.value,
+																)
+															}
+															required
+														/>
+													</div>
+													<div className="grid gap-2">
+														<Label htmlFor="edit-nic">
+															NIC
+														</Label>
+														<Input
+															id="edit-nic"
+															value={editNic}
+															onChange={(event) =>
+																setEditNic(
+																	event.target
+																		.value,
+																)
+															}
+															placeholder="Optional (must be unique)"
+														/>
+													</div>
+													<div className="grid gap-2">
+														<Label htmlFor="edit-alias">
+															Alias
+														</Label>
+														<Input
+															id="edit-alias"
+															value={editAlias}
+															onChange={(event) =>
+																setEditAlias(
+																	event.target
+																		.value,
+																)
+															}
+															placeholder="Optional"
+														/>
+													</div>
+													<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+														<div className="grid gap-2">
+															<Label htmlFor="edit-address-line-1">
+																Address Line 1
+															</Label>
+															<Input
+																id="edit-address-line-1"
+																value={
+																	editAddressLine1
+																}
+																onChange={(
+																	event,
+																) =>
+																	setEditAddressLine1(
+																		event
+																			.target
+																			.value,
+																	)
+																}
+																placeholder="Optional"
+															/>
+														</div>
+														<div className="grid gap-2">
+															<Label htmlFor="edit-address-line-2">
+																Address Line 2
+															</Label>
+															<Input
+																id="edit-address-line-2"
+																value={
+																	editAddressLine2
+																}
+																onChange={(
+																	event,
+																) =>
+																	setEditAddressLine2(
+																		event
+																			.target
+																			.value,
+																	)
+																}
+																placeholder="Optional"
+															/>
+														</div>
+													</div>
+													<div className="grid gap-2">
+														<Label htmlFor="edit-city">
+															City
+														</Label>
+														<Input
+															id="edit-city"
+															value={editCity}
+															onChange={(event) =>
+																setEditCity(
+																	event.target
+																		.value,
+																)
+															}
+															placeholder="Optional"
+														/>
+													</div>
+													<div className="grid gap-2">
+														<Label htmlFor="edit-notes">
+															Notes
+														</Label>
+														<Textarea
+															id="edit-notes"
+															maxLength={500}
+															value={editNotes}
+															onChange={(event) =>
+																setEditNotes(
+																	event.target
+																		.value,
+																)
+															}
+															placeholder="Include notes"
+															className="resize-none"
+														/>
+														<div className="text-sm text-gray-500">
+															{editNotes.length}
+															/500
+														</div>
+													</div>
+													<DialogFooter>
+														<DialogClose asChild>
+															<Button
+																type="button"
+																variant="outline"
+																className="cursor-pointer"
+															>
+																Cancel
+															</Button>
+														</DialogClose>
+														<Button
+															type="submit"
+															className="cursor-pointer"
+															disabled={
+																isUpdatingProfile
+															}
+														>
+															{isUpdatingProfile
+																? "Saving..."
+																: "Save Changes"}
+														</Button>
+													</DialogFooter>
+												</form>
+											</DialogContent>
+										</Dialog>
 										<AlertDialog
 											open={isDeleteDialogOpen}
 											onOpenChange={setIsDeleteDialogOpen}

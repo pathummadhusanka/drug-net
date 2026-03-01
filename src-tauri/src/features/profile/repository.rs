@@ -201,6 +201,42 @@ pub fn get_all_profiles(db: &DbConnection) -> Result<Vec<ProfileWithId>, String>
         .map_err(|e| format!("Database error: {}", e))
 }
 
+pub fn update_profile_by_id(db: &DbConnection, id: i64, profile: Profile) -> Result<bool, String> {
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    let rows_affected = conn
+        .execute(
+            "UPDATE profiles
+             SET full_name = ?1,
+                 alias = ?2,
+                 nic = ?3,
+                 address_line1 = ?4,
+                 address_line2 = ?5,
+                 city = ?6,
+                 risk_level = ?7,
+                 status = ?8,
+                 notes = ?9,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = ?10",
+            params![
+                profile.full_name,
+                profile.alias,
+                profile.nic,
+                profile.address_line1,
+                profile.address_line2,
+                profile.city,
+                profile.risk_level,
+                profile.status,
+                profile.notes,
+                id,
+            ],
+        )
+        .map_err(|e| format!("Database error: {}", e))?;
+
+    Ok(rows_affected > 0)
+}
+
 pub fn delete_profile_by_id(db: &DbConnection, id: i64) -> Result<bool, String> {
     let conn = db.lock()
         .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
