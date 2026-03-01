@@ -528,6 +528,12 @@ export default function ProfileView() {
 		}
 	};
 
+	// Prevent multiple consecutive newlines in notes
+	const handleNotesChange = (value: string) => {
+		// Replace 3+ consecutive newlines with two newlines
+		return value.replace(/\n{3,}/g, "\n\n");
+	};
+
 	useEffect(() => {
 		handleTextareaResize(textareaRef);
 	}, [caseNotes]);
@@ -1310,9 +1316,11 @@ export default function ProfileView() {
 																		event,
 																	) =>
 																		setEditNotes(
-																			event
-																				.target
-																				.value,
+																			handleNotesChange(
+																				event
+																					.target
+																					.value,
+																			),
 																		)
 																	}
 																	placeholder="Add notes"
