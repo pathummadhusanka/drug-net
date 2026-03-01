@@ -84,6 +84,32 @@ interface Profile {
 	created_at: string | null;
 }
 
+interface ProfileDrug {
+	id: number;
+	name: string;
+}
+
+interface ProfileArea {
+	id: number;
+	name: string;
+	is_primary: number;
+}
+
+interface ProfileRelationship {
+	id: number;
+	target_profile_id: number;
+	target_full_name: string;
+	relationship_type: string | null;
+}
+
+interface CaseWithDetails {
+	id: number;
+	cno: string;
+	case_id: string | null;
+	case_name: string;
+	created_at: string | null;
+}
+
 // Custom node component with 4 connection handles
 const CustomNode = ({
 	data,
@@ -189,6 +215,13 @@ export default function ProfileView() {
 	const { id } = useParams();
 	const navigate = useNavigate();
 	const [profile, setProfile] = useState<Profile | null>(null);
+	const [profileDrugs, setProfileDrugs] = useState<ProfileDrug[]>([]);
+	const [profileAreas, setProfileAreas] = useState<ProfileArea[]>([]);
+	const [profileRelationships, setProfileRelationships] = useState<
+		ProfileRelationship[]
+	>([]);
+	const [profileCases, setProfileCases] = useState<CaseWithDetails[]>([]);
+	const [isSavingCase, setIsSavingCase] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [showFileCaseForm, setShowFileCaseForm] = useState(false);
@@ -489,6 +522,58 @@ export default function ProfileView() {
 		caseStatus,
 	].filter((value) => value.trim().length > 0).length;
 
+	const handleSaveCase = async () => {
+		if (!id) {
+			toast.error("Profile ID is missing", {
+				position: "top-center",
+			});
+			return;
+		}
+
+		if (!caseTitle.trim()) {
+			toast.error("Case title is required", {
+				position: "top-center",
+			});
+			return;
+		}
+
+		try {
+			setIsSavingCase(true);
+			const profileId = parseInt(id, 10);
+			const newCaseId = await invoke<number>("create_case", {
+				case: {
+					case_id: caseId.trim() || null,
+					case_name: caseTitle.trim(),
+				},
+			});
+
+			await invoke("assign_case_to_profile", {
+				case_id: newCaseId,
+				profile_id: profileId,
+			});
+
+			const updatedCases = await invoke<CaseWithDetails[]>(
+				"get_profile_cases",
+				{
+					profile_id: profileId,
+				},
+			);
+			setProfileCases(updatedCases);
+
+			toast.success("Case has been filed successfully!", {
+				position: "top-center",
+			});
+			setShowFileCaseForm(false);
+		} catch (err) {
+			console.error("Failed to save case:", err);
+			toast.error("Failed to save case", {
+				position: "top-center",
+			});
+		} finally {
+			setIsSavingCase(false);
+		}
+	};
+
 	useEffect(() => {
 		const fetchProfile = async () => {
 			if (!id) {
@@ -499,21 +584,70 @@ export default function ProfileView() {
 
 			try {
 				setLoading(true);
+				const profileId = parseInt(id, 10);
+
+				// Fetch the main profile first
 				const result = await invoke<Profile | null>("get_profile", {
-					id: parseInt(id),
+					id: profileId,
 				});
 
-				if (result) {
-					setProfile(result);
-					setError(null);
-				} else {
-					setError("No user found");
+				if (!result) {
+					setError("Profile not found");
 					setProfile(null);
+					setProfileDrugs([]);
+					setProfileAreas([]);
+					setProfileRelationships([]);
+					setProfileCases([]);
+					setLoading(false);
+					return;
 				}
+
+				// Profile exists, now fetch related data using allSettled
+				// so that if some fail, we still show the profile with empty sections
+				const [
+					drugsResult,
+					areasResult,
+					relationshipsResult,
+					casesResult,
+				] = await Promise.allSettled([
+					invoke<ProfileDrug[]>("get_profile_drugs", {
+						id: profileId,
+					}),
+					invoke<ProfileArea[]>("get_profile_areas", {
+						id: profileId,
+					}),
+					invoke<ProfileRelationship[]>("get_profile_relationships", {
+						id: profileId,
+					}),
+					invoke<CaseWithDetails[]>("get_profile_cases", {
+						profile_id: profileId,
+					}),
+				]);
+
+				setProfile(result);
+				setProfileDrugs(
+					drugsResult.status === "fulfilled" ? drugsResult.value : [],
+				);
+				setProfileAreas(
+					areasResult.status === "fulfilled" ? areasResult.value : [],
+				);
+				setProfileRelationships(
+					relationshipsResult.status === "fulfilled"
+						? relationshipsResult.value
+						: [],
+				);
+				setProfileCases(
+					casesResult.status === "fulfilled" ? casesResult.value : [],
+				);
+				setError(null);
 			} catch (err) {
 				console.error("Failed to fetch profile:", err);
 				setError("Failed to load profile");
 				setProfile(null);
+				setProfileDrugs([]);
+				setProfileAreas([]);
+				setProfileRelationships([]);
+				setProfileCases([]);
 			} finally {
 				setLoading(false);
 			}
@@ -532,10 +666,19 @@ export default function ProfileView() {
 				)}
 
 				{error && (
-					<div className="text-center py-8">
+					<div className="text-center py-8 space-y-4">
 						<p className="text-red-500 text-lg font-medium">
 							{error}
 						</p>
+						<Button
+							type="button"
+							variant="outline"
+							className="cursor-pointer"
+							onClick={() => navigate("/")}
+						>
+							<ChevronLeft className="h-4 w-4 mr-2" />
+							Back to All Profiles
+						</Button>
 					</div>
 				)}
 
@@ -639,8 +782,7 @@ export default function ProfileView() {
 										<form
 											onSubmit={(e) => {
 												e.preventDefault();
-												console.log("Form submitted");
-												setShowFileCaseForm(false);
+												void handleSaveCase();
 											}}
 											className="space-y-4"
 										>
@@ -1855,18 +1997,11 @@ export default function ProfileView() {
 													<Button
 														type="submit"
 														className="cursor-pointer"
-														onClick={(e) => {
-															e.preventDefault();
-															toast.success(
-																"Case has been filed successfully!",
-																{
-																	position:
-																		"top-center",
-																},
-															);
-														}}
+														disabled={isSavingCase}
 													>
-														Save Case
+														{isSavingCase
+															? "Saving..."
+															: "Save Case"}
 													</Button>
 												</div>
 											</div>
@@ -1991,10 +2126,142 @@ export default function ProfileView() {
 												</div>
 											)}
 										</TabsContent>
-										<TabsContent value="analytics"></TabsContent>
-										<TabsContent value="reports"></TabsContent>
-										<TabsContent value="settings"></TabsContent>
-										<TabsContent value="areas"></TabsContent>
+										<TabsContent value="analytics">
+											<div className="space-y-2">
+												{profileCases.length === 0 ? (
+													<p className="text-sm text-gray-500">
+														No cases linked to this
+														profile.
+													</p>
+												) : (
+													<div className="space-y-2">
+														{profileCases.map(
+															(item) => (
+																<div
+																	key={
+																		item.id
+																	}
+																	className="flex items-center justify-between border rounded-md px-3 py-2"
+																>
+																	<div className="space-y-0.5">
+																		<p className="text-sm font-medium">
+																			{
+																				item.case_name
+																			}
+																		</p>
+																		<p className="text-xs text-gray-500">
+																			{item.case_id ||
+																				item.cno}
+																		</p>
+																	</div>
+																	<p className="text-xs text-gray-500">
+																		{item.created_at
+																			? new Date(
+																					item.created_at,
+																				).toLocaleDateString()
+																			: ""}
+																	</p>
+																</div>
+															),
+														)}
+													</div>
+												)}
+											</div>
+										</TabsContent>
+										<TabsContent value="reports">
+											<div className="space-y-2">
+												{profileDrugs.length === 0 ? (
+													<p className="text-sm text-gray-500">
+														No drugs linked in
+														database.
+													</p>
+												) : (
+													<div className="flex gap-2 flex-wrap">
+														{profileDrugs.map(
+															(drug) => (
+																<div
+																	key={
+																		drug.id
+																	}
+																	className="inline-flex items-center rounded-md bg-secondary px-2.5 py-0.5 text-sm font-medium text-secondary-foreground"
+																>
+																	{drug.name}
+																</div>
+															),
+														)}
+													</div>
+												)}
+											</div>
+										</TabsContent>
+										<TabsContent value="settings">
+											<div className="space-y-2">
+												{profileRelationships.length ===
+												0 ? (
+													<p className="text-sm text-gray-500">
+														No relationships linked
+														in database.
+													</p>
+												) : (
+													<div className="space-y-2">
+														{profileRelationships.map(
+															(connection) => (
+																<div
+																	key={
+																		connection.id
+																	}
+																	className="flex items-center justify-between border rounded-md px-3 py-2"
+																>
+																	<p className="text-sm font-medium">
+																		{
+																			connection.target_full_name
+																		}
+																	</p>
+																	<p className="text-xs text-gray-500">
+																		{connection.relationship_type ||
+																			"Unspecified"}
+																	</p>
+																</div>
+															),
+														)}
+													</div>
+												)}
+											</div>
+										</TabsContent>
+										<TabsContent value="areas">
+											<div className="space-y-2">
+												{profileAreas.length === 0 ? (
+													<p className="text-sm text-gray-500">
+														No areas linked in
+														database.
+													</p>
+												) : (
+													<div className="space-y-2">
+														{profileAreas.map(
+															(area) => (
+																<div
+																	key={
+																		area.id
+																	}
+																	className="flex items-center justify-between border rounded-md px-3 py-2"
+																>
+																	<p className="text-sm font-medium">
+																		{
+																			area.name
+																		}
+																	</p>
+																	{area.is_primary ===
+																		1 && (
+																		<p className="text-xs text-gray-500">
+																			Primary
+																		</p>
+																	)}
+																</div>
+															),
+														)}
+													</div>
+												)}
+											</div>
+										</TabsContent>
 									</>
 								)}
 							</Tabs>

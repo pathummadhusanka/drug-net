@@ -12,3 +12,18 @@ pub fn get_case(db: &DbConnection, id: i64) -> Result<Option<CaseWithDetails>, S
 pub fn list_cases(db: &DbConnection) -> Result<Vec<CaseWithDetails>, String> {
     super::repository::get_all_cases(db)
 }
+
+pub fn assign_case_to_profile(
+    db: &DbConnection,
+    case_id: i64,
+    profile_id: i64,
+) -> Result<(), String> {
+    super::repository::link_case_to_profile(db, case_id, profile_id)
+}
+
+pub fn list_cases_by_profile(
+    db: &DbConnection,
+    profile_id: i64,
+) -> Result<Vec<CaseWithDetails>, String> {
+    super::repository::get_cases_by_profile_id(db, profile_id)
+}

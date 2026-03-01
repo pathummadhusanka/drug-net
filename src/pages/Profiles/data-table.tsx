@@ -35,7 +35,7 @@ export function DataTable<TData, TValue>({
 
 	const navigate = useNavigate();
 
-	function handleRowClick(id: string) {
+	function handleRowClick(id: string | number) {
 		navigate(`/profile/${id}`);
 	}
 
@@ -67,7 +67,15 @@ export function DataTable<TData, TValue>({
 							<TableRow
 								key={row.id}
 								data-state={row.getIsSelected() && "selected"}
-								onClick={() => handleRowClick(row.id)}
+								onClick={() =>
+									handleRowClick(
+										(
+											row.original as {
+												id: string | number;
+											}
+										).id,
+									)
+								}
 								className="cursor-pointer"
 							>
 								{row.getVisibleCells().map((cell) => (

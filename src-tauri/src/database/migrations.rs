@@ -65,6 +65,14 @@ pub fn run_migrations(db: &DbConnection) -> Result<(), String> {
             case_name TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS case_profiles (
+            case_id INTEGER,
+            profile_id INTEGER,
+            PRIMARY KEY (case_id, profile_id),
+            FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE,
+            FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+        );
         "
     )
     .map_err(|e| e.to_string())?;

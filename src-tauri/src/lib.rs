@@ -5,8 +5,21 @@ mod features;
 
 use database::connection::{init_connection, DbConnection};
 use database::migrations::run_migrations;
-use features::case::commands::{create_case, get_case, get_all_cases};
-use features::profile::commands::{create_profile, get_profile};
+use features::case::commands::{
+    create_case,
+    get_case,
+    get_all_cases,
+    assign_case_to_profile,
+    get_profile_cases,
+};
+use features::profile::commands::{
+    create_profile,
+    get_profile,
+    get_profile_drugs,
+    get_profile_areas,
+    get_profile_relationships,
+    get_all_profiles,
+};
 
 /// Application state containing shared database connection
 pub struct AppState {
@@ -38,9 +51,15 @@ pub fn run() {
             greet, 
             create_profile, 
             get_profile,
+            get_profile_drugs,
+            get_profile_areas,
+            get_profile_relationships,
+            get_all_profiles,
             create_case,
             get_case,
-            get_all_cases
+            get_all_cases,
+            assign_case_to_profile,
+            get_profile_cases
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

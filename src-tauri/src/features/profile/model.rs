@@ -28,3 +28,24 @@ pub struct ProfileWithId {
     pub created_at: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProfileDrug {
+    pub id: i64,
+    pub name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProfileArea {
+    pub id: i64,
+    pub name: String,
+    pub is_primary: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProfileRelationship {
+    pub id: i64,
+    pub target_profile_id: i64,
+    pub target_full_name: String,
+    pub relationship_type: Option<String>,
+}
+

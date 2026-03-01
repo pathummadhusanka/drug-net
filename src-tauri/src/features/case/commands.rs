@@ -16,3 +16,20 @@ pub async fn get_case(state: State<'_, AppState>, id: i64) -> Result<Option<Case
 pub async fn get_all_cases(state: State<'_, AppState>) -> Result<Vec<CaseWithDetails>, String> {
     super::service::list_cases(&state.db)
 }
+
+#[tauri::command]
+pub async fn assign_case_to_profile(
+    state: State<'_, AppState>,
+    case_id: i64,
+    profile_id: i64,
+) -> Result<(), String> {
+    super::service::assign_case_to_profile(&state.db, case_id, profile_id)
+}
+
+#[tauri::command]
+pub async fn get_profile_cases(
+    state: State<'_, AppState>,
+    profile_id: i64,
+) -> Result<Vec<CaseWithDetails>, String> {
+    super::service::list_cases_by_profile(&state.db, profile_id)
+}

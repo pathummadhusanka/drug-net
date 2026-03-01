@@ -4,54 +4,44 @@ import { DataTable } from "./data-table";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { invoke } from "@tauri-apps/api/core";
 
-async function getData(): Promise<DrugDealer[]> {
-	return [
-		{
-			id: "1",
-			name: "Nimal Perera",
-			alias: "Black Fox",
-			primaryArea: "Colombo Central",
-			risk: "High",
-			cases: 3,
-			status: "Under Surveillance",
-		},
-		{
-			id: "2",
-			name: "Sunil Fernando",
-			alias: "Tiger",
-			primaryArea: "Gampaha",
-			risk: "Medium",
-			cases: 1,
-			status: "Active",
-		},
-		{
-			id: "3",
-			name: "Ruwan Silva",
-			alias: "Doctor",
-			primaryArea: "Negombo",
-			risk: "Low",
-			cases: 0,
-			status: "Inactive",
-		},
-		{
-			id: "4",
-			name: "Ajith Kumara",
-			alias: "Shadow",
-			primaryArea: "Kandy",
-			risk: "High",
-			cases: 5,
-			status: "Active",
-		},
-	];
-}
+type ProfileFromDb = {
+	id: number;
+	full_name: string;
+	alias: string | null;
+	city: string | null;
+	risk_level: string | null;
+	status: string | null;
+};
 
 export default function Profiles() {
 	const [data, setData] = useState<DrugDealer[]>([]);
 	const navigate = useNavigate();
 
 	useEffect(() => {
-		getData().then(setData);
+		const fetchProfiles = async () => {
+			try {
+				const profiles =
+					await invoke<ProfileFromDb[]>("get_all_profiles");
+				setData(
+					profiles.map((profile) => ({
+						id: profile.id,
+						name: profile.full_name,
+						alias: profile.alias,
+						primaryArea: profile.city,
+						risk: profile.risk_level,
+						cases: 0,
+						status: profile.status,
+					})),
+				);
+			} catch (err) {
+				console.error("Failed to fetch profiles:", err);
+				setData([]);
+			}
+		};
+
+		void fetchProfiles();
 	}, []);
 
 	return (

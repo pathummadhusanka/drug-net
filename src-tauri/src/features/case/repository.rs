@@ -90,3 +90,53 @@ pub fn get_all_cases(db: &DbConnection) -> Result<Vec<CaseWithDetails>, String> 
 
     Ok(cases)
 }
+
+pub fn link_case_to_profile(
+    db: &DbConnection,
+    case_id: i64,
+    profile_id: i64,
+) -> Result<(), String> {
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    conn.execute(
+        "INSERT OR IGNORE INTO case_profiles (case_id, profile_id)
+         VALUES (?1, ?2)",
+        params![case_id, profile_id],
+    )
+    .map_err(|e| format!("Database error: {}", e))?;
+
+    Ok(())
+}
+
+pub fn get_cases_by_profile_id(
+    db: &DbConnection,
+    profile_id: i64,
+) -> Result<Vec<CaseWithDetails>, String> {
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    let mut stmt = conn.prepare(
+        "SELECT c.id, c.cno, c.case_id, c.case_name, c.created_at
+         FROM cases c
+         JOIN case_profiles cp ON cp.case_id = c.id
+         WHERE cp.profile_id = ?1
+         ORDER BY c.created_at DESC"
+    )
+    .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+    let cases = stmt.query_map(params![profile_id], |row| {
+        Ok(CaseWithDetails {
+            id: row.get(0)?,
+            cno: row.get(1)?,
+            case_id: row.get(2)?,
+            case_name: row.get(3)?,
+            created_at: row.get(4)?,
+        })
+    })
+    .map_err(|e| format!("Query error: {}", e))?
+    .collect::<Result<Vec<CaseWithDetails>, _>>()
+    .map_err(|e| format!("Failed to collect results: {}", e))?;
+
+    Ok(cases)
+}

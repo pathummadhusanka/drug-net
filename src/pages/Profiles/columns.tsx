@@ -3,13 +3,13 @@
 import { ColumnDef } from "@tanstack/react-table";
 
 export type DrugDealer = {
-	id: string;
+	id: number;
 	name: string;
-	alias: string;
-	primaryArea: string;
-	risk: "High" | "Medium" | "Low";
+	alias: string | null;
+	primaryArea: string | null;
+	risk: string | null;
 	cases: number;
-	status: "Under Surveillance" | "Active" | "Inactive";
+	status: string | null;
 };
 
 export const columns: ColumnDef<DrugDealer>[] = [
@@ -20,14 +20,17 @@ export const columns: ColumnDef<DrugDealer>[] = [
 	{
 		accessorKey: "alias",
 		header: "Alias",
+		cell: ({ row }) => row.original.alias || "-",
 	},
 	{
 		accessorKey: "primaryArea",
 		header: "Primary Area",
+		cell: ({ row }) => row.original.primaryArea || "-",
 	},
 	{
 		accessorKey: "risk",
 		header: "Risk",
+		cell: ({ row }) => row.original.risk || "-",
 	},
 	{
 		accessorKey: "cases",
@@ -36,5 +39,6 @@ export const columns: ColumnDef<DrugDealer>[] = [
 	{
 		accessorKey: "status",
 		header: "Status",
+		cell: ({ row }) => row.original.status || "-",
 	},
 ];
