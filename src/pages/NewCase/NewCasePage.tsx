@@ -446,6 +446,18 @@ export default function NewCasePage() {
 		setPendingArea("");
 	};
 
+	const caseDetailsTotalFields = 8;
+	const caseDetailsFilledFields = [
+		caseId,
+		caseType,
+		caseTitle,
+		caseDescription,
+		caseDate,
+		caseTime,
+		severityLevel,
+		caseStatus,
+	].filter((value) => value.trim().length > 0).length;
+
 	return (
 		<div className="w-full mx-auto space-y-1">
 			<div className="flex items-center justify-between">
@@ -499,7 +511,8 @@ export default function NewCasePage() {
 									)}
 									<span>[1] Case Details</span>
 									<span className="text-xs text-gray-400 ml-2">
-										(0/7)
+										({caseDetailsFilledFields}/
+										{caseDetailsTotalFields})
 									</span>
 								</div>
 								<span className="text-gray-500 text-sm text-right">
@@ -986,7 +999,8 @@ export default function NewCasePage() {
 									)}
 									<span>[3] Drugs</span>
 									<span className="text-xs text-gray-400 ml-2">
-										(1/5)
+										{Object.keys(selectedDrugs).length}{" "}
+										selected
 									</span>
 								</div>
 								<span className="text-gray-500 text-sm text-right">
@@ -1132,7 +1146,7 @@ export default function NewCasePage() {
 									)}
 									<span>[4] Areas</span>
 									<span className="text-xs text-gray-400 ml-2">
-										(0/2)
+										{areas.length} added
 									</span>
 								</div>
 								<span className="text-gray-500 text-sm text-right">
@@ -1243,7 +1257,9 @@ export default function NewCasePage() {
 									)}
 									<span>[5] Notes</span>
 									<span className="text-xs text-gray-400 ml-2">
-										(1/1)
+										{caseNotes.trim().length > 0
+											? "Note added"
+											: "Empty"}
 									</span>
 								</div>
 								<span className="text-gray-500 text-sm text-right">
