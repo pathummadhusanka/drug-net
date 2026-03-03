@@ -50,15 +50,6 @@ const AREA_COLORS = [
 	"#fecaca",
 ];
 
-const PROFILE_COLORS = [
-	"#8b5cf6",
-	"#a78bfa",
-	"#7c3aed",
-	"#6d28d9",
-	"#ddd6fe",
-	"#ede9fe",
-];
-
 export default function AnalyticsPage() {
 	const [activeSection, setActiveSection] = useState<
 		"drugs" | "areas" | "profiles"
@@ -121,7 +112,7 @@ export default function AnalyticsPage() {
 				const profileCountMap = new Map<string, number>();
 				for (const caseProfiles of allProfilesByCase) {
 					for (const profile of caseProfiles) {
-						const key = profile.full_name;
+						const key = profile[1]; // profile is [id, name] tuple
 						profileCountMap.set(
 							key,
 							(profileCountMap.get(key) ?? 0) + 1,
