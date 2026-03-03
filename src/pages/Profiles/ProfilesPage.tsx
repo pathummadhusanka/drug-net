@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { columns, DrugDealer } from "./columns";
 import { DataTable } from "./data-table";
 import { useNavigate } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { invoke } from "@tauri-apps/api/core";
 
@@ -52,7 +52,7 @@ export default function Profiles() {
 					variant="outline"
 					className="cursor-pointer"
 				>
-					<Plus className="h-4 w-4 mr-2" />
+					<UserPlus className="h-4 w-4 mr-2" />
 					Add Profile
 				</Button>
 			</div>

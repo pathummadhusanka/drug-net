@@ -8,6 +8,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { FolderPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const dummyCases = [
@@ -61,9 +62,11 @@ export default function CasesPage() {
 		<div className="container mx-auto space-y-4">
 			<div className="flex justify-end items-center">
 				<Button
+					variant="secondary"
 					className="cursor-pointer"
 					onClick={() => navigate("/new-case")}
 				>
+					<FolderPlus className="h-4 w-4 mr-2" />
 					File Case
 				</Button>
 			</div>

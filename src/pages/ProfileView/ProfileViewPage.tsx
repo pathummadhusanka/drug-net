@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
+	FolderPlus,
 	Plus,
 	MoreVertical,
 	X,
@@ -970,7 +971,7 @@ export default function ProfileView() {
 												})
 											}
 										>
-											<Plus className="h-4 w-4 mr-2" />
+											<FolderPlus className="h-4 w-4 mr-2" />
 											File Case
 										</Button>
 										<DropdownMenu>

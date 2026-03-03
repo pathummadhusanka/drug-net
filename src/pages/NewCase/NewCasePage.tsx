@@ -67,8 +67,9 @@ import {
 	Check,
 	ChevronLeft,
 	Clock,
-	Plus,
 	Trash2,
+	UserPlus,
+	UserSearch,
 	X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -1025,7 +1026,7 @@ export default function NewCasePage() {
 												setIsAddProfileDialogOpen(true);
 											}}
 										>
-											<Plus className="h-4 w-4 mr-2" />
+											<UserSearch className="h-4 w-4 mr-2" />
 											Add Profile
 										</Button>
 										<Button
@@ -1038,6 +1039,7 @@ export default function NewCasePage() {
 												setIsNewProfileDialogOpen(true);
 											}}
 										>
+											<UserPlus className="h-4 w-4 mr-2" />
 											New Profile
 										</Button>
 									</div>

@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { invoke } from "@tauri-apps/api/core";
 import { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, FolderPlus } from "lucide-react";
 
 export default function NewProfile() {
 	const navigate = useNavigate();
@@ -238,6 +238,7 @@ export default function NewProfile() {
 										className="cursor-pointer"
 										onClick={handleSaveAndFileCases}
 									>
+										<FolderPlus className="h-4 w-4 mr-2" />
 										Save & File Cases
 									</Button>
 								</div>
