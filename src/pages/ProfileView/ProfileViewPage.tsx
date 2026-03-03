@@ -289,6 +289,8 @@ const CustomEdge = ({
 	sourceY,
 	targetX,
 	targetY,
+	source,
+	target,
 	data,
 	markerEnd,
 }: EdgeProps) => {
@@ -317,6 +319,7 @@ const CustomEdge = ({
 		const startY = event.clientY;
 		const initialOffsetX = labelOffsetX;
 		const initialOffsetY = labelOffsetY;
+		let didDrag = false;
 		let nextOffsetX = initialOffsetX;
 		let nextOffsetY = initialOffsetY;
 		let animationFrameId: number | null = null;
@@ -340,8 +343,13 @@ const CustomEdge = ({
 		};
 
 		const handleMouseMove = (moveEvent: MouseEvent) => {
-			nextOffsetX = initialOffsetX + (moveEvent.clientX - startX);
-			nextOffsetY = initialOffsetY + (moveEvent.clientY - startY);
+			const deltaX = moveEvent.clientX - startX;
+			const deltaY = moveEvent.clientY - startY;
+			if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+				didDrag = true;
+			}
+			nextOffsetX = initialOffsetX + deltaX;
+			nextOffsetY = initialOffsetY + deltaY;
 
 			if (animationFrameId === null) {
 				animationFrameId =
@@ -350,6 +358,13 @@ const CustomEdge = ({
 		};
 
 		const handleMouseUp = () => {
+			if (didDrag) {
+				(
+					window as Window & {
+						__edgeDragSuppressUntil?: number;
+					}
+				).__edgeDragSuppressUntil = Date.now() + 250;
+			}
 			if (animationFrameId !== null) {
 				window.cancelAnimationFrame(animationFrameId);
 				animationFrameId = null;
@@ -361,6 +376,26 @@ const CustomEdge = ({
 
 		window.addEventListener("mousemove", handleMouseMove);
 		window.addEventListener("mouseup", handleMouseUp);
+	};
+
+	const handleEdgeEditClick = (
+		event: React.MouseEvent<HTMLButtonElement>,
+	) => {
+		event.preventDefault();
+		event.stopPropagation();
+
+		window.dispatchEvent(
+			new CustomEvent("open-connection-edit-dialog", {
+				detail: {
+					edgeId: id,
+					label,
+					source,
+					target,
+					sourceHandle: null,
+					targetHandle: null,
+				},
+			}),
+		);
 	};
 
 	return (
@@ -396,11 +431,21 @@ const CustomEdge = ({
 					}}
 					className="nodrag nopan"
 				>
-					<div
-						onMouseDown={handleLabelDragStart}
-						className="px-2 py-0.5 bg-white border border-gray-300 rounded text-xs cursor-move select-none"
-					>
-						{displayLabel}
+					<div className="px-1.5 py-0.5 bg-white border border-gray-300 rounded text-xs select-none flex items-center gap-1">
+						<div
+							onMouseDown={handleLabelDragStart}
+							className="cursor-move"
+						>
+							{displayLabel}
+						</div>
+						<button
+							type="button"
+							onClick={handleEdgeEditClick}
+							className="w-4 h-4 rounded-full border border-gray-300 text-[10px] leading-none text-gray-500 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center cursor-pointer"
+							title="Edit connection"
+						>
+							✎
+						</button>
 					</div>
 				</div>
 			</EdgeLabelRenderer>
@@ -502,6 +547,41 @@ export default function ProfileView() {
 	const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 	const [nodeId, setNodeId] = useState(2);
 
+	useEffect(() => {
+		const handleOpenConnectionEditDialog = (event: Event) => {
+			const customEvent = event as CustomEvent<{
+				edgeId: string;
+				label: string;
+				source: string;
+				target: string;
+				sourceHandle?: string | null;
+				targetHandle?: string | null;
+			}>;
+
+			setEditingEdgeId(customEvent.detail.edgeId);
+			setConnectionLabel(customEvent.detail.label || "");
+			setPendingConnection({
+				source: customEvent.detail.source,
+				target: customEvent.detail.target,
+				sourceHandle: customEvent.detail.sourceHandle ?? null,
+				targetHandle: customEvent.detail.targetHandle ?? null,
+			});
+			setIsConnectionDialogOpen(true);
+		};
+
+		window.addEventListener(
+			"open-connection-edit-dialog",
+			handleOpenConnectionEditDialog,
+		);
+
+		return () => {
+			window.removeEventListener(
+				"open-connection-edit-dialog",
+				handleOpenConnectionEditDialog,
+			);
+		};
+	}, []);
+
 	// List of available drugs
 	const availableDrugs = [
 		{ name: "Heroin", unit: "grams" },
@@ -578,17 +658,9 @@ export default function ProfileView() {
 		[edges],
 	);
 
-	const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+	const onEdgeClick = useCallback((event: React.MouseEvent) => {
 		event.preventDefault();
-		setEditingEdgeId(edge.id);
-		setConnectionLabel((edge.label as string) || "");
-		setPendingConnection({
-			source: edge.source,
-			target: edge.target,
-			sourceHandle: edge.sourceHandle ?? null,
-			targetHandle: edge.targetHandle ?? null,
-		});
-		setIsConnectionDialogOpen(true);
+		event.stopPropagation();
 	}, []);
 
 	const onConnectStart = useCallback(() => {
