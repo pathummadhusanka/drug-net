@@ -90,6 +90,7 @@ import {
 	Clock,
 	Info,
 	Trash2,
+	User,
 	UserPlus,
 	UserSearch,
 	X,
@@ -121,19 +122,19 @@ const BubbleProfileNode = ({
 				.length
 		: 0;
 
-	// Truncate name to 18 characters max for compact display
+	// Truncate name to 20 characters max for compact display
 	const displayName = data.fullName
-		? data.fullName.length > 18
-			? data.fullName.substring(0, 18) + "..."
+		? data.fullName.length > 20
+			? data.fullName.substring(0, 20) + "..."
 			: data.fullName
-		: data.label.length > 18
-			? data.label.substring(0, 18) + "..."
+		: data.label.length > 20
+			? data.label.substring(0, 20) + "..."
 			: data.label;
 
 	const displaySubtitle = data.alias || data.city || null;
 	const truncatedSubtitle = displaySubtitle
-		? displaySubtitle.length > 18
-			? displaySubtitle.substring(0, 18) + "..."
+		? displaySubtitle.length > 20
+			? displaySubtitle.substring(0, 20) + "..."
 			: displaySubtitle
 		: null;
 
@@ -150,58 +151,66 @@ const BubbleProfileNode = ({
 				type="target"
 				position={Position.Top}
 				id="top"
-				className="h-1.5 w-2.5 !rounded-sm !border-orange-100 !bg-orange-400/80 shadow-sm"
+				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
 			/>
 			<Handle
 				type="target"
 				position={Position.Right}
 				id="right"
-				className="h-1.5 w-2.5 !rounded-sm !border-orange-100 !bg-orange-400/80 shadow-sm"
+				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
 			/>
 			<Handle
 				type="target"
 				position={Position.Bottom}
 				id="bottom"
-				className="h-1.5 w-2.5 !rounded-sm !border-orange-100 !bg-orange-400/80 shadow-sm"
+				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
 			/>
 			<Handle
 				type="target"
 				position={Position.Left}
 				id="left"
-				className="h-1.5 w-2.5 !rounded-sm !border-orange-100 !bg-orange-400/80 shadow-sm"
+				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
 			/>
 			<Handle
 				type="source"
 				position={Position.Top}
 				id="top"
-				className="h-1.5 w-2.5 !rounded-sm !border-orange-100 !bg-orange-400/80 shadow-sm"
+				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
 			/>
 			<Handle
 				type="source"
 				position={Position.Right}
 				id="right"
-				className="h-1.5 w-2.5 !rounded-sm !border-orange-100 !bg-orange-400/80 shadow-sm"
+				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
 			/>
 			<Handle
 				type="source"
 				position={Position.Bottom}
 				id="bottom"
-				className="h-1.5 w-2.5 !rounded-sm !border-orange-100 !bg-orange-400/80 shadow-sm"
+				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
 			/>
 			<Handle
 				type="source"
 				position={Position.Left}
 				id="left"
-				className="h-1.5 w-2.5 !rounded-sm !border-orange-100 !bg-orange-400/80 shadow-sm"
+				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
 			/>
 
 			<div
 				className={
 					data.isCurrentProfile
-						? "h-12 w-12 rounded-full border-2 border-orange-500 bg-orange-200 shadow-sm"
-						: "h-12 w-12 rounded-full border border-orange-300 bg-orange-100 shadow-sm"
+						? "h-12 w-12 rounded-full border-2 border-gray-700 bg-white shadow-sm"
+						: "h-12 w-12 rounded-full border border-gray-500 bg-white shadow-sm"
 				}
-			/>
+			>
+				<User
+					className={
+						data.isCurrentProfile
+							? "mx-auto mt-3 h-6 w-6 text-gray-700"
+							: "mx-auto mt-3 h-6 w-6 text-gray-500"
+					}
+				/>
+			</div>
 
 			<div className="absolute -right-5 -top-1 flex items-center gap-1">
 				<Tooltip open={tooltipOpen} onOpenChange={setTooltipOpen}>
@@ -349,9 +358,9 @@ const CustomEdge = ({
 	const labelX = midX;
 	const labelY = midY;
 
-	// Truncate label if longer than 10 characters
+	// Truncate label if longer than 20 characters
 	const displayLabel =
-		label.length > 10 ? label.substring(0, 10) + "..." : label;
+		label.length > 20 ? label.substring(0, 20) + "..." : label;
 
 	const gradientId = `edge-gradient-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
