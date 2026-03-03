@@ -33,3 +33,20 @@ pub async fn get_profile_cases(
 ) -> Result<Vec<CaseWithDetails>, String> {
     super::service::list_cases_by_profile(&state.db, profile_id)
 }
+
+#[tauri::command]
+pub async fn link_case_to_area(
+    state: State<'_, AppState>,
+    case_id: i64,
+    area_id: i64,
+) -> Result<(), String> {
+    super::service::assign_case_to_area(&state.db, case_id, area_id)
+}
+
+#[tauri::command]
+pub async fn get_case_areas(
+    state: State<'_, AppState>,
+    case_id: i64,
+) -> Result<Vec<String>, String> {
+    super::service::get_areas_for_case(&state.db, case_id)
+}

@@ -4,6 +4,13 @@ use serde::{Serialize, Deserialize};
 pub struct Case {
     pub case_id: Option<String>,
     pub case_name: String,
+    pub description: Option<String>,
+    pub case_type: Option<String>,
+    pub status: Option<String>,
+    pub severity_level: Option<String>,
+    pub notes: Option<String>,
+    pub case_date: Option<String>,
+    pub case_time: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -12,5 +19,12 @@ pub struct CaseWithDetails {
     pub cno: String,
     pub case_id: Option<String>,
     pub case_name: String,
+    pub description: Option<String>,
+    pub case_type: Option<String>,
+    pub status: Option<String>,
+    pub severity_level: Option<String>,
+    pub notes: Option<String>,
+    pub case_date: Option<String>,
+    pub case_time: Option<String>,
     pub created_at: Option<String>,
 }

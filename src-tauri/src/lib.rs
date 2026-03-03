@@ -5,12 +5,21 @@ mod features;
 
 use database::connection::{init_connection, DbConnection};
 use database::migrations::run_migrations;
+use features::area::commands::{
+    create_area,
+    get_area,
+    get_area_by_name,
+    get_all_areas,
+    delete_area,
+};
 use features::case::commands::{
     create_case,
     get_case,
     get_all_cases,
     assign_case_to_profile,
     get_profile_cases,
+    link_case_to_area,
+    get_case_areas,
 };
 use features::profile::commands::{
     create_profile,
@@ -63,7 +72,14 @@ pub fn run() {
             get_case,
             get_all_cases,
             assign_case_to_profile,
-            get_profile_cases
+            get_profile_cases,
+            link_case_to_area,
+            get_case_areas,
+            create_area,
+            get_area,
+            get_area_by_name,
+            get_all_areas,
+            delete_area
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

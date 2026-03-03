@@ -27,3 +27,18 @@ pub fn list_cases_by_profile(
 ) -> Result<Vec<CaseWithDetails>, String> {
     super::repository::get_cases_by_profile_id(db, profile_id)
 }
+
+pub fn assign_case_to_area(
+    db: &DbConnection,
+    case_id: i64,
+    area_id: i64,
+) -> Result<(), String> {
+    super::repository::link_case_to_area(db, case_id, area_id)
+}
+
+pub fn get_areas_for_case(
+    db: &DbConnection,
+    case_id: i64,
+) -> Result<Vec<String>, String> {
+    super::repository::get_case_areas(db, case_id)
+}

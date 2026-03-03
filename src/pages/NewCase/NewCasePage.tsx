@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { createCaseWithAreas } from "@/lib/cases";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -118,12 +119,10 @@ const CustomNode = ({
 						<AlertDialogHeader>
 							<AlertDialogTitle>Delete Profile</AlertDialogTitle>
 							<AlertDialogDescription>
-								<div>
-									Are you sure you want to delete this
-									profile?
-								</div>
+								Are you sure you want to delete this profile?
 								{connectionCount > 0 && (
-									<div className="mt-2">
+									<>
+										{" "}
 										This profile has{" "}
 										<span className="font-semibold">
 											{connectionCount}{" "}
@@ -132,11 +131,9 @@ const CustomNode = ({
 												: "connections"}
 										</span>{" "}
 										that will also be removed.
-									</div>
-								)}
-								<div className="mt-2">
-									This action cannot be undone.
-								</div>
+									</>
+								)}{" "}
+								This action cannot be undone.
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>
@@ -478,11 +475,49 @@ export default function NewCasePage() {
 			</p>
 
 			<form
-				onSubmit={(e) => {
+				onSubmit={async (e) => {
 					e.preventDefault();
-					toast.success("Case has been filed successfully!", {
-						position: "top-center",
-					});
+
+					// Validate at least one profile exists
+					if (nodes.length === 0) {
+						toast.error(
+							"Please add at least one profile to the network",
+							{
+								position: "top-center",
+							},
+						);
+						return;
+					}
+
+					try {
+						// Create case with areas
+						await createCaseWithAreas(
+							{
+								case_id: caseId || null,
+								case_name: caseTitle || "Untitled Case",
+								description: caseDescription || null,
+								case_type: caseType || null,
+								status: caseStatus || null,
+								severity_level: severityLevel || null,
+								notes: caseNotes || null,
+								case_date: caseDate || null,
+								case_time: caseTime || null,
+							},
+							areas,
+						);
+
+						toast.success("Case has been filed successfully!", {
+							position: "top-center",
+						});
+
+						// Navigate back or to cases page
+						setTimeout(() => navigate("/cases"), 1000);
+					} catch (error) {
+						console.error("Failed to create case:", error);
+						toast.error("Failed to file case. Please try again.", {
+							position: "top-center",
+						});
+					}
 				}}
 				className="space-y-4"
 			>
@@ -523,7 +558,7 @@ export default function NewCasePage() {
 						<AccordionContent>
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 px-2 ml-4">
 								<div className="space-y-2">
-									<Label htmlFor="case-id">Case ID *</Label>
+									<Label htmlFor="case-id">Case ID</Label>
 									<Input
 										id="case-id"
 										name="caseId"
@@ -532,13 +567,10 @@ export default function NewCasePage() {
 										onChange={(e) =>
 											setCaseId(e.target.value)
 										}
-										required
 									/>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="case-type">
-										Case Type *
-									</Label>
+									<Label htmlFor="case-type">Case Type</Label>
 									<Combobox
 										value={caseType}
 										onValueChange={(value) =>
@@ -586,7 +618,7 @@ export default function NewCasePage() {
 									</Combobox>
 								</div>
 								<div className="space-y-2 md:col-span-2">
-									<Label htmlFor="case-title">Title *</Label>
+									<Label htmlFor="case-title">Title</Label>
 									<Input
 										id="case-title"
 										name="title"
@@ -596,7 +628,6 @@ export default function NewCasePage() {
 										onChange={(e) =>
 											setCaseTitle(e.target.value)
 										}
-										required
 									/>
 									<div className="text-sm text-gray-500">
 										{caseTitle.length}/100
@@ -626,7 +657,7 @@ export default function NewCasePage() {
 									</div>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="case-date">Date *</Label>
+									<Label htmlFor="case-date">Date</Label>
 									<div className="relative">
 										<Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
 										<Input
@@ -637,7 +668,6 @@ export default function NewCasePage() {
 											onChange={(e) =>
 												setCaseDate(e.target.value)
 											}
-											required
 											className={`pl-8 ${caseDate ? "pr-8" : ""}`}
 										/>
 										{caseDate && (
@@ -653,7 +683,7 @@ export default function NewCasePage() {
 									</div>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="case-time">Time *</Label>
+									<Label htmlFor="case-time">Time</Label>
 									<div className="relative">
 										<Clock className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
 										<Input
@@ -664,7 +694,6 @@ export default function NewCasePage() {
 											onChange={(e) =>
 												setCaseTime(e.target.value)
 											}
-											required
 											className={`pl-8 ${caseTime ? "pr-8" : ""}`}
 										/>
 										{caseTime && (
@@ -681,7 +710,7 @@ export default function NewCasePage() {
 								</div>
 								<div className="space-y-2">
 									<Label htmlFor="severity-level">
-										Severity Level *
+										Severity Level
 									</Label>
 									<Combobox
 										value={severityLevel}
@@ -713,7 +742,7 @@ export default function NewCasePage() {
 								</div>
 								<div className="space-y-2">
 									<Label htmlFor="case-status">
-										Case Status *
+										Case Status
 									</Label>
 									<Combobox
 										value={caseStatus}

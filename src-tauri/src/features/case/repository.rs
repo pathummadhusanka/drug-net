@@ -23,12 +23,19 @@ pub fn insert_case(db: &DbConnection, case: Case) -> Result<i64, String> {
         .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
 
     conn.execute(
-        "INSERT INTO cases (cno, case_id, case_name)
-        VALUES (?1, ?2, ?3)",
+        "INSERT INTO cases (cno, case_id, case_name, description, case_type, status, severity_level, notes, case_date, case_time)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
         params![
             cno,
             case.case_id,
             case.case_name,
+            case.description,
+            case.case_type,
+            case.status,
+            case.severity_level,
+            case.notes,
+            case.case_date,
+            case.case_time,
         ],
     )
     .map_err(|e| format!("Database error: {}", e))?;
@@ -41,7 +48,7 @@ pub fn get_case_by_id(db: &DbConnection, id: i64) -> Result<Option<CaseWithDetai
         .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
 
     let mut stmt = conn.prepare(
-        "SELECT id, cno, case_id, case_name, created_at 
+        "SELECT id, cno, case_id, case_name, description, case_type, status, severity_level, notes, case_date, case_time, created_at 
          FROM cases 
          WHERE id = ?1"
     )
@@ -53,7 +60,14 @@ pub fn get_case_by_id(db: &DbConnection, id: i64) -> Result<Option<CaseWithDetai
             cno: row.get(1)?,
             case_id: row.get(2)?,
             case_name: row.get(3)?,
-            created_at: row.get(4)?,
+            description: row.get(4)?,
+            case_type: row.get(5)?,
+            status: row.get(6)?,
+            severity_level: row.get(7)?,
+            notes: row.get(8)?,
+            case_date: row.get(9)?,
+            case_time: row.get(10)?,
+            created_at: row.get(11)?,
         })
     });
 
@@ -69,7 +83,7 @@ pub fn get_all_cases(db: &DbConnection) -> Result<Vec<CaseWithDetails>, String> 
         .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
 
     let mut stmt = conn.prepare(
-        "SELECT id, cno, case_id, case_name, created_at 
+        "SELECT id, cno, case_id, case_name, description, case_type, status, severity_level, notes, case_date, case_time, created_at 
          FROM cases 
          ORDER BY created_at DESC"
     )
@@ -81,7 +95,14 @@ pub fn get_all_cases(db: &DbConnection) -> Result<Vec<CaseWithDetails>, String> 
             cno: row.get(1)?,
             case_id: row.get(2)?,
             case_name: row.get(3)?,
-            created_at: row.get(4)?,
+            description: row.get(4)?,
+            case_type: row.get(5)?,
+            status: row.get(6)?,
+            severity_level: row.get(7)?,
+            notes: row.get(8)?,
+            case_date: row.get(9)?,
+            case_time: row.get(10)?,
+            created_at: row.get(11)?,
         })
     })
     .map_err(|e| format!("Query error: {}", e))?
@@ -117,7 +138,7 @@ pub fn get_cases_by_profile_id(
         .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
 
     let mut stmt = conn.prepare(
-        "SELECT c.id, c.cno, c.case_id, c.case_name, c.created_at
+        "SELECT c.id, c.cno, c.case_id, c.case_name, c.description, c.case_type, c.status, c.severity_level, c.notes, c.case_date, c.case_time, c.created_at
          FROM cases c
          JOIN case_profiles cp ON cp.case_id = c.id
          WHERE cp.profile_id = ?1
@@ -131,7 +152,14 @@ pub fn get_cases_by_profile_id(
             cno: row.get(1)?,
             case_id: row.get(2)?,
             case_name: row.get(3)?,
-            created_at: row.get(4)?,
+            description: row.get(4)?,
+            case_type: row.get(5)?,
+            status: row.get(6)?,
+            severity_level: row.get(7)?,
+            notes: row.get(8)?,
+            case_date: row.get(9)?,
+            case_time: row.get(10)?,
+            created_at: row.get(11)?,
         })
     })
     .map_err(|e| format!("Query error: {}", e))?
@@ -139,4 +167,48 @@ pub fn get_cases_by_profile_id(
     .map_err(|e| format!("Failed to collect results: {}", e))?;
 
     Ok(cases)
+}
+
+pub fn link_case_to_area(
+    db: &DbConnection,
+    case_id: i64,
+    area_id: i64,
+) -> Result<(), String> {
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    conn.execute(
+        "INSERT OR IGNORE INTO case_areas (case_id, area_id)
+         VALUES (?1, ?2)",
+        params![case_id, area_id],
+    )
+    .map_err(|e| format!("Database error: {}", e))?;
+
+    Ok(())
+}
+
+pub fn get_case_areas(
+    db: &DbConnection,
+    case_id: i64,
+) -> Result<Vec<String>, String> {
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    let mut stmt = conn.prepare(
+        "SELECT a.name
+         FROM areas a
+         JOIN case_areas ca ON ca.area_id = a.id
+         WHERE ca.case_id = ?1
+         ORDER BY a.name ASC"
+    )
+    .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+    let areas = stmt.query_map(params![case_id], |row| {
+        row.get(0)
+    })
+    .map_err(|e| format!("Query error: {}", e))?
+    .collect::<Result<Vec<String>, _>>()
+    .map_err(|e| format!("Failed to collect results: {}", e))?;
+
+    Ok(areas)
 }
