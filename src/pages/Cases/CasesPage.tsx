@@ -306,7 +306,7 @@ export default function CasesPage() {
 										className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
 									>
 										<FileText className="h-3 w-3" />
-										Details
+										Info
 									</Badge>
 									<div className="flex-1 space-y-1">
 										{/* Line 1: Case ID | Case Title */}

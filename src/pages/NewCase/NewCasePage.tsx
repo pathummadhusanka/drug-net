@@ -1191,7 +1191,7 @@ export default function NewCasePage() {
 									) && (
 										<Check className="h-4 w-4 text-green-600" />
 									)}
-									<span>[1] Case Details</span>
+									<span>[1] Info</span>
 									<span className="text-xs text-gray-400 ml-2">
 										({caseDetailsFilledFields}/
 										{caseDetailsTotalFields})
@@ -1436,7 +1436,7 @@ export default function NewCasePage() {
 									) && (
 										<Check className="h-4 w-4 text-green-600" />
 									)}
-									<span>[2] Connections</span>
+									<span>[2] Network</span>
 									<span className="text-xs text-gray-400 ml-2">
 										{nodes.length}{" "}
 										{nodes.length === 1
