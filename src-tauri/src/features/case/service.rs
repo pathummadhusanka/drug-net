@@ -1,5 +1,6 @@
 use crate::database::connection::DbConnection;
-use super::model::{Case, CaseWithDetails};
+use super::model::{Case, CaseWithDetails, CaseRelationshipData};
+
 
 pub fn create_case(db: &DbConnection, case: Case) -> Result<i64, String> {
     super::repository::insert_case(db, case)
@@ -41,4 +42,18 @@ pub fn get_areas_for_case(
     case_id: i64,
 ) -> Result<Vec<String>, String> {
     super::repository::get_case_areas(db, case_id)
+}
+pub fn save_case_relationships(
+    db: &DbConnection,
+    case_id: i64,
+    relationships: Vec<CaseRelationshipData>,
+) -> Result<(), String> {
+    super::repository::save_case_relationships(db, case_id, relationships)
+}
+
+pub fn get_case_relationships(
+    db: &DbConnection,
+    case_id: i64,
+) -> Result<Vec<CaseRelationshipData>, String> {
+    super::repository::get_case_relationships(db, case_id)
 }

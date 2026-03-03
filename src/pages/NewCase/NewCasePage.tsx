@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { createCaseWithAreas } from "@/lib/cases";
+import {
+	createCaseWithAreas,
+	saveCaseRelationships,
+	assignCaseToProfile,
+	type CaseRelationshipData,
+} from "@/lib/cases";
 import { getAllAreas, type Area } from "@/lib/areas";
 import {
 	createProfile,
@@ -87,7 +92,6 @@ import { toast } from "sonner";
 const CustomNode = ({
 	data,
 	id,
-	isSelected,
 }: {
 	data: {
 		label: string;
@@ -1020,8 +1024,8 @@ export default function NewCasePage() {
 					}
 
 					try {
-						// Create case with areas
-						await createCaseWithAreas(
+						// Create case with areas and get case ID
+						const newCaseId = await createCaseWithAreas(
 							{
 								case_id: caseId || null,
 								case_name: caseTitle || "Untitled Case",
@@ -1035,6 +1039,86 @@ export default function NewCasePage() {
 							},
 							areas,
 						);
+
+						// Link all profiles to the case
+						console.log(
+							"Linking profiles to case. Nodes:",
+							nodes.map((n) => ({
+								nodeId: n.id,
+								profileId: n.data.profileId,
+								label: n.data.label,
+							})),
+						);
+
+						for (const node of nodes) {
+							const profileId = node.data.profileId;
+							if (profileId && !isNaN(profileId)) {
+								console.log(
+									`Linking profile ${profileId} to case ${newCaseId}`,
+								);
+								await assignCaseToProfile(newCaseId, profileId);
+							} else {
+								console.warn(
+									`Node ${node.id} has invalid profileId:`,
+									profileId,
+								);
+							}
+						}
+
+						// Extract relationships from edges
+						console.log(
+							"Extracting relationships from edges:",
+							edges,
+						);
+
+						// Create mapping from node ID to profile ID
+						const nodeToProfileMap = new Map<string, number>();
+						nodes.forEach((node) => {
+							if (node.data.profileId) {
+								nodeToProfileMap.set(
+									node.id,
+									node.data.profileId,
+								);
+							}
+						});
+
+						console.log(
+							"Node to Profile mapping:",
+							Object.fromEntries(nodeToProfileMap),
+						);
+
+						const relationships: CaseRelationshipData[] = edges
+							.map((edge) => {
+								const sourceProfileId = nodeToProfileMap.get(
+									edge.source,
+								);
+								const targetProfileId = nodeToProfileMap.get(
+									edge.target,
+								);
+								return {
+									source_profile_id: sourceProfileId || 0,
+									target_profile_id: targetProfileId || 0,
+									relationship_type: edge.data?.label || null,
+								};
+							})
+							.filter(
+								(rel) =>
+									rel.source_profile_id > 0 &&
+									rel.target_profile_id > 0,
+							);
+
+						console.log("Extracted relationships:", relationships);
+
+						// Save relationships if any exist
+						if (relationships.length > 0) {
+							console.log(
+								`Saving ${relationships.length} relationships`,
+							);
+							await saveCaseRelationships(
+								newCaseId,
+								relationships,
+							);
+						}
 
 						toast.success("Case has been filed successfully!", {
 							position: "top-center",

@@ -89,6 +89,14 @@ pub fn run_migrations(db: &DbConnection) -> Result<(), String> {
             FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE,
             FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS case_relationships (
+            case_id INTEGER,
+            relationship_id INTEGER,
+            PRIMARY KEY (case_id, relationship_id),
+            FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE,
+            FOREIGN KEY (relationship_id) REFERENCES relationships(id) ON DELETE CASCADE
+        );
         "
     )
     .map_err(|e| e.to_string())?;

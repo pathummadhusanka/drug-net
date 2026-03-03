@@ -137,7 +137,6 @@ interface CaseWithDetails {
 const CustomNode = ({
 	data,
 	id,
-	isSelected,
 }: {
 	data: {
 		label: string;

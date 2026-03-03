@@ -28,3 +28,9 @@ pub struct CaseWithDetails {
     pub case_time: Option<String>,
     pub created_at: Option<String>,
 }
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CaseRelationshipData {
+    pub source_profile_id: i64,
+    pub target_profile_id: i64,
+    pub relationship_type: Option<String>,
+}

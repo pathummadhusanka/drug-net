@@ -1,6 +1,7 @@
 use rusqlite::params;
 use crate::database::connection::DbConnection;
-use super::model::{Case, CaseWithDetails};
+use super::model::{Case, CaseWithDetails, CaseRelationshipData};
+
 
 fn generate_cno(db: &DbConnection) -> Result<String, String> {
     let conn = db.lock()
@@ -211,4 +212,112 @@ pub fn get_case_areas(
     .map_err(|e| format!("Failed to collect results: {}", e))?;
 
     Ok(areas)
+}
+pub fn save_case_relationships(
+    db: &DbConnection,
+    case_id: i64,
+    relationships: Vec<CaseRelationshipData>,
+) -> Result<(), String> {
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    for rel in relationships {
+        // First, verify both profiles exist
+        let source_exists: bool = conn
+            .query_row(
+                "SELECT 1 FROM profiles WHERE id = ?1",
+                params![rel.source_profile_id],
+                |_| Ok(true),
+            )
+            .unwrap_or(false);
+
+        let target_exists: bool = conn
+            .query_row(
+                "SELECT 1 FROM profiles WHERE id = ?1",
+                params![rel.target_profile_id],
+                |_| Ok(true),
+            )
+            .unwrap_or(false);
+
+        if !source_exists {
+            return Err(format!(
+                "Source profile {} does not exist in database",
+                rel.source_profile_id
+            ));
+        }
+        if !target_exists {
+            return Err(format!(
+                "Target profile {} does not exist in database",
+                rel.target_profile_id
+            ));
+        }
+
+        // Check if relationship already exists (in either direction)
+        let rel_id = conn.query_row(
+            "SELECT id FROM relationships 
+             WHERE (source_profile_id = ?1 AND target_profile_id = ?2)
+             OR (source_profile_id = ?2 AND target_profile_id = ?1)",
+            params![rel.source_profile_id, rel.target_profile_id],
+            |row| row.get::<_, i64>(0),
+        );
+
+        let relationship_id = match rel_id {
+            Ok(id) => id,
+            Err(rusqlite::Error::QueryReturnedNoRows) => {
+                // Create new relationship
+                conn.execute(
+                    "INSERT INTO relationships (source_profile_id, target_profile_id, relationship_type)
+                     VALUES (?1, ?2, ?3)",
+                    params![rel.source_profile_id, rel.target_profile_id, rel.relationship_type],
+                )
+                .map_err(|e| {
+                    format!(
+                        "Failed to create relationship between {} and {}: {}",
+                        rel.source_profile_id, rel.target_profile_id, e
+                    )
+                })?;
+                conn.last_insert_rowid()
+            }
+            Err(e) => return Err(format!("Database error querying relationships: {}", e)),
+        };
+
+        // Link relationship to case
+        conn.execute(
+            "INSERT OR IGNORE INTO case_relationships (case_id, relationship_id)
+             VALUES (?1, ?2)",
+            params![case_id, relationship_id],
+        )
+        .map_err(|e| format!("Failed to link relationship to case: {}", e))?;
+    }
+
+    Ok(())
+}
+
+pub fn get_case_relationships(
+    db: &DbConnection,
+    case_id: i64,
+) -> Result<Vec<CaseRelationshipData>, String> {
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    let mut stmt = conn.prepare(
+        "SELECT r.source_profile_id, r.target_profile_id, r.relationship_type
+         FROM relationships r
+         JOIN case_relationships cr ON cr.relationship_id = r.id
+         WHERE cr.case_id = ?1"
+    )
+    .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+    let relationships = stmt.query_map(params![case_id], |row| {
+        Ok(CaseRelationshipData {
+            source_profile_id: row.get(0)?,
+            target_profile_id: row.get(1)?,
+            relationship_type: row.get(2)?,
+        })
+    })
+    .map_err(|e| format!("Query error: {}", e))?
+    .collect::<Result<Vec<CaseRelationshipData>, _>>()
+    .map_err(|e| format!("Failed to collect results: {}", e))?;
+
+    Ok(relationships)
 }

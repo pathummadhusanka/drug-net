@@ -28,6 +28,12 @@ export interface CaseWithDetails {
 	created_at: string | null;
 }
 
+export interface CaseRelationshipData {
+	source_profile_id: number;
+	target_profile_id: number;
+	relationship_type: string | null;
+}
+
 /**
  * Create a new case in the database
  * CNO (Case Number) is automatically generated
@@ -105,6 +111,73 @@ export async function linkCaseToArea(
  */
 export async function getCaseAreas(caseId: number): Promise<string[]> {
 	return await invoke<string[]>("get_case_areas", { caseId });
+}
+
+/**
+ * Save relationships (edges) for a case
+ * @param caseId - The case ID
+ * @param relationships - Array of relationship data to save
+ */
+export async function saveCaseRelationships(
+	caseId: number,
+	relationships: CaseRelationshipData[],
+): Promise<void> {
+	return await invoke<void>("save_case_relationships", {
+		caseId,
+		relationships,
+	});
+}
+
+/**
+ * Get all relationships (edges) for a case
+ * @param caseId - The case ID
+ * @returns Array of relationship data
+ */
+export async function getCaseRelationships(
+	caseId: number,
+): Promise<CaseRelationshipData[]> {
+	return await invoke<CaseRelationshipData[]>("get_case_relationships", {
+		caseId,
+	});
+}
+
+/**
+ * Load a case with its complete network (profiles, relationships)
+ * This retrieves all profiles and relationships associated with a case
+ * @param caseId - The case ID
+ * @returns Object containing case details, profiles (nodes), and relationships (edges)
+ */
+export async function getCaseWithNetwork(caseId: number): Promise<{
+	caseData: CaseWithDetails | null;
+	profileIds: number[];
+	relationships: CaseRelationshipData[];
+} | null> {
+	try {
+		// Get case details
+		const caseData = await getCase(caseId);
+		if (!caseData) {
+			return null;
+		}
+
+		// Get all relationships for the case
+		const relationships = await getCaseRelationships(caseId);
+
+		// Build a set of all unique profile IDs from relationships
+		const profileIds = new Set<number>();
+		relationships.forEach((rel) => {
+			profileIds.add(rel.source_profile_id);
+			profileIds.add(rel.target_profile_id);
+		});
+
+		return {
+			caseData,
+			profileIds: Array.from(profileIds),
+			relationships,
+		};
+	} catch (error) {
+		console.error("Failed to load case with network:", error);
+		return null;
+	}
 }
 
 /**

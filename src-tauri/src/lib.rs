@@ -20,6 +20,8 @@ use features::case::commands::{
     get_profile_cases,
     link_case_to_area,
     get_case_areas,
+    save_case_relationships,
+    get_case_relationships,
 };
 use features::profile::commands::{
     create_profile,
@@ -75,6 +77,8 @@ pub fn run() {
             get_profile_cases,
             link_case_to_area,
             get_case_areas,
+            save_case_relationships,
+            get_case_relationships,
             create_area,
             get_area,
             get_area_by_name,

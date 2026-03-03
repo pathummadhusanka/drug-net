@@ -1,6 +1,7 @@
 use tauri::State;
 use crate::AppState;
-use super::model::{Case, CaseWithDetails};
+use super::model::{Case, CaseWithDetails, CaseRelationshipData};
+
 
 #[tauri::command]
 pub async fn create_case(state: State<'_, AppState>, case: Case) -> Result<i64, String> {
@@ -49,4 +50,20 @@ pub async fn get_case_areas(
     case_id: i64,
 ) -> Result<Vec<String>, String> {
     super::service::get_areas_for_case(&state.db, case_id)
+}
+#[tauri::command]
+pub async fn save_case_relationships(
+    state: State<'_, AppState>,
+    case_id: i64,
+    relationships: Vec<CaseRelationshipData>,
+) -> Result<(), String> {
+    super::service::save_case_relationships(&state.db, case_id, relationships)
+}
+
+#[tauri::command]
+pub async fn get_case_relationships(
+    state: State<'_, AppState>,
+    case_id: i64,
+) -> Result<Vec<CaseRelationshipData>, String> {
+    super::service::get_case_relationships(&state.db, case_id)
 }
