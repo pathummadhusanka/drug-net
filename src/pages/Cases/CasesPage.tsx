@@ -62,6 +62,13 @@ export default function CasesPage() {
 	const [selectedProfile, setSelectedProfile] =
 		useState<ProfileWithId | null>(null);
 	const [loadingProfile, setLoadingProfile] = useState(false);
+	const dividerClass = "text-muted-foreground";
+	const dividerText = "\u00A0\u00A0|\u00A0\u00A0";
+
+	// Replace one or more consecutive newlines with a single backslash
+	const formatTextWithNewlineIndicator = (text: string) => {
+		return text.replace(/[\r\n]+/g, " \\ ");
+	};
 
 	useEffect(() => {
 		fetchCases();
@@ -297,12 +304,22 @@ export default function CasesPage() {
 									<div className="flex-1 space-y-1">
 										{/* Line 1: Case ID | Case Title */}
 										<p className="text-sm text-gray-700">
-											{[
-												caseItem.case_id,
-												caseItem.case_name,
-											]
-												.filter(Boolean)
-												.join(" | ")}
+											{caseItem.case_id && (
+												<span>{caseItem.case_id}</span>
+											)}
+											{caseItem.case_id &&
+												caseItem.case_name && (
+													<span
+														className={dividerClass}
+													>
+														{dividerText}
+													</span>
+												)}
+											{caseItem.case_name && (
+												<span>
+													{caseItem.case_name}
+												</span>
+											)}
 										</p>
 
 										{/* Line 2: Date, Time, Severity, Status, Description */}
@@ -315,22 +332,42 @@ export default function CasesPage() {
 												{(caseItem.case_date ||
 													caseItem.case_time) && (
 													<>
-														<span>
-															{[
-																caseItem.case_date
-																	? new Date(
-																			caseItem.case_date,
-																		).toLocaleDateString()
-																	: null,
-																caseItem.case_time,
-															]
-																.filter(Boolean)
-																.join(" | ")}
-														</span>
+														{caseItem.case_date && (
+															<span>
+																{new Date(
+																	caseItem.case_date,
+																).toLocaleDateString()}
+															</span>
+														)}
+														{caseItem.case_date &&
+															caseItem.case_time && (
+																<span
+																	className={
+																		dividerClass
+																	}
+																>
+																	{
+																		dividerText
+																	}
+																</span>
+															)}
+														{caseItem.case_time && (
+															<span>
+																{
+																	caseItem.case_time
+																}
+															</span>
+														)}
 														{(caseItem.severity_level ||
 															caseItem.status ||
 															caseItem.description) && (
-															<span>|</span>
+															<span
+																className={
+																	dividerClass
+																}
+															>
+																{dividerText}
+															</span>
 														)}
 													</>
 												)}
@@ -348,7 +385,13 @@ export default function CasesPage() {
 														</span>
 														{(caseItem.status ||
 															caseItem.description) && (
-															<span>|</span>
+															<span
+																className={
+																	dividerClass
+																}
+															>
+																{dividerText}
+															</span>
 														)}
 													</>
 												)}
@@ -360,16 +403,28 @@ export default function CasesPage() {
 															{caseItem.status}
 														</span>
 														{caseItem.description && (
-															<span>|</span>
+															<span
+																className={
+																	dividerClass
+																}
+															>
+																{dividerText}
+															</span>
 														)}
 													</>
 												)}
 												{caseItem.description && (
 													<span>
-														{caseItem.description
-															.length > 100
-															? `${caseItem.description.substring(0, 100)}...`
-															: caseItem.description}
+														{(() => {
+															const formatted =
+																formatTextWithNewlineIndicator(
+																	caseItem.description,
+																);
+															return formatted.length >
+																100
+																? `${formatted.substring(0, 100)}...`
+																: formatted;
+														})()}
 													</span>
 												)}
 											</div>
@@ -404,11 +459,17 @@ export default function CasesPage() {
 														{caseItem.profiles!.indexOf(
 															p,
 														) !==
-														caseItem.profiles!
-															.length -
-															1
-															? " | "
-															: ""}
+															caseItem.profiles!
+																.length -
+																1 && (
+															<span
+																className={
+																	dividerClass
+																}
+															>
+																{dividerText}
+															</span>
+														)}
 													</span>
 												))}
 											</div>
@@ -427,12 +488,29 @@ export default function CasesPage() {
 												Drugs
 											</Badge>
 											<p className="text-sm text-gray-700">
-												{caseItem.drugs
-													.map(
-														(d) =>
-															`${d.drug_name} (${d.quantity} ${d.quantified_by})`,
-													)
-													.join(" | ")}
+												{caseItem.drugs.map(
+													(d, index) => (
+														<span
+															key={`${d.drug_name}-${index}`}
+														>
+															{`${d.drug_name} (${d.quantity} ${d.quantified_by})`}
+															{index !==
+																caseItem.drugs!
+																	.length -
+																	1 && (
+																<span
+																	className={
+																		dividerClass
+																	}
+																>
+																	{
+																		dividerText
+																	}
+																</span>
+															)}
+														</span>
+													),
+												)}
 											</p>
 										</div>
 									)}
@@ -449,7 +527,29 @@ export default function CasesPage() {
 												Areas
 											</Badge>
 											<p className="text-sm text-gray-700">
-												{caseItem.areas.join(" | ")}
+												{caseItem.areas.map(
+													(area, index) => (
+														<span
+															key={`${area}-${index}`}
+														>
+															{area}
+															{index !==
+																caseItem.areas!
+																	.length -
+																	1 && (
+																<span
+																	className={
+																		dividerClass
+																	}
+																>
+																	{
+																		dividerText
+																	}
+																</span>
+															)}
+														</span>
+													),
+												)}
 											</p>
 										</div>
 									)}
@@ -465,7 +565,9 @@ export default function CasesPage() {
 											Notes
 										</Badge>
 										<p className="text-sm text-gray-700 truncate">
-											{caseItem.notes}
+											{formatTextWithNewlineIndicator(
+												caseItem.notes,
+											)}
 										</p>
 									</div>
 								)}
@@ -475,8 +577,11 @@ export default function CasesPage() {
 										Created At:{" "}
 										{new Date(
 											caseItem.created_at,
-										).toLocaleDateString()}{" "}
-										| Updated At:{" "}
+										).toLocaleDateString()}
+										<span className={dividerClass}>
+											{dividerText}
+										</span>
+										Updated At:{" "}
 										{new Date(
 											caseItem.created_at,
 										).toLocaleDateString()}
