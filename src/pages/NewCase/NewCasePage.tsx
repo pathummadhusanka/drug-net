@@ -610,6 +610,10 @@ export default function NewCasePage() {
 		return `${drug.name} (${drug.quantified_by})`;
 	};
 
+	const isValidDrugQuantity = (value: string) => {
+		return /^(\d+(\.\d+)?|\.\d+)$/.test(value);
+	};
+
 	const handleDrugSelect = (drugId: number) => {
 		if (!selectedDrugs[drugId]) {
 			setSelectedDrugs({ ...selectedDrugs, [drugId]: "" });
@@ -1022,6 +1026,21 @@ export default function NewCasePage() {
 						return;
 					}
 
+					const invalidDrugQuantity = Object.entries(
+						selectedDrugs,
+					).find(
+						([_, quantity]) =>
+							quantity.trim() !== "" &&
+							!isValidDrugQuantity(quantity.trim()),
+					);
+
+					if (invalidDrugQuantity) {
+						toast.error("Drug quantity must be a valid number", {
+							position: "top-center",
+						});
+						return;
+					}
+
 					try {
 						// Create case with areas and get case ID
 						const newCaseId = await createCaseWithAreas(
@@ -1126,7 +1145,7 @@ export default function NewCasePage() {
 							.filter(([_, quantity]) => quantity.trim() !== "")
 							.map(([drugIdStr, quantity]) => ({
 								drug_id: Number(drugIdStr),
-								quantity,
+								quantity: quantity.trim(),
 							}));
 
 						if (caseDrugs.length > 0) {
@@ -2078,40 +2097,51 @@ export default function NewCasePage() {
 															getDrugDisplayName(
 																drug,
 															);
-														return (
-															!(
-																drug.id in
-																selectedDrugs
-															) &&
-															displayName
-																.toLowerCase()
-																.includes(
-																	drugSearch.toLowerCase(),
-																)
-														);
+														return displayName
+															.toLowerCase()
+															.includes(
+																drugSearch.toLowerCase(),
+															);
 													})
 													.map((drug) => {
 														const displayName =
 															getDrugDisplayName(
 																drug,
 															);
+														const isDrugSelected =
+															drug.id in
+															selectedDrugs;
 														return (
 															<ComboboxItem
 																key={drug.id}
 																value={
 																	displayName
 																}
+																disabled={
+																	isDrugSelected
+																}
 																onClick={() => {
-																	handleDrugSelect(
-																		drug.id,
-																	);
-																	setDrugSearch(
-																		"",
-																	);
+																	if (
+																		!isDrugSelected
+																	) {
+																		handleDrugSelect(
+																			drug.id,
+																		);
+																		setDrugSearch(
+																			"",
+																		);
+																	}
 																}}
-																className="cursor-pointer"
+																className={
+																	isDrugSelected
+																		? "opacity-50"
+																		: "cursor-pointer"
+																}
 															>
 																{displayName}
+																{isDrugSelected
+																	? " (selected)"
+																	: ""}
 															</ComboboxItem>
 														);
 													})}
@@ -2136,6 +2166,11 @@ export default function NewCasePage() {
 												if (!drug) return null;
 												const displayName =
 													getDrugDisplayName(drug);
+												const hasQuantityError =
+													quantity.trim() !== "" &&
+													!isValidDrugQuantity(
+														quantity.trim(),
+													);
 												return (
 													<div
 														key={drugId}
@@ -2148,20 +2183,27 @@ export default function NewCasePage() {
 															>
 																{displayName}:
 															</Label>
-															<Input
-																id={`quantity-${drugId}`}
-																type="text"
-																placeholder="Enter quantity"
-																value={quantity}
-																onChange={(e) =>
-																	handleDrugQuantityChange(
-																		drugId,
-																		e.target
-																			.value,
-																	)
-																}
-																className="flex-1"
-															/>
+															<div className="flex-1 flex items-center gap-2">
+																<Input
+																	id={`quantity-${drugId}`}
+																	type="text"
+																	inputMode="decimal"
+																	placeholder="Enter quantity"
+																	value={
+																		quantity
+																	}
+																	onChange={(
+																		e,
+																	) =>
+																		handleDrugQuantityChange(
+																			drugId,
+																			e
+																				.target
+																				.value,
+																		)
+																	}
+																/>
+															</div>
 														</div>
 														<Button
 															type="button"
@@ -2176,6 +2218,12 @@ export default function NewCasePage() {
 														>
 															<X className="h-4 w-4" />
 														</Button>
+														{hasQuantityError && (
+															<p className="text-xs text-red-500/70 whitespace-nowrap">
+																Quantity must be
+																a number
+															</p>
+														)}
 													</div>
 												);
 											},
