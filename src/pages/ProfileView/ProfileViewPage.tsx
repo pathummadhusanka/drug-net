@@ -494,7 +494,7 @@ export default function ProfileView() {
 
 			// Open dialog for edge label/name
 			setPendingConnection(params);
-			setConnectionLabel("");
+			setConnectionLabel("supporter");
 			setIsConnectionDialogOpen(true);
 		},
 		[edges],

@@ -502,7 +502,7 @@ export default function NewCasePage() {
 			}
 
 			setPendingConnection(params);
-			setConnectionLabel("");
+			setConnectionLabel("supporter");
 			setIsConnectionDialogOpen(true);
 		},
 		[edges],
