@@ -1106,7 +1106,7 @@ export default function NewCasePage() {
 								>
 									<DialogContent className="sm:max-w-md">
 										<form onSubmit={handleConnectionSubmit}>
-											<DialogHeader>
+											<DialogHeader className="px-1 pb-1">
 												<DialogTitle>
 													{editingEdgeId
 														? "Edit"
@@ -1183,7 +1183,7 @@ export default function NewCasePage() {
 													/>
 												</Field>
 											</div>
-											<DialogFooter>
+											<DialogFooter className="px-1 pt-1">
 												<div className="flex w-full justify-between">
 													<DialogClose asChild>
 														<Button
@@ -1229,7 +1229,7 @@ export default function NewCasePage() {
 													to this case network
 												</DialogDescription>
 											</DialogHeader>
-											<div className="grid gap-4 py-4 px-1 max-h-[65vh] overflow-y-auto pr-1">
+											<div className="grid gap-4 my-2 py-4 px-1 max-h-[65vh] overflow-y-auto pr-1">
 												<div className="grid gap-2">
 													<Label htmlFor="new-profile-full-name">
 														Full Name
@@ -1352,9 +1352,7 @@ export default function NewCasePage() {
 														/500
 													</div>
 												</div>
-											</div>
-											<DialogFooter>
-												<div className="flex w-full justify-between gap-2">
+												<div className="flex w-full justify-between gap-2 pt-2">
 													<Button
 														type="button"
 														variant="outline"
@@ -1388,7 +1386,7 @@ export default function NewCasePage() {
 														</Button>
 													</div>
 												</div>
-											</DialogFooter>
+											</div>
 										</form>
 									</DialogContent>
 								</Dialog>
