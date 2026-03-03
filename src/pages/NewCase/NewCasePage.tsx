@@ -87,8 +87,9 @@ import {
 	Calendar,
 	Check,
 	ChevronLeft,
+	CircleHelp,
 	Clock,
-	Info,
+	Pencil,
 	Trash2,
 	User,
 	UserPlus,
@@ -223,7 +224,7 @@ const BubbleProfileNode = ({
 							className="h-4 w-4 shrink-0 cursor-pointer rounded-full bg-white text-gray-500 shadow-sm hover:bg-gray-100 hover:text-gray-700"
 							title="Show profile info"
 						>
-							<Info className="mx-auto h-2.5 w-2.5" />
+							<CircleHelp className="mx-auto h-2.5 w-2.5" />
 						</button>
 					</TooltipTrigger>
 					<TooltipContent className="rounded-md bg-slate-900 p-3 text-white">
@@ -245,7 +246,7 @@ const BubbleProfileNode = ({
 								className="h-4 w-4 shrink-0 cursor-pointer rounded-full bg-white text-gray-500 shadow-sm hover:bg-red-100 hover:text-red-600"
 								title="Delete profile"
 							>
-								<X className="mx-auto h-2.5 w-2.5" />
+								<Trash2 className="mx-auto h-2.5 w-2.5" />
 							</button>
 						</AlertDialogTrigger>
 						<AlertDialogContent>
@@ -434,10 +435,10 @@ const CustomEdge = ({
 						<button
 							type="button"
 							onClick={handleEdgeEditClick}
-							className="w-4 h-4 rounded-full border border-gray-300 text-[10px] leading-none text-gray-500 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center cursor-pointer"
+							className="w-4 h-4 rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center cursor-pointer"
 							title="Edit connection"
 						>
-							✎
+							<Pencil className="h-2.5 w-2.5" />
 						</button>
 					</div>
 				</div>
