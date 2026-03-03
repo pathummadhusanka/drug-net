@@ -508,6 +508,16 @@ export default function NewCasePage() {
 
 	const addNode = useCallback(
 		(profile: ProfileWithId) => {
+			// Check if profile is already on canvas
+			const profileExists = nodes.some(
+				(node) => node.data?.profileId === profile.id,
+			);
+
+			if (profileExists) {
+				toast.error("Profile already added to canvas");
+				return;
+			}
+
 			const displayName = profile.alias
 				? `${profile.full_name} (${profile.alias})`
 				: profile.full_name;
@@ -532,7 +542,7 @@ export default function NewCasePage() {
 			setNodes((nds) => [...nds, newNode]);
 			setNodeId((id) => id + 1);
 		},
-		[nodeId, setNodes, handleNodeDelete, edges],
+		[nodeId, nodes, setNodes, handleNodeDelete, edges],
 	);
 
 	useEffect(() => {
@@ -1515,47 +1525,67 @@ export default function NewCasePage() {
 													}
 
 													return filteredProfiles.map(
-														({ profile }) => (
-															<button
-																key={profile.id}
-																type="button"
-																onClick={() => {
-																	addNode(
-																		profile,
-																	);
-																	setIsAddProfileDialogOpen(
-																		false,
-																	);
-																	setProfileSearch(
-																		"",
-																	);
-																}}
-																className="w-full border-b px-3 py-2 text-left last:border-b-0 hover:bg-muted/50"
-															>
-																<div className="flex flex-col">
-																	<span className="font-medium">
-																		{
-																			profile.full_name
-																		}
-																	</span>
-																	{profile.alias && (
-																		<span className="text-sm text-muted-foreground">
-																			Alias:{" "}
+														({ profile }) => {
+															const isProfileAdded =
+																nodes.some(
+																	(node) =>
+																		node
+																			.data
+																			?.profileId ===
+																		profile.id,
+																);
+
+															return (
+																<button
+																	key={
+																		profile.id
+																	}
+																	type="button"
+																	disabled={
+																		isProfileAdded
+																	}
+																	onClick={() => {
+																		addNode(
+																			profile,
+																		);
+																		setIsAddProfileDialogOpen(
+																			false,
+																		);
+																		setProfileSearch(
+																			"",
+																		);
+																	}}
+																	className={`w-full border-b px-3 py-2 text-left last:border-b-0 ${
+																		isProfileAdded
+																			? "opacity-50 cursor-not-allowed bg-muted/30 hover:bg-muted/30"
+																			: "hover:bg-muted/50 cursor-pointer"
+																	}`}
+																>
+																	<div className="flex flex-col">
+																		<span className="font-medium">
 																			{
-																				profile.alias
+																				profile.full_name
 																			}
 																		</span>
-																	)}
-																	{profile.city && (
-																		<span className="text-xs text-muted-foreground">
-																			{
-																				profile.city
-																			}
-																		</span>
-																	)}
-																</div>
-															</button>
-														),
+																		{profile.alias && (
+																			<span className="text-sm text-muted-foreground">
+																				Alias:{" "}
+																				{
+																					profile.alias
+																				}
+																			</span>
+																		)}
+																		{profile.city && (
+																			<span className="text-xs text-muted-foreground">
+																				{
+																					profile.city
+																				}
+																			</span>
+																		)}
+																	</div>
+																</button>
+															);
+														},
 													);
 												})()}
 											</div>
