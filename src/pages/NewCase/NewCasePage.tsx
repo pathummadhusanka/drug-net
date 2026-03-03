@@ -358,14 +358,17 @@ const CustomEdge = ({
 	const dy = resolvedTargetY - resolvedSourceY;
 	const length = Math.sqrt(dx * dx + dy * dy);
 
-	// Node radius (circles are 48px diameter)
+	// Node radius (circles are 48px diameter) + arrow offset
 	const nodeRadius = 24;
+	const arrowOffset = 8; // Extra space for arrow marker
 
 	// Calculate edge endpoints at circle circumference
 	const edgeSourceX = resolvedSourceX + (dx / length) * nodeRadius;
 	const edgeSourceY = resolvedSourceY + (dy / length) * nodeRadius;
-	const edgeTargetX = resolvedTargetX - (dx / length) * nodeRadius;
-	const edgeTargetY = resolvedTargetY - (dy / length) * nodeRadius;
+	const edgeTargetX =
+		resolvedTargetX - (dx / length) * (nodeRadius + arrowOffset);
+	const edgeTargetY =
+		resolvedTargetY - (dy / length) * (nodeRadius + arrowOffset);
 
 	const midX = (edgeSourceX + edgeTargetX) / 2;
 	const midY = (edgeSourceY + edgeTargetY) / 2;
