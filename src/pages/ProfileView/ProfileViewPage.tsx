@@ -2217,9 +2217,24 @@ export default function ProfileView() {
 																open={
 																	isConnectionDialogOpen
 																}
-																onOpenChange={
-																	setIsConnectionDialogOpen
-																}
+																onOpenChange={(
+																	open,
+																) => {
+																	setIsConnectionDialogOpen(
+																		open,
+																	);
+																	if (!open) {
+																		setPendingConnection(
+																			null,
+																		);
+																		setConnectionLabel(
+																			"",
+																		);
+																		setEditingEdgeId(
+																			null,
+																		);
+																	}
+																}}
 															>
 																<DialogContent className="sm:max-w-md">
 																	<form

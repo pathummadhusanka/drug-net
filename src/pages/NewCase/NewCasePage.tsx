@@ -1294,7 +1294,14 @@ export default function NewCasePage() {
 
 								<Dialog
 									open={isConnectionDialogOpen}
-									onOpenChange={setIsConnectionDialogOpen}
+									onOpenChange={(open) => {
+										setIsConnectionDialogOpen(open);
+										if (!open) {
+											setPendingConnection(null);
+											setConnectionLabel("");
+											setEditingEdgeId(null);
+										}
+									}}
 								>
 									<DialogContent className="sm:max-w-md">
 										<form onSubmit={handleConnectionSubmit}>
