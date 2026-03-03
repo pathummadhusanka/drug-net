@@ -501,7 +501,8 @@ export default function CaseViewPage() {
 				minDistance: number,
 			): { x: number; y: number } => {
 				const margin = 100;
-				const maxAttempts = 100;
+				const maxAttempts = 300;
+				const maxCollinearDeviation = 0.14;
 
 				for (let attempt = 0; attempt < maxAttempts; attempt++) {
 					const x =
@@ -517,7 +518,48 @@ export default function CaseViewPage() {
 						return distance >= minDistance;
 					});
 
-					if (isFarEnough) {
+					if (!isFarEnough) {
+						continue;
+					}
+
+					// Prevent 3 nodes from aligning on almost the same straight line
+					let createsCollinearTriple = false;
+					for (
+						let i = 0;
+						i < existingPositions.length - 1 &&
+						!createsCollinearTriple;
+						i++
+					) {
+						for (let j = i + 1; j < existingPositions.length; j++) {
+							const p1 = existingPositions[i];
+							const p2 = existingPositions[j];
+
+							const lineDx = p2.x - p1.x;
+							const lineDy = p2.y - p1.y;
+							const lineLength = Math.sqrt(
+								lineDx * lineDx + lineDy * lineDy,
+							);
+
+							if (lineLength < 1) {
+								continue;
+							}
+
+							const areaTwice = Math.abs(
+								lineDx * (y - p1.y) - lineDy * (x - p1.x),
+							);
+							const deviation = areaTwice / lineLength;
+
+							if (
+								deviation <
+								minDistance * maxCollinearDeviation
+							) {
+								createsCollinearTriple = true;
+								break;
+							}
+						}
+					}
+
+					if (!createsCollinearTriple) {
 						return { x, y };
 					}
 				}
