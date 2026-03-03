@@ -70,6 +70,13 @@ export default function CasesPage() {
 		return text.replace(/[\r\n]+/g, " \\ ");
 	};
 
+	// Truncate text to maximum 20 characters with ellipsis
+	const truncateName = (name: string, maxLength: number = 20) => {
+		return name.length > maxLength
+			? `${name.substring(0, maxLength)}...`
+			: name;
+	};
+
 	useEffect(() => {
 		fetchCases();
 	}, []);
@@ -317,7 +324,9 @@ export default function CasesPage() {
 												)}
 											{caseItem.case_name && (
 												<span>
-													{caseItem.case_name}
+													{truncateName(
+														caseItem.case_name,
+													)}
 												</span>
 											)}
 										</p>
@@ -455,7 +464,7 @@ export default function CasesPage() {
 														}}
 														className="cursor-pointer hover:underline text-blue-600 hover:text-blue-800"
 													>
-														{p[1]}
+														{truncateName(p[1])}
 														{caseItem.profiles!.indexOf(
 															p,
 														) !==
@@ -493,7 +502,7 @@ export default function CasesPage() {
 														<span
 															key={`${d.drug_name}-${index}`}
 														>
-															{`${d.drug_name} (${d.quantity} ${d.quantified_by})`}
+															{`${truncateName(d.drug_name)} (${d.quantity} ${d.quantified_by})`}
 															{index !==
 																caseItem.drugs!
 																	.length -
@@ -604,8 +613,10 @@ export default function CasesPage() {
 						<AlertDialogDescription>
 							Are you sure you want to delete case{" "}
 							<strong>{caseToDelete?.cno}</strong> (
-							{caseToDelete?.case_name})? This action cannot be
-							undone.
+							{caseToDelete?.case_name
+								? truncateName(caseToDelete.case_name)
+								: ""}
+							)? This action cannot be undone.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
@@ -629,7 +640,9 @@ export default function CasesPage() {
 				<AlertDialogContent className="max-w-md">
 					<AlertDialogHeader>
 						<AlertDialogTitle>
-							{selectedProfile?.full_name || "Profile Details"}
+							{selectedProfile?.full_name
+								? truncateName(selectedProfile.full_name)
+								: "Profile Details"}
 						</AlertDialogTitle>
 					</AlertDialogHeader>
 					{loadingProfile ? (
@@ -644,7 +657,7 @@ export default function CasesPage() {
 										Alias:
 									</span>
 									<span className="ml-2">
-										{selectedProfile.alias}
+										{truncateName(selectedProfile.alias)}
 									</span>
 								</div>
 							)}
