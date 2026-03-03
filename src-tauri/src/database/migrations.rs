@@ -25,7 +25,8 @@ pub fn run_migrations(db: &DbConnection) -> Result<(), String> {
 
         CREATE TABLE IF NOT EXISTS drugs (
             id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL UNIQUE
+            name TEXT NOT NULL UNIQUE,
+            quantified_by TEXT NOT NULL DEFAULT 'grams'
         );
 
         CREATE TABLE IF NOT EXISTS profile_drugs (
@@ -97,6 +98,15 @@ pub fn run_migrations(db: &DbConnection) -> Result<(), String> {
             FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE,
             FOREIGN KEY (relationship_id) REFERENCES relationships(id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS case_drugs (
+            case_id INTEGER,
+            drug_id INTEGER,
+            quantity TEXT,
+            PRIMARY KEY (case_id, drug_id),
+            FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE,
+            FOREIGN KEY (drug_id) REFERENCES drugs(id) ON DELETE CASCADE
+        );
         "
     )
     .map_err(|e| e.to_string())?;
@@ -134,6 +144,46 @@ pub fn run_migrations(db: &DbConnection) -> Result<(), String> {
             Ok(_) => {}
             Err(e) if e.to_string().contains("duplicate column name") => {}
             Err(e) => return Err(e.to_string()),
+        }
+    }
+
+    // Add quantified_by column to drugs table if it doesn't exist
+    match conn.execute("ALTER TABLE drugs ADD COLUMN quantified_by TEXT NOT NULL DEFAULT 'grams'", []) {
+        Ok(_) => {}
+        Err(e) if e.to_string().contains("duplicate column name") => {}
+        Err(e) => return Err(e.to_string()),
+    }
+
+    // Seed drugs table with common drugs if empty
+    let drug_count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM drugs", [], |row| row.get(0))
+        .unwrap_or(0);
+
+    if drug_count == 0 {
+        let drugs = vec![
+            ("Heroin", "grams"),
+            ("Cocaine", "grams"),
+            ("Methamphetamine", "grams"),
+            ("Cannabis", "grams"),
+            ("MDMA (Ecstasy)", "pills"),
+            ("LSD", "tabs"),
+            ("Fentanyl", "grams"),
+            ("Amphetamine", "grams"),
+            ("Ketamine", "grams"),
+            ("PCP", "grams"),
+            ("Morphine", "grams"),
+            ("Codeine", "pills"),
+            ("Oxycodone", "pills"),
+            ("Hydrocodone", "pills"),
+            ("Methadone", "mg"),
+        ];
+
+        for (name, unit) in drugs {
+            conn.execute(
+                "INSERT OR IGNORE INTO drugs (name, quantified_by) VALUES (?1, ?2)",
+                [name, unit],
+            )
+            .map_err(|e| format!("Failed to seed drug {}: {}", name, e))?;
         }
     }
 

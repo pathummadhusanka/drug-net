@@ -9,6 +9,12 @@ import {
 } from "@/lib/cases";
 import { getAllAreas, type Area } from "@/lib/areas";
 import {
+	getAllDrugs,
+	saveCaseDrugs,
+	type Drug,
+	type CaseDrugData,
+} from "@/lib/drugs";
+import {
 	createProfile,
 	getAllProfiles,
 	type ProfileWithId,
@@ -509,9 +515,10 @@ export default function NewCasePage() {
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
 	const [selectedDrugs, setSelectedDrugs] = useState<{
-		[key: string]: string;
+		[key: number]: string;
 	}>({});
 	const [drugSearch, setDrugSearch] = useState("");
+	const [availableDrugs, setAvailableDrugs] = useState<Drug[]>([]);
 	const [areas, setAreas] = useState<string[]>([]);
 	const [pendingArea, setPendingArea] = useState("");
 	const [availableAreas, setAvailableAreas] = useState<Area[]>([]);
@@ -599,42 +606,24 @@ export default function NewCasePage() {
 		};
 	}, []);
 
-	const availableDrugs = [
-		{ name: "Heroin", unit: "grams" },
-		{ name: "Cocaine", unit: "grams" },
-		{ name: "Methamphetamine", unit: "grams" },
-		{ name: "Cannabis", unit: "grams" },
-		{ name: "MDMA (Ecstasy)", unit: "pills" },
-		{ name: "LSD", unit: "tabs" },
-		{ name: "Fentanyl", unit: "grams" },
-		{ name: "Amphetamine", unit: "grams" },
-		{ name: "Ketamine", unit: "grams" },
-		{ name: "PCP", unit: "grams" },
-		{ name: "Morphine", unit: "grams" },
-		{ name: "Codeine", unit: "pills" },
-		{ name: "Oxycodone", unit: "pills" },
-		{ name: "Hydrocodone", unit: "pills" },
-		{ name: "Methadone", unit: "mg" },
-	];
-
-	const getDrugDisplayName = (name: string, unit: string) => {
-		return `${name} (${unit})`;
+	const getDrugDisplayName = (drug: Drug) => {
+		return `${drug.name} (${drug.quantified_by})`;
 	};
 
-	const handleDrugSelect = (drugName: string) => {
-		if (!selectedDrugs[drugName]) {
-			setSelectedDrugs({ ...selectedDrugs, [drugName]: "" });
+	const handleDrugSelect = (drugId: number) => {
+		if (!selectedDrugs[drugId]) {
+			setSelectedDrugs({ ...selectedDrugs, [drugId]: "" });
 		}
 		setDrugSearch("");
 	};
 
-	const handleDrugQuantityChange = (drugName: string, quantity: string) => {
-		setSelectedDrugs({ ...selectedDrugs, [drugName]: quantity });
+	const handleDrugQuantityChange = (drugId: number, quantity: string) => {
+		setSelectedDrugs({ ...selectedDrugs, [drugId]: quantity });
 	};
 
-	const handleRemoveDrug = (drugName: string) => {
+	const handleRemoveDrug = (drugId: number) => {
 		const updatedDrugs = { ...selectedDrugs };
-		delete updatedDrugs[drugName];
+		delete updatedDrugs[drugId];
 		setSelectedDrugs(updatedDrugs);
 	};
 
@@ -945,7 +934,7 @@ export default function NewCasePage() {
 		}
 	};
 
-	// Fetch available areas and profiles on mount
+	// Fetch available areas, drugs, and profiles on mount
 	useEffect(() => {
 		const fetchAreas = async () => {
 			try {
@@ -956,7 +945,17 @@ export default function NewCasePage() {
 			}
 		};
 
+		const fetchDrugs = async () => {
+			try {
+				const drugs = await getAllDrugs();
+				setAvailableDrugs(drugs);
+			} catch (error) {
+				console.error("Failed to fetch drugs:", error);
+			}
+		};
+
 		fetchAreas();
+		fetchDrugs();
 		fetchProfiles();
 	}, [fetchProfiles]);
 
@@ -1118,6 +1117,21 @@ export default function NewCasePage() {
 								newCaseId,
 								relationships,
 							);
+						}
+
+						// Save case drugs if any exist
+						const caseDrugs: CaseDrugData[] = Object.entries(
+							selectedDrugs,
+						)
+							.filter(([_, quantity]) => quantity.trim() !== "")
+							.map(([drugIdStr, quantity]) => ({
+								drug_id: Number(drugIdStr),
+								quantity,
+							}));
+
+						if (caseDrugs.length > 0) {
+							console.log(`Saving ${caseDrugs.length} drugs`);
+							await saveCaseDrugs(newCaseId, caseDrugs);
 						}
 
 						toast.success("Case has been filed successfully!", {
@@ -2062,12 +2076,11 @@ export default function NewCasePage() {
 													.filter((drug) => {
 														const displayName =
 															getDrugDisplayName(
-																drug.name,
-																drug.unit,
+																drug,
 															);
 														return (
 															!(
-																displayName in
+																drug.id in
 																selectedDrugs
 															) &&
 															displayName
@@ -2080,20 +2093,17 @@ export default function NewCasePage() {
 													.map((drug) => {
 														const displayName =
 															getDrugDisplayName(
-																drug.name,
-																drug.unit,
+																drug,
 															);
 														return (
 															<ComboboxItem
-																key={
-																	displayName
-																}
+																key={drug.id}
 																value={
 																	displayName
 																}
 																onClick={() => {
 																	handleDrugSelect(
-																		displayName,
+																		drug.id,
 																	);
 																	setDrugSearch(
 																		"",
@@ -2116,48 +2126,59 @@ export default function NewCasePage() {
 											Selected Drugs
 										</Label>
 										{Object.entries(selectedDrugs).map(
-											([drugName, quantity]) => (
-												<div
-													key={drugName}
-													className="flex items-center gap-3"
-												>
-													<div className="flex-1 flex items-center gap-3">
-														<Label
-															htmlFor={`quantity-${drugName}`}
-															className="text-sm font-medium min-w-fit whitespace-nowrap"
-														>
-															{drugName}:
-														</Label>
-														<Input
-															id={`quantity-${drugName}`}
-															type="text"
-															placeholder="Enter quantity"
-															value={quantity}
-															onChange={(e) =>
-																handleDrugQuantityChange(
-																	drugName,
-																	e.target
-																		.value,
+											([drugIdStr, quantity]) => {
+												const drugId =
+													Number(drugIdStr);
+												const drug =
+													availableDrugs.find(
+														(d) => d.id === drugId,
+													);
+												if (!drug) return null;
+												const displayName =
+													getDrugDisplayName(drug);
+												return (
+													<div
+														key={drugId}
+														className="flex items-center gap-3"
+													>
+														<div className="flex-1 flex items-center gap-3">
+															<Label
+																htmlFor={`quantity-${drugId}`}
+																className="text-sm font-medium min-w-fit whitespace-nowrap"
+															>
+																{displayName}:
+															</Label>
+															<Input
+																id={`quantity-${drugId}`}
+																type="text"
+																placeholder="Enter quantity"
+																value={quantity}
+																onChange={(e) =>
+																	handleDrugQuantityChange(
+																		drugId,
+																		e.target
+																			.value,
+																	)
+																}
+																className="flex-1"
+															/>
+														</div>
+														<Button
+															type="button"
+															variant="ghost"
+															size="icon"
+															onClick={() =>
+																handleRemoveDrug(
+																	drugId,
 																)
 															}
-															className="flex-1"
-														/>
+															className="cursor-pointer"
+														>
+															<X className="h-4 w-4" />
+														</Button>
 													</div>
-													<Button
-														type="button"
-														variant="ghost"
-														size="icon"
-														onClick={() =>
-															handleRemoveDrug(
-																drugName,
-															)
-														}
-														className="cursor-pointer"
-													>
-														<X className="h-4 w-4" />
-													</Button>
-												</div>
-											),
+												);
+											},
 										)}
 									</div>
 								)}
