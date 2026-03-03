@@ -1218,7 +1218,7 @@ export default function NewCasePage() {
 										}
 									}}
 								>
-									<DialogContent className="sm:max-w-2xl">
+									<DialogContent className="sm:max-w-2xl px-6">
 										<form onSubmit={handleCreateNewProfile}>
 											<DialogHeader>
 												<DialogTitle>
@@ -1229,7 +1229,7 @@ export default function NewCasePage() {
 													to this case network
 												</DialogDescription>
 											</DialogHeader>
-											<div className="grid gap-4 py-4 max-h-[65vh] overflow-y-auto pr-1">
+											<div className="grid gap-4 py-4 px-1 max-h-[65vh] overflow-y-auto pr-1">
 												<div className="grid gap-2">
 													<Label htmlFor="new-profile-full-name">
 														Full Name
