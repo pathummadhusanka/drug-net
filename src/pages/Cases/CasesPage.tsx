@@ -502,7 +502,7 @@ export default function CasesPage() {
 														<span
 															key={`${d.drug_name}-${index}`}
 														>
-															{`${truncateName(d.drug_name)} (${d.quantity} ${d.quantified_by})`}
+															{`${truncateName(d.drug_name)}(${d.quantified_by}): ${d.quantity}`}
 															{index !==
 																caseItem.drugs!
 																	.length -

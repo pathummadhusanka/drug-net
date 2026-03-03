@@ -72,7 +72,8 @@ pub fn run_migrations(db: &DbConnection) -> Result<(), String> {
             notes TEXT,
             case_date TEXT,
             case_time TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
         CREATE TABLE IF NOT EXISTS case_profiles (
@@ -134,6 +135,7 @@ pub fn run_migrations(db: &DbConnection) -> Result<(), String> {
         "notes",
         "case_date",
         "case_time",
+        "updated_at",
     ];
 
     for column in case_columns.iter() {
@@ -146,6 +148,14 @@ pub fn run_migrations(db: &DbConnection) -> Result<(), String> {
             Err(e) => return Err(e.to_string()),
         }
     }
+
+    conn.execute(
+        "UPDATE cases
+         SET updated_at = COALESCE(updated_at, created_at, CURRENT_TIMESTAMP)
+         WHERE updated_at IS NULL",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
 
     // Add quantified_by column to drugs table if it doesn't exist
     match conn.execute("ALTER TABLE drugs ADD COLUMN quantified_by TEXT NOT NULL DEFAULT 'grams'", []) {

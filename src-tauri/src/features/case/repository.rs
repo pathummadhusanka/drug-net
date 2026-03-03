@@ -49,7 +49,7 @@ pub fn get_case_by_id(db: &DbConnection, id: i64) -> Result<Option<CaseWithDetai
         .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
 
     let mut stmt = conn.prepare(
-        "SELECT id, cno, case_id, case_name, description, case_type, status, severity_level, notes, case_date, case_time, created_at 
+        "SELECT id, cno, case_id, case_name, description, case_type, status, severity_level, notes, case_date, case_time, created_at, updated_at 
          FROM cases 
          WHERE id = ?1"
     )
@@ -69,6 +69,7 @@ pub fn get_case_by_id(db: &DbConnection, id: i64) -> Result<Option<CaseWithDetai
             case_date: row.get(9)?,
             case_time: row.get(10)?,
             created_at: row.get(11)?,
+            updated_at: row.get(12)?,
         })
     });
 
@@ -84,7 +85,7 @@ pub fn get_all_cases(db: &DbConnection) -> Result<Vec<CaseWithDetails>, String> 
         .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
 
     let mut stmt = conn.prepare(
-        "SELECT id, cno, case_id, case_name, description, case_type, status, severity_level, notes, case_date, case_time, created_at 
+        "SELECT id, cno, case_id, case_name, description, case_type, status, severity_level, notes, case_date, case_time, created_at, updated_at 
          FROM cases 
          ORDER BY created_at DESC"
     )
@@ -104,6 +105,7 @@ pub fn get_all_cases(db: &DbConnection) -> Result<Vec<CaseWithDetails>, String> 
             case_date: row.get(9)?,
             case_time: row.get(10)?,
             created_at: row.get(11)?,
+            updated_at: row.get(12)?,
         })
     })
     .map_err(|e| format!("Query error: {}", e))?
@@ -139,7 +141,7 @@ pub fn get_cases_by_profile_id(
         .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
 
     let mut stmt = conn.prepare(
-        "SELECT c.id, c.cno, c.case_id, c.case_name, c.description, c.case_type, c.status, c.severity_level, c.notes, c.case_date, c.case_time, c.created_at
+        "SELECT c.id, c.cno, c.case_id, c.case_name, c.description, c.case_type, c.status, c.severity_level, c.notes, c.case_date, c.case_time, c.created_at, c.updated_at
          FROM cases c
          JOIN case_profiles cp ON cp.case_id = c.id
          WHERE cp.profile_id = ?1
@@ -161,6 +163,7 @@ pub fn get_cases_by_profile_id(
             case_date: row.get(9)?,
             case_time: row.get(10)?,
             created_at: row.get(11)?,
+            updated_at: row.get(12)?,
         })
     })
     .map_err(|e| format!("Query error: {}", e))?

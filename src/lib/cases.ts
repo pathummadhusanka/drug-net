@@ -26,6 +26,7 @@ export interface CaseWithDetails {
 	case_date: string | null;
 	case_time: string | null;
 	created_at: string | null;
+	updated_at: string | null;
 }
 
 export interface CaseRelationshipData {

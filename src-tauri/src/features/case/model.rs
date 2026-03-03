@@ -27,6 +27,7 @@ pub struct CaseWithDetails {
     pub case_date: Option<String>,
     pub case_time: Option<String>,
     pub created_at: Option<String>,
+    pub updated_at: Option<String>,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CaseRelationshipData {
