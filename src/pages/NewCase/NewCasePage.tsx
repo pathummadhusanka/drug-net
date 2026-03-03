@@ -46,6 +46,11 @@ import {
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
 	Background,
 	BackgroundVariant,
 	Controls,
@@ -83,6 +88,7 @@ const CustomNode = ({
 		profileId?: number;
 		fullName?: string;
 		alias?: string | null;
+		nic?: string | null;
 		city?: string | null;
 		isCurrentProfile?: boolean;
 		onDelete?: (id: string) => void;
@@ -118,11 +124,10 @@ const CustomNode = ({
 
 	// Build tooltip with profile details
 	const tooltipParts = [];
-	if (data.fullName) tooltipParts.push(`Full name: ${data.fullName}`);
+	if (data.fullName) tooltipParts.push(data.fullName);
+	if (data.nic) tooltipParts.push(`NIC: ${data.nic}`);
 	if (data.alias) tooltipParts.push(`Alias: ${data.alias}`);
 	if (data.city) tooltipParts.push(`City: ${data.city}`);
-	const tooltip =
-		tooltipParts.length > 0 ? tooltipParts.join("\n") : data.label;
 
 	return (
 		<div
@@ -137,14 +142,27 @@ const CustomNode = ({
 			<Handle type="source" position={Position.Bottom} id="bottom" />
 			<Handle type="source" position={Position.Left} id="left" />
 			<div className="flex items-start justify-between gap-2">
-				<div className="flex flex-col" title={tooltip}>
-					<div className="font-medium text-sm">{displayName}</div>
-					{displayAlias && (
-						<div className="text-xs opacity-80 italic">
-							{displayAlias}
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<div className="flex flex-col cursor-help">
+							<div className="font-medium text-sm">
+								{displayName}
+							</div>
+							{displayAlias && (
+								<div className="text-xs opacity-80 italic">
+									{displayAlias}
+								</div>
+							)}
 						</div>
-					)}
-				</div>
+					</TooltipTrigger>
+					<TooltipContent className="bg-slate-900 text-white p-3 rounded-md">
+						<div className="text-sm space-y-1">
+							{tooltipParts.map((part, idx) => (
+								<div key={idx}>{part}</div>
+							))}
+						</div>
+					</TooltipContent>
+				</Tooltip>
 				{data.onDelete && (
 					<AlertDialog>
 						<AlertDialogTrigger asChild>
@@ -335,6 +353,7 @@ export default function NewCasePage() {
 							label: defaultProfile.full_name,
 							profileId: defaultProfile.id,
 							fullName: defaultProfile.full_name,
+							nic: defaultProfile.nic,
 							alias: defaultProfile.alias,
 							city: defaultProfile.city,
 							isCurrentProfile: true,
@@ -552,6 +571,7 @@ export default function NewCasePage() {
 					label: displayName,
 					profileId: profile.id,
 					fullName: profile.full_name,
+					nic: profile.nic,
 					alias: profile.alias,
 					city: profile.city,
 					onDelete: handleNodeDelete,

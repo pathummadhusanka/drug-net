@@ -4,6 +4,7 @@
 import "./App.css";
 import { AppRouter } from "@/routes/AppRouter";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 // import { Button } from "@/components/ui/button";
 
@@ -17,10 +18,10 @@ function App() {
 	// }
 
 	return (
-		<>
+		<TooltipProvider>
 			<AppRouter />
 			<Toaster />
-		</>
+		</TooltipProvider>
 	);
 
 	// return (
