@@ -43,7 +43,7 @@ import {
 import { toast } from "sonner";
 
 interface CaseDetails extends CaseWithDetails {
-	drugs?: { drug_name: string; quantity: string }[];
+	drugs?: { drug_name: string; quantity: string; quantified_by: string }[];
 	areas?: string[];
 	profiles?: [number, string][];
 	relationships?: {
@@ -333,7 +333,8 @@ export default function CaseViewPage() {
 							<p className="text-sm text-gray-700">
 								{caseData.drugs
 									.map(
-										(d) => `${d.drug_name} (${d.quantity})`,
+										(d) =>
+											`${d.drug_name} (${d.quantity} ${d.quantified_by})`,
 									)
 									.join(", ")}
 							</p>

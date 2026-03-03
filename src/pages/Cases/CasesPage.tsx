@@ -38,6 +38,8 @@ import {
 	AlertCircle,
 	MoreVertical,
 	Trash2,
+	FileText,
+	MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -46,7 +48,7 @@ interface CaseWithMetadata extends CaseWithDetails {
 	hasAreas: boolean;
 	hasNetwork: boolean;
 	profileCount: number;
-	drugs?: { drug_name: string; quantity: string }[];
+	drugs?: { drug_name: string; quantity: string; quantified_by: string }[];
 	areas?: string[];
 	profiles?: [number, string][]; // [profile_id, profile_name]
 	relationships?: {
@@ -271,83 +273,114 @@ export default function CasesPage() {
 					cases.map((caseItem) => (
 						<Card
 							key={caseItem.id}
-							className="cursor-pointer hover:shadow-md transition-shadow"
+							className="cursor-pointer hover:shadow-md transition-shadow gap-2"
 							onClick={() => navigate(`/case/${caseItem.id}`)}
 						>
 							{/* Card Header */}
-							<CardHeader className="pb-3">
-								<div className="space-y-2">
-									<div className="flex justify-between items-start">
-										<div className="flex-1">
-											<div className="flex items-baseline gap-2">
-												<code className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
-													{caseItem.cno}
-												</code>
-												<h3 className="text-lg font-semibold">
-													{caseItem.case_name}
-												</h3>
-											</div>
+							<CardHeader className="pt-1 pb-0 px-6 !space-y-0">
+								<div className="flex justify-between items-start">
+									<div className="flex-1">
+										<div className="flex items-baseline gap-2">
+											<code className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+												{caseItem.cno}
+											</code>
+											<h3 className="text-lg font-semibold">
+												{caseItem.case_name}
+											</h3>
 										</div>
-										<div className="flex items-center gap-2">
-											<span
-												className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(caseItem.status)}`}
-											>
-												{caseItem.status || "Unknown"}
-											</span>
-											<DropdownMenu>
-												<DropdownMenuTrigger asChild>
-													<Button
-														variant="secondary"
-														size="sm"
-														className="cursor-pointer"
-														onClick={(e) =>
-															e.stopPropagation()
-														}
-													>
-														<MoreVertical className="h-4 w-4" />
-													</Button>
-												</DropdownMenuTrigger>
-												<DropdownMenuContent
-													align="end"
-													className="w-44"
+									</div>
+									<div className="flex items-center gap-2">
+										<span
+											className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(caseItem.status)}`}
+										>
+											{caseItem.status || "Unknown"}
+										</span>
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild>
+												<Button
+													variant="secondary"
+													size="sm"
+													className="cursor-pointer"
+													onClick={(e) =>
+														e.stopPropagation()
+													}
 												>
-													<DropdownMenuItem
-														onSelect={(event) => {
-															event.preventDefault();
-															navigate(
-																`/new-case/${caseItem.id}`,
-															);
-														}}
-													>
-														Edit Case
-													</DropdownMenuItem>
-													<DropdownMenuSeparator />
-													<DropdownMenuItem
-														variant="destructive"
-														onSelect={(event) => {
-															event.preventDefault();
-															setCaseToDelete(
-																caseItem,
-															);
-															setDeleteDialogOpen(
-																true,
-															);
-														}}
-														disabled={isDeleting}
-													>
-														<Trash2 className="h-4 w-4" />
-														Delete Case
-													</DropdownMenuItem>
-												</DropdownMenuContent>
-											</DropdownMenu>
-										</div>
+													<MoreVertical className="h-4 w-4" />
+												</Button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent
+												align="end"
+												className="w-44"
+											>
+												<DropdownMenuItem
+													onSelect={(event) => {
+														event.preventDefault();
+														navigate(
+															`/new-case/${caseItem.id}`,
+														);
+													}}
+												>
+													Edit Case
+												</DropdownMenuItem>
+												<DropdownMenuSeparator />
+												<DropdownMenuItem
+													variant="destructive"
+													onSelect={(event) => {
+														event.preventDefault();
+														setCaseToDelete(
+															caseItem,
+														);
+														setDeleteDialogOpen(
+															true,
+														);
+													}}
+													disabled={isDeleting}
+												>
+													<Trash2 className="h-4 w-4" />
+													Delete Case
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
 									</div>
 								</div>
 							</CardHeader>
 
 							{/* Always visible section - Details with badges */}
 							<CardContent className="pt-0 space-y-2 pb-3">
-								{/* Profiles Badge + Details */}
+								{/* Details Badge - Date, Time, Description */}
+								{(caseItem.case_date ||
+									caseItem.case_time ||
+									caseItem.description) && (
+									<div className="flex items-start gap-2">
+										<Badge
+											variant="outline"
+											className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+										>
+											<FileText className="h-3 w-3" />
+											Details
+										</Badge>
+										<p className="text-sm text-gray-700 truncate">
+											{[
+												caseItem.case_date
+													? new Date(
+															caseItem.case_date,
+														).toLocaleDateString()
+													: null,
+												caseItem.case_time,
+												caseItem.description
+													? caseItem.description
+															.length > 50
+														? `${caseItem.description.substring(0, 50)}...`
+														: caseItem.description
+													: null,
+											]
+												.filter(Boolean)
+												.join(" | ")}
+										</p>
+									</div>
+								)}
+
+								{/* Network Badge + Details */}
 								{caseItem.profiles &&
 									caseItem.profiles.length > 0 && (
 										<div className="flex items-start gap-2">
@@ -358,7 +391,7 @@ export default function CasesPage() {
 												<Network className="h-3 w-3" />
 												Network
 											</Badge>
-											<div className="text-sm text-gray-700 flex flex-wrap gap-1">
+											<div className="text-sm text-gray-700 truncate">
 												{caseItem.profiles.map((p) => (
 													<span
 														key={p[0]}
@@ -377,7 +410,7 @@ export default function CasesPage() {
 														caseItem.profiles!
 															.length -
 															1
-															? ","
+															? " | "
 															: ""}
 													</span>
 												))}
@@ -398,8 +431,11 @@ export default function CasesPage() {
 											</Badge>
 											<p className="text-sm text-gray-700">
 												{caseItem.drugs
-													.map((d) => d.drug_name)
-													.join(", ")}
+													.map(
+														(d) =>
+															`${d.drug_name} (${d.quantity} ${d.quantified_by})`,
+													)
+													.join(" | ")}
 											</p>
 										</div>
 									)}
@@ -416,43 +452,38 @@ export default function CasesPage() {
 												Areas
 											</Badge>
 											<p className="text-sm text-gray-700">
-												{caseItem.areas.join(", ")}
+												{caseItem.areas.join(" | ")}
 											</p>
 										</div>
 									)}
 
-								{/* Created At */}
-								{caseItem.created_at && (
+								{/* Notes Badge + Details */}
+								{caseItem.notes && (
 									<div className="flex items-start gap-2">
 										<Badge
-											variant="secondary"
-											className="flex-shrink-0 mt-0.5 text-xs"
+											variant="outline"
+											className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
 										>
-											Created At
+											<MessageSquare className="h-3 w-3" />
+											Notes
 										</Badge>
-										<p className="text-sm text-gray-700">
-											{new Date(
-												caseItem.created_at,
-											).toLocaleDateString()}
+										<p className="text-sm text-gray-700 truncate">
+											{caseItem.notes}
 										</p>
 									</div>
 								)}
 
-								{/* Updated At */}
 								{caseItem.created_at && (
-									<div className="flex items-start gap-2">
-										<Badge
-											variant="secondary"
-											className="flex-shrink-0 mt-0.5 text-xs"
-										>
-											Updated At
-										</Badge>
-										<p className="text-sm text-gray-700">
-											{new Date(
-												caseItem.created_at,
-											).toLocaleDateString()}
-										</p>
-									</div>
+									<p className="text-xs text-gray-500 mt-3">
+										Created At:{" "}
+										{new Date(
+											caseItem.created_at,
+										).toLocaleDateString()}{" "}
+										| Updated At:{" "}
+										{new Date(
+											caseItem.created_at,
+										).toLocaleDateString()}
+									</p>
 								)}
 							</CardContent>
 						</Card>
