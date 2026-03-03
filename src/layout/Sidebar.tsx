@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Users, Network, Library } from "lucide-react";
+import { Users, Network, Library, Settings } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 export function Sidebar() {
@@ -37,6 +37,18 @@ export function Sidebar() {
 					>
 						<Library className="h-4 w-4 mr-2" />
 						Cases
+					</Button>
+				)}
+			</NavLink>
+
+			<NavLink to="/settings">
+				{({ isActive }) => (
+					<Button
+						variant={isActive ? "secondary" : "ghost"}
+						className="w-full justify-start cursor-pointer"
+					>
+						<Settings className="h-4 w-4 mr-2" />
+						Settings
 					</Button>
 				)}
 			</NavLink>

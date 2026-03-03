@@ -27,6 +27,9 @@ use features::drug::commands::{
     get_all_drugs,
     save_case_drugs,
     get_case_drugs,
+    add_drug,
+    delete_drug,
+    is_drug_in_use,
 };
 use features::profile::commands::{
     create_profile,
@@ -87,6 +90,9 @@ pub fn run() {
             get_all_drugs,
             save_case_drugs,
             get_case_drugs,
+            add_drug,
+            delete_drug,
+            is_drug_in_use,
             create_area,
             get_area,
             get_area_by_name,

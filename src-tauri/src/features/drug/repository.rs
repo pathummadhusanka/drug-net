@@ -77,3 +77,46 @@ pub fn get_case_drugs(
 
     Ok(drugs)
 }
+
+pub fn add_drug(
+    db: &DbConnection,
+    name: String,
+    quantified_by: String,
+) -> Result<i64, String> {
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    conn.execute(
+        "INSERT INTO drugs (name, quantified_by) VALUES (?1, ?2)",
+        params![name, quantified_by],
+    )
+    .map_err(|e| format!("Failed to add drug: {}", e))?;
+
+    let id = conn.last_insert_rowid();
+    Ok(id)
+}
+
+pub fn delete_drug(db: &DbConnection, drug_id: i64) -> Result<(), String> {
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    conn.execute("DELETE FROM drugs WHERE id = ?1", params![drug_id])
+        .map_err(|e| format!("Failed to delete drug: {}", e))?;
+
+    Ok(())
+}
+
+pub fn is_drug_in_use(db: &DbConnection, drug_id: i64) -> Result<bool, String> {
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    let count: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM case_drugs WHERE drug_id = ?1",
+            params![drug_id],
+            |row| row.get(0),
+        )
+        .map_err(|e| format!("Failed to check drug usage: {}", e))?;
+
+    Ok(count > 0)
+}

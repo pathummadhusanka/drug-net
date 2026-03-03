@@ -54,3 +54,41 @@ export async function getCaseDrugs(
 		caseId,
 	});
 }
+
+/**
+ * Add a new drug to the database
+ * @param name - Drug name
+ * @param quantifiedBy - Unit of measurement (e.g., "grams", "pills")
+ * @returns The ID of the newly created drug
+ */
+export async function addDrug(
+	name: string,
+	quantifiedBy: string,
+): Promise<number> {
+	return await invoke<number>("add_drug", {
+		name,
+		quantifiedBy,
+	});
+}
+
+/**
+ * Delete a drug from the database
+ * @param drugId - The drug ID to delete
+ * @throws Error if drug is in use by any case
+ */
+export async function deleteDrug(drugId: number): Promise<void> {
+	return await invoke<void>("delete_drug", {
+		drugId,
+	});
+}
+
+/**
+ * Check if a drug is currently used in any case
+ * @param drugId - The drug ID to check
+ * @returns True if drug is in use, false otherwise
+ */
+export async function isDrugInUse(drugId: number): Promise<boolean> {
+	return await invoke<boolean>("is_drug_in_use", {
+		drugId,
+	});
+}
