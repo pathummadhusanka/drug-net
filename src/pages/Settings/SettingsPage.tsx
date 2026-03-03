@@ -17,6 +17,21 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogFooter,
+} from "@/components/ui/dialog";
+import {
+	Menubar,
+	MenubarContent,
+	MenubarItem,
+	MenubarMenu,
+	MenubarTrigger,
+} from "@/components/ui/menubar";
 import { Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -38,12 +53,14 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function SettingsPage() {
+	const [activeSection, setActiveSection] = useState<"drugs">("drugs");
 	const [drugs, setDrugs] = useState<Drug[]>([]);
 	const [newDrugName, setNewDrugName] = useState("");
 	const [newDrugUnit, setNewDrugUnit] = useState("");
 	const [drugInUseStatus, setDrugInUseStatus] = useState<{
 		[key: number]: boolean;
 	}>({});
+	const [addDrugDialogOpen, setAddDrugDialogOpen] = useState(false);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [drugToDelete, setDrugToDelete] = useState<Drug | null>(null);
 
@@ -80,6 +97,7 @@ export default function SettingsPage() {
 			toast.success("Drug added successfully");
 			setNewDrugName("");
 			setNewDrugUnit("");
+			setAddDrugDialogOpen(false);
 			fetchDrugs();
 		} catch (error) {
 			console.error("Failed to add drug:", error);
@@ -113,73 +131,57 @@ export default function SettingsPage() {
 
 	return (
 		<div className="container mx-auto p-6 space-y-6">
-			<div>
-				<h1 className="text-3xl font-bold">Settings</h1>
-				<p className="text-muted-foreground">
-					Manage your application settings
-				</p>
+			<div className="space-y-4">
+				<div>
+					<h1 className="text-3xl font-bold">Settings</h1>
+					<p className="text-muted-foreground">
+						Manage your application settings
+					</p>
+				</div>
+
+				{/* Settings Menu */}
+				<Menubar className="w-full bg-muted/40 border">
+					<MenubarMenu>
+						<MenubarTrigger
+							className={`cursor-pointer ${
+								activeSection === "drugs" ? "bg-secondary" : ""
+							}`}
+						>
+							Drugs
+						</MenubarTrigger>
+						<MenubarContent>
+							<MenubarItem
+								onClick={() => setActiveSection("drugs")}
+								className="cursor-pointer"
+							>
+								Drug Management
+							</MenubarItem>
+						</MenubarContent>
+					</MenubarMenu>
+				</Menubar>
 			</div>
 
 			{/* Drug Management Section */}
-			<Card>
-				<CardHeader>
-					<CardTitle>Drug Management</CardTitle>
-					<CardDescription>
-						Add or remove drug types and their units of measurement
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-6">
-					{/* Add New Drug Form */}
-					<div className="space-y-4">
-						<h3 className="text-lg font-semibold">Add New Drug</h3>
-						<div className="flex gap-4 items-end">
-							<div className="flex-1">
-								<Label htmlFor="drugName">Drug Name</Label>
-								<Input
-									id="drugName"
-									placeholder="e.g., Cocaine"
-									value={newDrugName}
-									onChange={(e) =>
-										setNewDrugName(e.target.value)
-									}
-									onKeyDown={(e) => {
-										if (e.key === "Enter") {
-											handleAddDrug();
-										}
-									}}
-								/>
-							</div>
-							<div className="flex-1">
-								<Label htmlFor="drugUnit">Quantified By</Label>
-								<Input
-									id="drugUnit"
-									placeholder="e.g., grams, pills, ml"
-									value={newDrugUnit}
-									onChange={(e) =>
-										setNewDrugUnit(e.target.value)
-									}
-									onKeyDown={(e) => {
-										if (e.key === "Enter") {
-											handleAddDrug();
-										}
-									}}
-								/>
-							</div>
-							<Button
-								onClick={handleAddDrug}
-								className="cursor-pointer"
-							>
-								<Plus className="h-4 w-4 mr-2" />
-								Add Drug
-							</Button>
+			{activeSection === "drugs" && (
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between">
+						<div>
+							<CardTitle>Drug Management</CardTitle>
+							<CardDescription>
+								Add or remove drug types and their units of
+								measurement
+							</CardDescription>
 						</div>
-					</div>
-
-					{/* Drugs Table */}
-					<div className="space-y-4">
-						<h3 className="text-lg font-semibold">
-							Existing Drugs
-						</h3>
+						<Button
+							onClick={() => setAddDrugDialogOpen(true)}
+							className="cursor-pointer"
+						>
+							<Plus className="h-4 w-4 mr-2" />
+							New Drug
+						</Button>
+					</CardHeader>
+					<CardContent className="space-y-6">
+						{/* Drugs Table */}
 						<div className="border rounded-lg">
 							<Table>
 								<TableHeader>
@@ -256,9 +258,71 @@ export default function SettingsPage() {
 								</TableBody>
 							</Table>
 						</div>
+					</CardContent>
+				</Card>
+			)}
+
+			{/* Add Drug Modal */}
+			<Dialog
+				open={addDrugDialogOpen}
+				onOpenChange={setAddDrugDialogOpen}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Add New Drug</DialogTitle>
+						<DialogDescription>
+							Enter the drug name and its unit of measurement
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 py-4">
+						<div className="space-y-2">
+							<Label htmlFor="drugName">Drug Name</Label>
+							<Input
+								id="drugName"
+								placeholder="e.g., Cocaine"
+								value={newDrugName}
+								onChange={(e) => setNewDrugName(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === "Enter") {
+										handleAddDrug();
+									}
+								}}
+								autoFocus
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="drugUnit">Quantified By</Label>
+							<Input
+								id="drugUnit"
+								placeholder="e.g., grams, pills, ml"
+								value={newDrugUnit}
+								onChange={(e) => setNewDrugUnit(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === "Enter") {
+										handleAddDrug();
+									}
+								}}
+							/>
+						</div>
 					</div>
-				</CardContent>
-			</Card>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setAddDrugDialogOpen(false)}
+							className="cursor-pointer"
+						>
+							Cancel
+						</Button>
+						<Button
+							onClick={handleAddDrug}
+							className="cursor-pointer"
+						>
+							<Plus className="h-4 w-4 mr-2" />
+							Add Drug
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 
 			{/* Delete Confirmation Dialog */}
 			<AlertDialog
