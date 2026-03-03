@@ -322,7 +322,6 @@ const CustomEdge = ({
 	source,
 	target,
 	data,
-	markerEnd,
 	selected,
 }: EdgeProps) => {
 	const { getNode } = useReactFlow();
@@ -336,6 +335,7 @@ const CustomEdge = ({
 	const targetNodeWidth = targetNode?.width ?? 48;
 	const targetNodeHeight = targetNode?.height ?? 48;
 
+	// Calculate node centers
 	const resolvedSourceX = sourceNode
 		? (sourceNode.positionAbsolute?.x ?? sourceNode.position.x) +
 			sourceNodeWidth / 2
@@ -353,9 +353,23 @@ const CustomEdge = ({
 			targetNodeHeight / 2
 		: targetY;
 
-	const midX = (resolvedSourceX + resolvedTargetX) / 2;
-	const midY = (resolvedSourceY + resolvedTargetY) / 2;
-	const edgePath = `M ${resolvedSourceX},${resolvedSourceY} L ${resolvedTargetX},${resolvedTargetY}`;
+	// Calculate direction vector
+	const dx = resolvedTargetX - resolvedSourceX;
+	const dy = resolvedTargetY - resolvedSourceY;
+	const length = Math.sqrt(dx * dx + dy * dy);
+
+	// Node radius (circles are 48px diameter)
+	const nodeRadius = 24;
+
+	// Calculate edge endpoints at circle circumference
+	const edgeSourceX = resolvedSourceX + (dx / length) * nodeRadius;
+	const edgeSourceY = resolvedSourceY + (dy / length) * nodeRadius;
+	const edgeTargetX = resolvedTargetX - (dx / length) * nodeRadius;
+	const edgeTargetY = resolvedTargetY - (dy / length) * nodeRadius;
+
+	const midX = (edgeSourceX + edgeTargetX) / 2;
+	const midY = (edgeSourceY + edgeTargetY) / 2;
+	const edgePath = `M ${edgeSourceX},${edgeSourceY} L ${edgeTargetX},${edgeTargetY}`;
 	const labelX = midX;
 	const labelY = midY;
 
@@ -385,6 +399,8 @@ const CustomEdge = ({
 		);
 	};
 
+	const markerId = `arrow-${id}`;
+
 	return (
 		<>
 			<defs>
@@ -405,11 +421,25 @@ const CustomEdge = ({
 						stopColor={selected ? "#dc2626" : "#ef4444"}
 					/>
 				</linearGradient>
+				<marker
+					id={markerId}
+					viewBox="0 0 10 10"
+					refX="5"
+					refY="5"
+					markerWidth="6"
+					markerHeight="6"
+					orient="auto"
+				>
+					<path
+						d="M 0 0 L 10 5 L 0 10 z"
+						fill={selected ? "#dc2626" : "#ef4444"}
+					/>
+				</marker>
 			</defs>
 			<BaseEdge
 				id={id}
 				path={edgePath}
-				markerEnd={markerEnd}
+				markerEnd={`url(#${markerId})`}
 				style={{
 					stroke: `url(#${gradientId})`,
 					strokeWidth: 2,
