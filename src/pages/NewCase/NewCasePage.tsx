@@ -95,7 +95,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-const CustomNode = ({
+const BubbleProfileNode = ({
 	data,
 	id,
 }: {
@@ -115,30 +115,25 @@ const CustomNode = ({
 }) => {
 	const [tooltipOpen, setTooltipOpen] = useState(false);
 
-	const bgColor = data.isCurrentProfile ? "bg-indigo-600" : "bg-white";
-	const textColor = data.isCurrentProfile ? "text-white" : "text-black";
-	const borderColor = data.isCurrentProfile
-		? "border-indigo-700"
-		: "border-gray-400";
-
 	const connectionCount = data.edges
 		? data.edges.filter((edge) => edge.source === id || edge.target === id)
 				.length
 		: 0;
 
-	// Truncate name and alias to 20 characters max
+	// Truncate name to 18 characters max for compact display
 	const displayName = data.fullName
-		? data.fullName.length > 20
-			? data.fullName.substring(0, 20) + "..."
+		? data.fullName.length > 18
+			? data.fullName.substring(0, 18) + "..."
 			: data.fullName
-		: data.label.length > 20
-			? data.label.substring(0, 20) + "..."
+		: data.label.length > 18
+			? data.label.substring(0, 18) + "..."
 			: data.label;
 
-	const displayAlias = data.alias
-		? data.alias.length > 20
-			? data.alias.substring(0, 20) + "..."
-			: data.alias
+	const displaySubtitle = data.alias || data.city || null;
+	const truncatedSubtitle = displaySubtitle
+		? displaySubtitle.length > 18
+			? displaySubtitle.substring(0, 18) + "..."
+			: displaySubtitle
 		: null;
 
 	// Build tooltip with profile details
@@ -149,102 +144,157 @@ const CustomNode = ({
 	if (data.city) tooltipParts.push(`City: ${data.city}`);
 
 	return (
-		<div
-			className={`px-4 py-2 shadow-md rounded-md ${bgColor} ${textColor} border-2 ${borderColor} relative`}
-		>
-			<Handle type="target" position={Position.Top} id="top" />
-			<Handle type="target" position={Position.Right} id="right" />
-			<Handle type="target" position={Position.Bottom} id="bottom" />
-			<Handle type="target" position={Position.Left} id="left" />
-			<Handle type="source" position={Position.Top} id="top" />
-			<Handle type="source" position={Position.Right} id="right" />
-			<Handle type="source" position={Position.Bottom} id="bottom" />
-			<Handle type="source" position={Position.Left} id="left" />
-			<div className="flex flex-col gap-0.5">
-				<div className="flex items-start justify-between gap-0.5">
-					<div className="font-medium text-sm flex-1">
-						{displayName}
-					</div>
-					<Tooltip open={tooltipOpen} onOpenChange={setTooltipOpen}>
-						<TooltipTrigger asChild>
+		<div className="relative h-12 w-12 overflow-visible">
+			<Handle
+				type="target"
+				position={Position.Top}
+				id="top"
+				className="h-2 w-2 border border-white bg-gray-300 opacity-70"
+			/>
+			<Handle
+				type="target"
+				position={Position.Right}
+				id="right"
+				className="h-2 w-2 border border-white bg-gray-300 opacity-70"
+			/>
+			<Handle
+				type="target"
+				position={Position.Bottom}
+				id="bottom"
+				className="h-2 w-2 border border-white bg-gray-300 opacity-70"
+			/>
+			<Handle
+				type="target"
+				position={Position.Left}
+				id="left"
+				className="h-2 w-2 border border-white bg-gray-300 opacity-70"
+			/>
+			<Handle
+				type="source"
+				position={Position.Top}
+				id="top"
+				className="h-2 w-2 border border-white bg-gray-300 opacity-70"
+			/>
+			<Handle
+				type="source"
+				position={Position.Right}
+				id="right"
+				className="h-2 w-2 border border-white bg-gray-300 opacity-70"
+			/>
+			<Handle
+				type="source"
+				position={Position.Bottom}
+				id="bottom"
+				className="h-2 w-2 border border-white bg-gray-300 opacity-70"
+			/>
+			<Handle
+				type="source"
+				position={Position.Left}
+				id="left"
+				className="h-2 w-2 border border-white bg-gray-300 opacity-70"
+			/>
+
+			<div
+				className={
+					data.isCurrentProfile
+						? "h-12 w-12 rounded-full border-2 border-orange-500 bg-orange-200 shadow-sm"
+						: "h-12 w-12 rounded-full border border-orange-300 bg-orange-100 shadow-sm"
+				}
+			/>
+
+			<div className="absolute -right-5 -top-1 flex items-center gap-1">
+				<Tooltip open={tooltipOpen} onOpenChange={setTooltipOpen}>
+					<TooltipTrigger asChild>
+						<button
+							onClick={(e) => {
+								e.stopPropagation();
+								setTooltipOpen(!tooltipOpen);
+							}}
+							className="h-4 w-4 shrink-0 cursor-pointer rounded-full bg-white text-gray-500 shadow-sm hover:bg-gray-100 hover:text-gray-700"
+							title="Show profile info"
+						>
+							<Info className="mx-auto h-2.5 w-2.5" />
+						</button>
+					</TooltipTrigger>
+					<TooltipContent className="rounded-md bg-slate-900 p-3 text-white">
+						<div className="space-y-1 text-sm">
+							{tooltipParts.map((part, idx) => (
+								<div key={idx}>{part}</div>
+							))}
+						</div>
+					</TooltipContent>
+				</Tooltip>
+
+				{data.onDelete && (
+					<AlertDialog>
+						<AlertDialogTrigger asChild>
 							<button
 								onClick={(e) => {
 									e.stopPropagation();
-									setTooltipOpen(!tooltipOpen);
 								}}
-								className="hover:bg-blue-100 hover:bg-opacity-20 text-current hover:text-blue-600 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer p-0 flex-shrink-0"
-								title="Show profile info"
+								className="h-4 w-4 shrink-0 cursor-pointer rounded-full bg-white text-gray-500 shadow-sm hover:bg-red-100 hover:text-red-600"
+								title="Delete profile"
 							>
-								<Info className="w-3 h-3" />
+								<X className="mx-auto h-2.5 w-2.5" />
 							</button>
-						</TooltipTrigger>
-						<TooltipContent className="bg-slate-900 text-white p-3 rounded-md">
-							<div className="text-sm space-y-1">
-								{tooltipParts.map((part, idx) => (
-									<div key={idx}>{part}</div>
-								))}
-							</div>
-						</TooltipContent>
-					</Tooltip>
-					{data.onDelete && (
-						<AlertDialog>
-							<AlertDialogTrigger asChild>
-								<button
-									onClick={(e) => {
+						</AlertDialogTrigger>
+						<AlertDialogContent>
+							<AlertDialogHeader>
+								<AlertDialogTitle>
+									Delete Profile
+								</AlertDialogTitle>
+								<AlertDialogDescription>
+									Are you sure you want to delete this
+									profile?
+									{connectionCount > 0 && (
+										<>
+											{" "}
+											This profile has{" "}
+											<span className="font-semibold">
+												{connectionCount}{" "}
+												{connectionCount === 1
+													? "connection"
+													: "connections"}
+											</span>{" "}
+											that will also be removed.
+										</>
+									)}{" "}
+									This action cannot be undone.
+								</AlertDialogDescription>
+							</AlertDialogHeader>
+							<AlertDialogFooter>
+								<AlertDialogCancel className="cursor-pointer">
+									Cancel
+								</AlertDialogCancel>
+								<AlertDialogAction
+									className="cursor-pointer bg-red-600 text-white hover:bg-red-700"
+									onClick={(e: React.MouseEvent) => {
+										e.preventDefault();
 										e.stopPropagation();
+										data.onDelete?.(id);
 									}}
-									className="hover:bg-red-100 hover:bg-opacity-20 text-current hover:text-red-600 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer p-0 flex-shrink-0"
-									title="Delete profile"
 								>
-									<X className="w-2.5 h-2.5" />
-								</button>
-							</AlertDialogTrigger>
-							<AlertDialogContent>
-								<AlertDialogHeader>
-									<AlertDialogTitle>
-										Delete Profile
-									</AlertDialogTitle>
-									<AlertDialogDescription>
-										Are you sure you want to delete this
-										profile?
-										{connectionCount > 0 && (
-											<>
-												{" "}
-												This profile has{" "}
-												<span className="font-semibold">
-													{connectionCount}{" "}
-													{connectionCount === 1
-														? "connection"
-														: "connections"}
-												</span>{" "}
-												that will also be removed.
-											</>
-										)}{" "}
-										This action cannot be undone.
-									</AlertDialogDescription>
-								</AlertDialogHeader>
-								<AlertDialogFooter>
-									<AlertDialogCancel className="cursor-pointer">
-										Cancel
-									</AlertDialogCancel>
-									<AlertDialogAction
-										className="cursor-pointer bg-red-600 hover:bg-red-700 text-white"
-										onClick={(e: React.MouseEvent) => {
-											e.preventDefault();
-											e.stopPropagation();
-											data.onDelete?.(id);
-										}}
-									>
-										Delete
-									</AlertDialogAction>
-								</AlertDialogFooter>
-							</AlertDialogContent>
-						</AlertDialog>
-					)}
+									Delete
+								</AlertDialogAction>
+							</AlertDialogFooter>
+						</AlertDialogContent>
+					</AlertDialog>
+				)}
+			</div>
+
+			<div className="absolute left-1/2 top-full mt-1 w-32 -translate-x-1/2 text-center">
+				<div
+					className="truncate text-sm font-semibold text-gray-900"
+					title={data.fullName || data.label}
+				>
+					{displayName}
 				</div>
-				{displayAlias && (
-					<div className="text-xs opacity-80 italic">
-						{displayAlias}
+				{truncatedSubtitle && (
+					<div
+						className="truncate text-xs text-gray-500"
+						title={displaySubtitle || ""}
+					>
+						{truncatedSubtitle}
 					</div>
 				)}
 			</div>
@@ -262,23 +312,53 @@ const CustomEdge = ({
 	target,
 	data,
 	markerEnd,
+	selected,
 }: EdgeProps) => {
-	const { setEdges } = useReactFlow();
+	const { setEdges, getNode } = useReactFlow();
 	const label = (data?.label as string) || "";
 	const labelOffsetX = Number(data?.labelOffsetX ?? 0);
 	const labelOffsetY = Number(data?.labelOffsetY ?? 0);
-	const gradientId = `edge-gradient-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
-	const midX = (sourceX + targetX) / 2;
-	const midY = (sourceY + targetY) / 2;
+
+	const sourceNode = getNode(source);
+	const targetNode = getNode(target);
+
+	const sourceNodeWidth = sourceNode?.width ?? 48;
+	const sourceNodeHeight = sourceNode?.height ?? 48;
+	const targetNodeWidth = targetNode?.width ?? 48;
+	const targetNodeHeight = targetNode?.height ?? 48;
+
+	const resolvedSourceX = sourceNode
+		? (sourceNode.positionAbsolute?.x ?? sourceNode.position.x) +
+			sourceNodeWidth / 2
+		: sourceX;
+	const resolvedSourceY = sourceNode
+		? (sourceNode.positionAbsolute?.y ?? sourceNode.position.y) +
+			sourceNodeHeight / 2
+		: sourceY;
+	const resolvedTargetX = targetNode
+		? (targetNode.positionAbsolute?.x ?? targetNode.position.x) +
+			targetNodeWidth / 2
+		: targetX;
+	const resolvedTargetY = targetNode
+		? (targetNode.positionAbsolute?.y ?? targetNode.position.y) +
+			targetNodeHeight / 2
+		: targetY;
+
+	const midX = (resolvedSourceX + resolvedTargetX) / 2;
+	const midY = (resolvedSourceY + resolvedTargetY) / 2;
 	const controlX = midX + labelOffsetX;
 	const controlY = midY + labelOffsetY;
-	const edgePath = `M ${sourceX},${sourceY} Q ${controlX},${controlY} ${targetX},${targetY}`;
-	const labelX = 0.25 * sourceX + 0.5 * controlX + 0.25 * targetX;
-	const labelY = 0.25 * sourceY + 0.5 * controlY + 0.25 * targetY;
+	const edgePath = `M ${resolvedSourceX},${resolvedSourceY} Q ${controlX},${controlY} ${resolvedTargetX},${resolvedTargetY}`;
+	const labelX =
+		0.25 * resolvedSourceX + 0.5 * controlX + 0.25 * resolvedTargetX;
+	const labelY =
+		0.25 * resolvedSourceY + 0.5 * controlY + 0.25 * resolvedTargetY;
 
 	// Truncate label if longer than 10 characters
 	const displayLabel =
 		label.length > 10 ? label.substring(0, 10) + "..." : label;
+
+	const gradientId = `edge-gradient-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
 	const handleLabelDragStart = (event: React.MouseEvent<HTMLDivElement>) => {
 		event.preventDefault();
@@ -372,14 +452,20 @@ const CustomEdge = ({
 			<defs>
 				<linearGradient
 					id={gradientId}
-					x1={sourceX}
-					y1={sourceY}
-					x2={targetX}
-					y2={targetY}
+					x1={resolvedSourceX}
+					y1={resolvedSourceY}
+					x2={resolvedTargetX}
+					y2={resolvedTargetY}
 					gradientUnits="userSpaceOnUse"
 				>
-					<stop offset="0%" stopColor="#60a5fa" />
-					<stop offset="100%" stopColor="#f87171" />
+					<stop
+						offset="0%"
+						stopColor={selected ? "#2563eb" : "#3b82f6"}
+					/>
+					<stop
+						offset="100%"
+						stopColor={selected ? "#dc2626" : "#ef4444"}
+					/>
 				</linearGradient>
 			</defs>
 			<BaseEdge
@@ -400,7 +486,13 @@ const CustomEdge = ({
 					}}
 					className="nodrag nopan"
 				>
-					<div className="px-1.5 py-0.5 bg-white border border-gray-300 rounded text-xs select-none flex items-center gap-1">
+					<div
+						className="px-2 py-1 bg-white border border-gray-300 text-xs select-none flex items-center gap-1 shadow-sm"
+						style={{
+							borderRadius: "10px",
+							fontSize: "11px",
+						}}
+					>
 						<div
 							onMouseDown={handleLabelDragStart}
 							className="cursor-move"
@@ -423,7 +515,7 @@ const CustomEdge = ({
 };
 
 const nodeTypes = {
-	custom: CustomNode,
+	custom: BubbleProfileNode,
 };
 
 const edgeTypes = {
@@ -1539,8 +1631,12 @@ export default function NewCasePage() {
 											type: "custom",
 											markerEnd: {
 												type: MarkerType.ArrowClosed,
+												color: "#ef4444",
 											},
-											style: { strokeWidth: 2 },
+											style: {
+												strokeWidth: 2,
+												stroke: "#ef4444",
+											},
 										}}
 										defaultViewport={{
 											x: 0,
