@@ -1473,8 +1473,21 @@ export default function NewCasePage() {
 												{pendingConnection && (
 													<div className="bg-muted p-3 rounded-md text-sm">
 														<div className="flex items-center justify-between gap-2">
-															<div className="flex items-center gap-2">
-																<span className="font-medium">
+															<div className="flex min-w-0 items-center gap-2">
+																<span
+																	className="font-medium truncate max-w-45"
+																	title={
+																		(nodes.find(
+																			(
+																				n,
+																			) =>
+																				n.id ===
+																				pendingConnection.source,
+																		)?.data
+																			.label as string) ||
+																		""
+																	}
+																>
 																	{
 																		nodes.find(
 																			(
@@ -1486,10 +1499,23 @@ export default function NewCasePage() {
 																			.label as string
 																	}
 																</span>
-																<span className="text-muted-foreground">
+																<span className="text-muted-foreground shrink-0">
 																	→
 																</span>
-																<span className="font-medium">
+																<span
+																	className="font-medium truncate max-w-45"
+																	title={
+																		(nodes.find(
+																			(
+																				n,
+																			) =>
+																				n.id ===
+																				pendingConnection.target,
+																		)?.data
+																			.label as string) ||
+																		""
+																	}
+																>
 																	{
 																		nodes.find(
 																			(
@@ -1504,7 +1530,7 @@ export default function NewCasePage() {
 															</div>
 															{editingEdgeId && (
 																<Trash2
-																	className="h-4 w-4 text-destructive cursor-pointer hover:text-destructive/80"
+																	className="h-4 w-4 shrink-0 text-destructive cursor-pointer hover:text-destructive/80"
 																	onClick={
 																		handleConnectionDelete
 																	}
