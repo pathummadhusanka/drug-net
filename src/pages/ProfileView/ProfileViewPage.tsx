@@ -130,6 +130,9 @@ const CustomNode = ({
 }: {
 	data: {
 		label: string;
+		fullName?: string;
+		alias?: string | null;
+		city?: string | null;
 		isCurrentProfile?: boolean;
 		onDelete?: (id: string) => void;
 		edges?: Edge[];
@@ -147,6 +150,20 @@ const CustomNode = ({
 		? data.edges.filter((edge) => edge.source === id || edge.target === id)
 				.length
 		: 0;
+
+	// Truncate label to 20 characters max
+	const displayLabel =
+		data.label.length > 20
+			? data.label.substring(0, 20) + "..."
+			: data.label;
+
+	// Build tooltip with profile details
+	const tooltipParts = [];
+	if (data.fullName) tooltipParts.push(`Full name: ${data.fullName}`);
+	if (data.alias) tooltipParts.push(`Alias: ${data.alias}`);
+	if (data.city) tooltipParts.push(`City: ${data.city}`);
+	const tooltip =
+		tooltipParts.length > 0 ? tooltipParts.join("\n") : data.label;
 
 	return (
 		<div
@@ -215,7 +232,9 @@ const CustomNode = ({
 					</AlertDialogContent>
 				</AlertDialog>
 			)}
-			<div className="font-medium">{data.label}</div>
+			<div className="font-medium" title={tooltip}>
+				{displayLabel}
+			</div>
 		</div>
 	);
 };
@@ -288,6 +307,9 @@ export default function ProfileView() {
 			type: "custom",
 			data: {
 				label: profile?.full_name || "Current Profile",
+				fullName: profile?.full_name,
+				alias: profile?.alias,
+				city: profile?.city,
 				isCurrentProfile: true,
 				edges: [],
 			},
@@ -496,6 +518,9 @@ export default function ProfileView() {
 								...node,
 								data: {
 									label: profile.full_name,
+									fullName: profile.full_name,
+									alias: profile.alias,
+									city: profile.city,
 									isCurrentProfile: true,
 									edges,
 								},
