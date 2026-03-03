@@ -35,10 +35,10 @@ import ReactFlow, {
 	Node,
 	useNodesState,
 	useEdgesState,
+	useReactFlow,
 	MarkerType,
 	Handle,
 	Position,
-	getBezierPath,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { Input } from "@/components/ui/input";
@@ -289,25 +289,78 @@ const CustomEdge = ({
 	sourceY,
 	targetX,
 	targetY,
-	sourcePosition,
-	targetPosition,
 	data,
 	markerEnd,
 }: EdgeProps) => {
-	const [edgePath, labelX, labelY] = getBezierPath({
-		sourceX,
-		sourceY,
-		sourcePosition,
-		targetX,
-		targetY,
-		targetPosition,
-	});
-
+	const { setEdges } = useReactFlow();
 	const label = (data?.label as string) || "";
+	const labelOffsetX = Number(data?.labelOffsetX ?? 0);
+	const labelOffsetY = Number(data?.labelOffsetY ?? 0);
+	const midX = (sourceX + targetX) / 2;
+	const midY = (sourceY + targetY) / 2;
+	const controlX = midX + labelOffsetX;
+	const controlY = midY + labelOffsetY;
+	const edgePath = `M ${sourceX},${sourceY} Q ${controlX},${controlY} ${targetX},${targetY}`;
+	const labelX = 0.25 * sourceX + 0.5 * controlX + 0.25 * targetX;
+	const labelY = 0.25 * sourceY + 0.5 * controlY + 0.25 * targetY;
 
 	// Truncate label if longer than 10 characters
 	const displayLabel =
 		label.length > 10 ? label.substring(0, 10) + "..." : label;
+
+	const handleLabelDragStart = (event: React.MouseEvent<HTMLDivElement>) => {
+		event.preventDefault();
+		event.stopPropagation();
+
+		const startX = event.clientX;
+		const startY = event.clientY;
+		const initialOffsetX = labelOffsetX;
+		const initialOffsetY = labelOffsetY;
+		let nextOffsetX = initialOffsetX;
+		let nextOffsetY = initialOffsetY;
+		let animationFrameId: number | null = null;
+
+		const flushDragUpdate = () => {
+			animationFrameId = null;
+			setEdges((edges) =>
+				edges.map((edge) =>
+					edge.id === id
+						? {
+								...edge,
+								data: {
+									...edge.data,
+									labelOffsetX: nextOffsetX,
+									labelOffsetY: nextOffsetY,
+								},
+							}
+						: edge,
+				),
+			);
+		};
+
+		const handleMouseMove = (moveEvent: MouseEvent) => {
+			nextOffsetX = initialOffsetX + (moveEvent.clientX - startX);
+			nextOffsetY = initialOffsetY + (moveEvent.clientY - startY);
+
+			if (animationFrameId === null) {
+				animationFrameId =
+					window.requestAnimationFrame(flushDragUpdate);
+			}
+		};
+
+		const handleMouseUp = () => {
+			if (animationFrameId !== null) {
+				window.cancelAnimationFrame(animationFrameId);
+				animationFrameId = null;
+			}
+			flushDragUpdate();
+			window.removeEventListener("mousemove", handleMouseMove);
+			window.removeEventListener("mouseup", handleMouseUp);
+		};
+
+		window.addEventListener("mousemove", handleMouseMove);
+		window.addEventListener("mouseup", handleMouseUp);
+	};
 
 	return (
 		<>
@@ -321,7 +374,10 @@ const CustomEdge = ({
 					}}
 					className="nodrag nopan"
 				>
-					<div className="px-2 py-0.5 bg-white border border-gray-300 rounded text-xs">
+					<div
+						onMouseDown={handleLabelDragStart}
+						className="px-2 py-0.5 bg-white border border-gray-300 rounded text-xs cursor-move select-none"
+					>
 						{displayLabel}
 					</div>
 				</div>
