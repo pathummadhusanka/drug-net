@@ -43,6 +43,11 @@ use features::profile::commands::{
     get_all_profiles,
     delete_profile,
 };
+use features::network::commands::{
+    get_network_node_positions,
+    upsert_network_node_positions,
+    sync_network_node_positions,
+};
 
 /// Application state containing shared database connection
 pub struct AppState {
@@ -101,7 +106,10 @@ pub fn run() {
             get_area,
             get_area_by_name,
             get_all_areas,
-            delete_area
+            delete_area,
+            get_network_node_positions,
+            upsert_network_node_positions,
+            sync_network_node_positions
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

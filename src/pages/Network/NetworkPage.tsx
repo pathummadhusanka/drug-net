@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+	type MouseEvent,
+} from "react";
 import {
 	Background,
 	BackgroundVariant,
@@ -29,6 +35,11 @@ import {
 	getCaseRelationships,
 } from "@/lib/cases";
 import { getProfile } from "@/lib/profiles";
+import {
+	getNetworkNodePositions,
+	syncNetworkNodePositions,
+	upsertNetworkNodePositions,
+} from "@/lib/network";
 import { toast } from "sonner";
 
 type NetworkNodeData = {
@@ -308,18 +319,32 @@ const ReadOnlyNetworkEdge = ({
 	);
 };
 
-const nodeTypes = {
-	custom: ReadOnlyNetworkNode,
-};
-
-const edgeTypes = {
-	custom: ReadOnlyNetworkEdge,
-};
-
 export default function NetworkPage() {
 	const [loading, setLoading] = useState(true);
 	const [nodes, setNodes, onNodesChange] = useNodesState<NetworkNodeData>([]);
 	const [edges, setEdges] = useEdgesState<NetworkEdgeData>([]);
+	const nodeTypes = useMemo(() => ({ custom: ReadOnlyNetworkNode }), []);
+	const edgeTypes = useMemo(() => ({ custom: ReadOnlyNetworkEdge }), []);
+
+	const handleNodeDragStop = useCallback(
+		async (_event: MouseEvent, node: Node<NetworkNodeData>) => {
+			const profileId = Number(node.id);
+			if (Number.isNaN(profileId)) return;
+
+			try {
+				await upsertNetworkNodePositions([
+					{
+						profile_id: profileId,
+						x: node.position.x,
+						y: node.position.y,
+					},
+				]);
+			} catch (error) {
+				console.error("Failed to persist node position:", error);
+			}
+		},
+		[],
+	);
 
 	useEffect(() => {
 		const loadUnifiedNetwork = async () => {
@@ -388,6 +413,17 @@ export default function NetworkPage() {
 				}
 
 				const uniqueIds = Array.from(uniqueProfileIds);
+				const savedPositions = await getNetworkNodePositions();
+				const savedPositionMap = new Map<
+					number,
+					{ x: number; y: number }
+				>();
+				for (const saved of savedPositions) {
+					savedPositionMap.set(saved.profile_id, {
+						x: saved.x,
+						y: saved.y,
+					});
+				}
 				const profileDetailsList = await Promise.all(
 					uniqueIds.map((id) => getProfile(id)),
 				);
@@ -482,16 +518,29 @@ export default function NetworkPage() {
 				const canvasHeight = 1100;
 				const minDistance = 180;
 				const positions: { x: number; y: number }[] = [];
+				const positionsToPersist: {
+					profile_id: number;
+					x: number;
+					y: number;
+				}[] = [];
 
 				const newNodes: Node<NetworkNodeData>[] = uniqueIds.map(
 					(profileId) => {
 						const details = profileDetailMap.get(profileId);
-						const position = generateNonOverlappingPosition(
-							positions,
-							canvasWidth,
-							canvasHeight,
-							minDistance,
-						);
+						let position = savedPositionMap.get(profileId);
+						if (!position) {
+							position = generateNonOverlappingPosition(
+								positions,
+								canvasWidth,
+								canvasHeight,
+								minDistance,
+							);
+							positionsToPersist.push({
+								profile_id: profileId,
+								x: position.x,
+								y: position.y,
+							});
+						}
 						positions.push(position);
 
 						return {
@@ -584,6 +633,11 @@ export default function NetworkPage() {
 
 				setNodes(newNodes);
 				setEdges(newEdges);
+
+				await syncNetworkNodePositions(uniqueIds);
+				if (positionsToPersist.length > 0) {
+					await upsertNetworkNodePositions(positionsToPersist);
+				}
 			} catch (error) {
 				console.error("Failed to load network:", error);
 				toast.error("Failed to load unified network", {
@@ -634,6 +688,7 @@ export default function NetworkPage() {
 						onNodesChange={onNodesChange}
 						nodeTypes={nodeTypes}
 						edgeTypes={edgeTypes}
+						onNodeDragStop={handleNodeDragStop}
 						nodesConnectable={false}
 						fitView
 					>

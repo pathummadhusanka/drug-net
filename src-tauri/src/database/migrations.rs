@@ -108,6 +108,14 @@ pub fn run_migrations(db: &DbConnection) -> Result<(), String> {
             FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE,
             FOREIGN KEY (drug_id) REFERENCES drugs(id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS network_node_positions (
+            profile_id INTEGER PRIMARY KEY,
+            x REAL NOT NULL,
+            y REAL NOT NULL,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+        );
         "
     )
     .map_err(|e| e.to_string())?;
