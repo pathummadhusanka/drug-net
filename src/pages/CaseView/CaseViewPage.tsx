@@ -21,6 +21,11 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
 	getCase,
 	getCaseAreas,
 	getCaseRelationships,
@@ -29,7 +34,32 @@ import {
 	type CaseWithDetails,
 } from "@/lib/cases";
 import { getCaseDrugs } from "@/lib/drugs";
-import { ChevronLeft, MoreVertical, Trash2, AlertCircle } from "lucide-react";
+import { getProfile } from "@/lib/profiles";
+import {
+	Background,
+	BackgroundVariant,
+	Controls,
+	Handle,
+	MarkerType,
+	MiniMap,
+	Position,
+	Edge,
+	EdgeProps,
+	BaseEdge,
+	EdgeLabelRenderer,
+	Node,
+	useEdgesState,
+	useNodesState,
+} from "reactflow";
+import ReactFlow from "reactflow";
+import "reactflow/dist/style.css";
+import {
+	ChevronLeft,
+	MoreVertical,
+	Trash2,
+	AlertCircle,
+	Info,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface CaseDetails extends CaseWithDetails {
@@ -43,6 +73,155 @@ interface CaseDetails extends CaseWithDetails {
 	}[];
 }
 
+// Read-only CustomNode component
+const ReadOnlyCustomNode = ({
+	data,
+}: {
+	data: {
+		label: string;
+		fullName?: string;
+		nic?: string | null;
+		alias?: string | null;
+		city?: string | null;
+	};
+}) => {
+	const [tooltipOpen, setTooltipOpen] = useState(false);
+
+	// Truncate name to 20 characters max
+	const displayName = data.fullName
+		? data.fullName.length > 20
+			? data.fullName.substring(0, 20) + "..."
+			: data.fullName
+		: data.label.length > 20
+			? data.label.substring(0, 20) + "..."
+			: data.label;
+
+	const displayAlias = data.alias
+		? data.alias.length > 20
+			? data.alias.substring(0, 20) + "..."
+			: data.alias
+		: null;
+
+	// Build tooltip with profile details
+	const tooltipParts = [];
+	if (data.fullName) tooltipParts.push(data.fullName);
+	if (data.nic) tooltipParts.push(`NIC: ${data.nic}`);
+	if (data.alias) tooltipParts.push(`Alias: ${data.alias}`);
+	if (data.city) tooltipParts.push(`City: ${data.city}`);
+
+	return (
+		<div className="px-4 py-2 shadow-md rounded-md bg-white text-black border-2 border-gray-400 relative">
+			<Handle type="target" position={Position.Top} id="top" />
+			<Handle type="target" position={Position.Right} id="right" />
+			<Handle type="target" position={Position.Bottom} id="bottom" />
+			<Handle type="target" position={Position.Left} id="left" />
+			<Handle type="source" position={Position.Top} id="top" />
+			<Handle type="source" position={Position.Right} id="right" />
+			<Handle type="source" position={Position.Bottom} id="bottom" />
+			<Handle type="source" position={Position.Left} id="left" />
+			<div className="flex flex-col gap-0.5">
+				<div className="flex items-start justify-between gap-0.5">
+					<div className="font-medium text-sm flex-1">
+						{displayName}
+					</div>
+					<Tooltip open={tooltipOpen} onOpenChange={setTooltipOpen}>
+						<TooltipTrigger asChild>
+							<button
+								onClick={(e) => {
+									e.stopPropagation();
+									setTooltipOpen(!tooltipOpen);
+								}}
+								className="hover:bg-blue-100 hover:bg-opacity-20 text-current hover:text-blue-600 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer p-0 shrink-0"
+								title="Show profile info"
+							>
+								<Info className="w-3 h-3" />
+							</button>
+						</TooltipTrigger>
+						<TooltipContent className="bg-slate-900 text-white p-3 rounded-md">
+							<div className="text-sm space-y-1">
+								{tooltipParts.map((part, idx) => (
+									<div key={idx}>{part}</div>
+								))}
+							</div>
+						</TooltipContent>
+					</Tooltip>
+				</div>
+				{displayAlias && (
+					<div className="text-xs opacity-80 italic">
+						{displayAlias}
+					</div>
+				)}
+			</div>
+		</div>
+	);
+};
+
+// Read-only CustomEdge component with gradient
+const ReadOnlyCustomEdge = ({
+	id,
+	sourceX,
+	sourceY,
+	targetX,
+	targetY,
+	data,
+	markerEnd,
+}: EdgeProps) => {
+	const gradientId = `edge-gradient-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+	const label = (data?.label as string) || "";
+	const midX = (sourceX + targetX) / 2;
+	const midY = (sourceY + targetY) / 2;
+	const edgePath = `M ${sourceX},${sourceY} Q ${midX},${midY} ${targetX},${targetY}`;
+	const labelX = 0.25 * sourceX + 0.5 * midX + 0.25 * targetX;
+	const labelY = 0.25 * sourceY + 0.5 * midY + 0.25 * targetY;
+
+	// Truncate label if longer than 15 characters
+	const displayLabel =
+		label.length > 15 ? label.substring(0, 15) + "..." : label;
+
+	return (
+		<>
+			<defs>
+				<linearGradient
+					id={gradientId}
+					x1={sourceX}
+					y1={sourceY}
+					x2={targetX}
+					y2={targetY}
+					gradientUnits="userSpaceOnUse"
+				>
+					<stop offset="0%" stopColor="#60a5fa" />
+					<stop offset="100%" stopColor="#f87171" />
+				</linearGradient>
+			</defs>
+			<BaseEdge
+				id={id}
+				path={edgePath}
+				markerEnd={markerEnd}
+				style={{
+					stroke: `url(#${gradientId})`,
+					strokeWidth: 2,
+				}}
+			/>
+			{displayLabel && (
+				<EdgeLabelRenderer>
+					<div
+						style={{
+							position: "absolute",
+							transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+							pointerEvents: "none",
+						}}
+						className="nodrag nopan"
+					>
+						<div className="px-1.5 py-0.5 bg-white border border-gray-300 rounded text-xs select-none">
+							{displayLabel}
+						</div>
+					</div>
+				</EdgeLabelRenderer>
+			)}
+		</>
+	);
+};
+
 export default function CaseViewPage() {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
@@ -50,6 +229,8 @@ export default function CaseViewPage() {
 	const [loading, setLoading] = useState(true);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
+	const [nodes, setNodes] = useNodesState([]);
+	const [edges, setEdges] = useEdgesState([]);
 
 	useEffect(() => {
 		fetchCaseDetails();
@@ -88,6 +269,63 @@ export default function CaseViewPage() {
 			setLoading(false);
 		}
 	};
+
+	// Generate nodes and edges from profile and relationship data
+	useEffect(() => {
+		if (!caseData || !caseData.profiles || caseData.profiles.length === 0) {
+			setNodes([]);
+			setEdges([]);
+			return;
+		}
+
+		// Fetch full profile details for all profiles
+		const fetchProfileDetails = async () => {
+			const profiles = caseData.profiles;
+			if (!profiles || profiles.length === 0) return;
+
+			const profileDetailsPromises = profiles.map((profile) =>
+				getProfile(profile[0]),
+			);
+			const profileDetails = await Promise.all(profileDetailsPromises);
+
+			// Create nodes from profiles with full details
+			const newNodes: Node[] = profiles.map((profile, idx) => {
+				const fullProfile = profileDetails[idx];
+				return {
+					id: profile[0].toString(),
+					data: {
+						label: profile[1],
+						fullName: fullProfile?.full_name || profile[1],
+						nic: fullProfile?.nic || null,
+						alias: fullProfile?.alias || null,
+						city: fullProfile?.city || null,
+					},
+					position: {
+						x: (idx % 3) * 300 + 50,
+						y: Math.floor(idx / 3) * 250 + 50,
+					},
+					type: "custom",
+				};
+			});
+
+			// Create edges from relationships
+			const newEdges: Edge[] = (caseData.relationships || []).map(
+				(rel) => ({
+					id: `edge-${rel.source_profile_id}-${rel.target_profile_id}`,
+					source: rel.source_profile_id.toString(),
+					target: rel.target_profile_id.toString(),
+					type: "custom",
+					data: { label: rel.relationship_type || "" },
+					markerEnd: { type: MarkerType.ArrowClosed },
+				}),
+			);
+
+			setNodes(newNodes);
+			setEdges(newEdges);
+		};
+
+		fetchProfileDetails();
+	}, [caseData, setNodes, setEdges]);
 
 	const handleDeleteCase = async () => {
 		if (!caseData) return;
@@ -306,56 +544,36 @@ export default function CaseViewPage() {
 						<h3 className="text-sm font-semibold text-gray-700">
 							Network
 						</h3>
-						<div>
-							<Label className="text-xs text-gray-500">
-								Profiles
-							</Label>
-							<p className="text-sm text-gray-700">
-								{caseData.profiles &&
-								caseData.profiles.length > 0
-									? caseData.profiles
-											.map((p) => p[1])
-											.join(", ")
-									: "_"}
-							</p>
-						</div>
-
-						{caseData.relationships &&
-						caseData.relationships.length > 0 ? (
-							<div>
-								<Label className="text-xs text-gray-500">
-									Connections
-								</Label>
-								<div className="space-y-2">
-									{caseData.relationships.map((rel, idx) => (
-										<div
-											key={idx}
-											className="text-sm text-gray-700 p-2 bg-gray-50 rounded"
-										>
-											Profile {rel.source_profile_id}{" "}
-											{rel.relationship_type && (
-												<span className="font-medium">
-													{rel.relationship_type}
-												</span>
-											)}{" "}
-											Profile {rel.target_profile_id}
-										</div>
-									))}
-								</div>
+						{caseData.profiles && caseData.profiles.length > 0 ? (
+							<div
+								className="w-full bg-gray-50 rounded border border-gray-200"
+								style={{ height: "500px" }}
+							>
+								<ReactFlow
+									nodes={nodes}
+									edges={edges}
+									nodeTypes={{ custom: ReadOnlyCustomNode }}
+									edgeTypes={{ custom: ReadOnlyCustomEdge }}
+								>
+									<Background
+										color="#aaa"
+										gap={16}
+										variant={BackgroundVariant.Dots}
+									/>
+									<Controls />
+									<MiniMap />
+								</ReactFlow>
 							</div>
 						) : (
-							<div>
-								<Label className="text-xs text-gray-500">
-									Connections
-								</Label>
-								<p className="text-sm text-gray-700">_</p>
+							<div className="bg-gray-50 p-4 rounded border border-gray-200">
+								<p className="text-sm text-gray-600">
+									No profiles associated with this case
+								</p>
 							</div>
 						)}
 					</div>
 
 					<Separator />
-
-					{/* [3] Drugs Section */}
 					<div className="space-y-4">
 						<h3 className="text-sm font-semibold text-gray-700">
 							Drugs
