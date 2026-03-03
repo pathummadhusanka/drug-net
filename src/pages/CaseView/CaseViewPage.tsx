@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -25,6 +26,14 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogFooter,
+} from "@/components/ui/dialog";
 import {
 	getCase,
 	getCaseAreas,
@@ -163,6 +172,8 @@ const ReadOnlyCustomEdge = ({
 	sourceY,
 	targetX,
 	targetY,
+	source,
+	target,
 	data,
 	markerEnd,
 }: EdgeProps) => {
@@ -177,6 +188,24 @@ const ReadOnlyCustomEdge = ({
 	// Truncate label if longer than 15 characters
 	const displayLabel =
 		label.length > 15 ? label.substring(0, 15) + "..." : label;
+
+	const handleEdgeInfoClick = (
+		event: React.MouseEvent<HTMLButtonElement>,
+	) => {
+		event.preventDefault();
+		event.stopPropagation();
+
+		window.dispatchEvent(
+			new CustomEvent("open-connection-info-dialog", {
+				detail: {
+					edgeId: id,
+					label,
+					source,
+					target,
+				},
+			}),
+		);
+	};
 
 	return (
 		<>
@@ -208,12 +237,20 @@ const ReadOnlyCustomEdge = ({
 						style={{
 							position: "absolute",
 							transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-							pointerEvents: "none",
+							pointerEvents: "all",
 						}}
 						className="nodrag nopan"
 					>
-						<div className="px-1.5 py-0.5 bg-white border border-gray-300 rounded text-xs select-none">
-							{displayLabel}
+						<div className="px-1.5 py-0.5 bg-white border border-gray-300 rounded text-xs select-none flex items-center gap-1">
+							<div className="cursor-default">{displayLabel}</div>
+							<button
+								type="button"
+								onClick={handleEdgeInfoClick}
+								className="w-4 h-4 rounded-full border border-gray-300 text-[10px] leading-none text-gray-500 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center cursor-pointer shrink-0"
+								title="View connection details"
+							>
+								<Info className="w-2.5 h-2.5" />
+							</button>
 						</div>
 					</div>
 				</EdgeLabelRenderer>
@@ -229,12 +266,52 @@ export default function CaseViewPage() {
 	const [loading, setLoading] = useState(true);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
+	const [isConnectionInfoDialogOpen, setIsConnectionInfoDialogOpen] =
+		useState(false);
+	const [connectionInfo, setConnectionInfo] = useState<{
+		edgeId: string;
+		label: string;
+		source: string;
+		target: string;
+	} | null>(null);
 	const [nodes, setNodes] = useNodesState([]);
 	const [edges, setEdges] = useEdgesState([]);
 
 	useEffect(() => {
 		fetchCaseDetails();
 	}, [id]);
+
+	// Set up event listener for connection info dialog
+	useEffect(() => {
+		const handleOpenConnectionInfoDialog = (event: Event) => {
+			const customEvent = event as CustomEvent<{
+				edgeId: string;
+				label: string;
+				source: string;
+				target: string;
+			}>;
+
+			setConnectionInfo({
+				edgeId: customEvent.detail.edgeId,
+				label: customEvent.detail.label || "",
+				source: customEvent.detail.source,
+				target: customEvent.detail.target,
+			});
+			setIsConnectionInfoDialogOpen(true);
+		};
+
+		window.addEventListener(
+			"open-connection-info-dialog",
+			handleOpenConnectionInfoDialog,
+		);
+
+		return () => {
+			window.removeEventListener(
+				"open-connection-info-dialog",
+				handleOpenConnectionInfoDialog,
+			);
+		};
+	}, []);
 
 	const fetchCaseDetails = async () => {
 		if (!id) return;
@@ -704,6 +781,92 @@ export default function CaseViewPage() {
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
+
+			{/* Connection Info Dialog */}
+			<Dialog
+				open={isConnectionInfoDialogOpen}
+				onOpenChange={setIsConnectionInfoDialogOpen}
+			>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>Connection Details</DialogTitle>
+						<DialogDescription>
+							View connection information between profiles
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 py-4">
+						{connectionInfo && (
+							<div className="bg-muted p-3 rounded-md text-sm">
+								<div className="flex items-center justify-between gap-2">
+									<div className="flex min-w-0 items-center gap-2">
+										<span
+											className="font-medium truncate max-w-45"
+											title={
+												nodes.find(
+													(n) =>
+														n.id ===
+														connectionInfo.source,
+												)?.data?.label as string
+											}
+										>
+											{
+												nodes.find(
+													(n) =>
+														n.id ===
+														connectionInfo.source,
+												)?.data?.label as string
+											}
+										</span>
+										<span className="text-muted-foreground shrink-0">
+											→
+										</span>
+										<span
+											className="font-medium truncate max-w-45"
+											title={
+												nodes.find(
+													(n) =>
+														n.id ===
+														connectionInfo.target,
+												)?.data?.label as string
+											}
+										>
+											{
+												nodes.find(
+													(n) =>
+														n.id ===
+														connectionInfo.target,
+												)?.data?.label as string
+											}
+										</span>
+									</div>
+								</div>
+							</div>
+						)}
+						<div className="space-y-2">
+							<Label htmlFor="connection-type-readonly">
+								Connection Type
+							</Label>
+							<Input
+								id="connection-type-readonly"
+								value={connectionInfo?.label || ""}
+								readOnly
+								disabled
+								className="bg-gray-50 cursor-not-allowed"
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button
+							type="button"
+							variant="outline"
+							className="cursor-pointer"
+							onClick={() => setIsConnectionInfoDialogOpen(false)}
+						>
+							Close
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</>
 	);
 }
