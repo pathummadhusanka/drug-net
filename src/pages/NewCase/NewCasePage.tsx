@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { createCaseWithAreas } from "@/lib/cases";
+import { getAllAreas, type Area } from "@/lib/areas";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -162,6 +163,68 @@ const nodeTypes = {
 	custom: CustomNode,
 };
 
+/**
+ * Fuzzy match search term against target string
+ * Returns { match: boolean, score: number } where higher score = better match
+ * Scoring: exact match > starts with > fuzzy sequence match
+ */
+function fuzzyMatch(
+	search: string,
+	target: string,
+): { match: boolean; score: number } {
+	const searchLower = search.toLowerCase().trim();
+	const targetLower = target.toLowerCase();
+
+	if (!searchLower) return { match: true, score: 0 };
+
+	// Exact match - highest score
+	if (targetLower === searchLower) {
+		return { match: true, score: 1000 };
+	}
+
+	// Starts with - high score
+	if (targetLower.startsWith(searchLower)) {
+		return { match: true, score: 500 };
+	}
+
+	// Contains substring - medium score
+	if (targetLower.includes(searchLower)) {
+		return { match: true, score: 250 };
+	}
+
+	// Fuzzy sequence match (characters appear in order)
+	let searchIndex = 0;
+	let lastMatchIndex = -1;
+	let consecutiveMatches = 0;
+	let totalGaps = 0;
+
+	for (
+		let i = 0;
+		i < targetLower.length && searchIndex < searchLower.length;
+		i++
+	) {
+		if (targetLower[i] === searchLower[searchIndex]) {
+			if (i === lastMatchIndex + 1) {
+				consecutiveMatches++;
+			}
+			if (lastMatchIndex >= 0) {
+				totalGaps += i - lastMatchIndex - 1;
+			}
+			lastMatchIndex = i;
+			searchIndex++;
+		}
+	}
+
+	// All characters found in sequence
+	if (searchIndex === searchLower.length) {
+		// Better score for consecutive matches and fewer gaps
+		const score = 100 + consecutiveMatches * 10 - totalGaps;
+		return { match: true, score: Math.max(score, 1) };
+	}
+
+	return { match: false, score: 0 };
+}
+
 export default function NewCasePage() {
 	const navigate = useNavigate();
 	const location = useLocation();
@@ -191,6 +254,7 @@ export default function NewCasePage() {
 	const [drugSearch, setDrugSearch] = useState("");
 	const [areas, setAreas] = useState<string[]>([]);
 	const [pendingArea, setPendingArea] = useState("");
+	const [availableAreas, setAvailableAreas] = useState<Area[]>([]);
 
 	const [isConnectionDialogOpen, setIsConnectionDialogOpen] = useState(false);
 	const [pendingConnection, setPendingConnection] = useState<
@@ -425,6 +489,19 @@ export default function NewCasePage() {
 	useEffect(() => {
 		handleTextareaResize(descriptionTextareaRef);
 	}, [caseDescription]);
+
+	// Fetch available areas on mount
+	useEffect(() => {
+		const fetchAreas = async () => {
+			try {
+				const allAreas = await getAllAreas();
+				setAvailableAreas(allAreas);
+			} catch (error) {
+				console.error("Failed to fetch areas:", error);
+			}
+		};
+		fetchAreas();
+	}, []);
 
 	const clearAll = () => {
 		setCaseNotes("");
@@ -1187,8 +1264,10 @@ export default function NewCasePage() {
 							<div className="space-y-4 pt-2 px-2">
 								<div className="space-y-2 max-w-180 ml-4">
 									<Label>Add Area</Label>
-									<Field orientation="horizontal">
-										<Input
+									<Combobox>
+										<ComboboxInput
+											placeholder="Enter or select area name..."
+											showTrigger
 											value={pendingArea}
 											onChange={(e) =>
 												setPendingArea(e.target.value)
@@ -1215,28 +1294,86 @@ export default function NewCasePage() {
 													}
 												}
 											}}
-											placeholder="Enter area name (press Enter, comma, or space to add)"
 										/>
-										<Button
-											type="button"
-											variant="outline"
-											className="cursor-pointer"
-											onClick={() => {
-												if (pendingArea.trim()) {
-													const newAreas = new Set([
-														...areas,
-														pendingArea.trim(),
-													]);
-													setAreas(
-														Array.from(newAreas),
-													);
-													setPendingArea("");
-												}
-											}}
-										>
-											Add
-										</Button>
-									</Field>
+										<ComboboxContent>
+											<ComboboxList>
+												{availableAreas
+													.map((area) => ({
+														area,
+														...fuzzyMatch(
+															pendingArea,
+															area.name,
+														),
+													}))
+													.filter(
+														({ area, match }) =>
+															!areas.includes(
+																area.name,
+															) && match,
+													)
+													.sort(
+														(a, b) =>
+															b.score - a.score,
+													)
+													.map(({ area }) => (
+														<ComboboxItem
+															key={area.id}
+															value={area.name}
+															onClick={() => {
+																const newAreas =
+																	new Set([
+																		...areas,
+																		area.name,
+																	]);
+																setAreas(
+																	Array.from(
+																		newAreas,
+																	),
+																);
+																setPendingArea(
+																	"",
+																);
+															}}
+															className="cursor-pointer"
+														>
+															{area.name}
+														</ComboboxItem>
+													))}
+												{pendingArea.trim() &&
+													!availableAreas.some(
+														(area) =>
+															area.name.toLowerCase() ===
+															pendingArea
+																.trim()
+																.toLowerCase(),
+													) && (
+														<ComboboxItem
+															value={pendingArea.trim()}
+															onClick={() => {
+																const newAreas =
+																	new Set([
+																		...areas,
+																		pendingArea.trim(),
+																	]);
+																setAreas(
+																	Array.from(
+																		newAreas,
+																	),
+																);
+																setPendingArea(
+																	"",
+																);
+															}}
+															className="cursor-pointer"
+														>
+															Add "
+															{pendingArea.trim()}
+															"
+														</ComboboxItem>
+													)}
+											</ComboboxList>
+										</ComboboxContent>
+									</Combobox>
 									{areas.length > 0 && (
 										<div className="border rounded-md min-h-10 overflow-y-auto p-2 flex gap-2 flex-wrap items-center">
 											{areas.map((area, idx) => (
