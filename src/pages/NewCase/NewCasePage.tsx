@@ -1112,7 +1112,12 @@ export default function NewCasePage() {
 								{/* Profile Selection Dialog */}
 								<Dialog
 									open={isAddProfileDialogOpen}
-									onOpenChange={setIsAddProfileDialogOpen}
+									onOpenChange={(open) => {
+										setIsAddProfileDialogOpen(open);
+										if (!open) {
+											setProfileSearch("");
+										}
+									}}
 								>
 									<DialogContent className="sm:max-w-2xl">
 										<DialogHeader>
@@ -1125,21 +1130,20 @@ export default function NewCasePage() {
 											</DialogDescription>
 										</DialogHeader>
 										<div className="space-y-4 py-4">
-											<Combobox>
-												<ComboboxInput
-													placeholder="Search by name or alias..."
-													showTrigger
-													value={profileSearch}
-													onChange={(e) =>
-														setProfileSearch(
-															e.target.value,
-														)
-													}
-													autoFocus
-												/>
-												<ComboboxContent>
-													<ComboboxList>
-														{availableProfiles
+											<Input
+												placeholder="Search by name or alias..."
+												value={profileSearch}
+												onChange={(e) =>
+													setProfileSearch(
+														e.target.value,
+													)
+												}
+												autoFocus
+											/>
+											<div className="max-h-80 overflow-y-auto rounded-md border">
+												{(() => {
+													const filteredProfiles =
+														availableProfiles
 															.map((profile) => ({
 																profile,
 																...fuzzyMatch(
@@ -1156,81 +1160,78 @@ export default function NewCasePage() {
 																	b.score -
 																	a.score,
 															)
-															.slice(0, 50)
-															.map(
-																({
-																	profile,
-																}) => (
-																	<ComboboxItem
-																		key={
-																			profile.id
-																		}
-																		value={
-																			profile.full_name
-																		}
-																		onClick={() => {
-																			addNode(
-																				profile,
-																			);
-																			setIsAddProfileDialogOpen(
-																				false,
-																			);
-																			setProfileSearch(
-																				"",
-																			);
-																		}}
-																		className="cursor-pointer"
-																	>
-																		<div className="flex flex-col">
-																			<span className="font-medium">
-																				{
-																					profile.full_name
-																				}
-																			</span>
-																			{profile.alias && (
-																				<span className="text-sm text-muted-foreground">
-																					Alias:{" "}
-																					{
-																						profile.alias
-																					}
-																				</span>
-																			)}
-																			{profile.city && (
-																				<span className="text-xs text-muted-foreground">
-																					{
-																						profile.city
-																					}
-																				</span>
-																			)}
-																		</div>
-																	</ComboboxItem>
-																),
-															)}
-														{availableProfiles.length ===
-															0 && (
+															.slice(0, 50);
+
+													if (
+														availableProfiles.length ===
+														0
+													) {
+														return (
 															<div className="p-4 text-center text-sm text-muted-foreground">
 																No profiles
 																found in
 																database
 															</div>
-														)}
-														{profileSearch &&
-															availableProfiles.filter(
-																(p) =>
-																	fuzzyMatch(
-																		profileSearch,
-																		`${p.full_name} ${p.alias || ""}`,
-																	).match,
-															).length === 0 && (
-																<div className="p-4 text-center text-sm text-muted-foreground">
-																	No matching
-																	profiles
-																	found
+														);
+													}
+
+													if (
+														filteredProfiles.length ===
+														0
+													) {
+														return (
+															<div className="p-4 text-center text-sm text-muted-foreground">
+																No matching
+																profiles found
+															</div>
+														);
+													}
+
+													return filteredProfiles.map(
+														({ profile }) => (
+															<button
+																key={profile.id}
+																type="button"
+																onClick={() => {
+																	addNode(
+																		profile,
+																	);
+																	setIsAddProfileDialogOpen(
+																		false,
+																	);
+																	setProfileSearch(
+																		"",
+																	);
+																}}
+																className="w-full border-b px-3 py-2 text-left last:border-b-0 hover:bg-muted/50"
+															>
+																<div className="flex flex-col">
+																	<span className="font-medium">
+																		{
+																			profile.full_name
+																		}
+																	</span>
+																	{profile.alias && (
+																		<span className="text-sm text-muted-foreground">
+																			Alias:{" "}
+																			{
+																				profile.alias
+																			}
+																		</span>
+																	)}
+																	{profile.city && (
+																		<span className="text-xs text-muted-foreground">
+																			{
+																				profile.city
+																			}
+																		</span>
+																	)}
 																</div>
-															)}
-													</ComboboxList>
-												</ComboboxContent>
-											</Combobox>
+															</button>
+														),
+													);
+												})()}
+											</div>
 										</div>
 										<DialogFooter>
 											<DialogClose asChild>
