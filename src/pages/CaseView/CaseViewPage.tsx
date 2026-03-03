@@ -194,6 +194,22 @@ export default function CaseViewPage() {
 		}
 	};
 
+	const getSeverityBadgeColor = (severity: string | null) => {
+		if (!severity) return "bg-gray-100 text-gray-800";
+		switch (severity.toLowerCase()) {
+			case "low":
+				return "bg-green-100 text-green-800";
+			case "medium":
+				return "bg-yellow-100 text-yellow-800";
+			case "high":
+				return "bg-orange-100 text-orange-800";
+			case "critical":
+				return "bg-red-100 text-red-800";
+			default:
+				return "bg-gray-100 text-gray-800";
+		}
+	};
+
 	if (loading) {
 		return (
 			<div className="container mx-auto flex items-center justify-center py-12">
@@ -244,20 +260,34 @@ export default function CaseViewPage() {
 					<div className="flex justify-between items-start">
 						<div className="flex-1">
 							<div className="flex items-baseline gap-2 mb-2">
-								<code className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
-									{caseData.cno}
-								</code>
+								{caseData.case_id && (
+									<code className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+										{caseData.case_id}
+									</code>
+								)}
 								<h1 className="text-2xl font-bold">
 									{caseData.case_name}
 								</h1>
 							</div>
 						</div>
 						<div className="flex items-center gap-2">
-							<span
-								className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(caseData.status)}`}
-							>
-								{caseData.status || "Unknown"}
-							</span>
+							{caseData.severity_level && (
+								<span
+									className={`px-3 py-1 rounded-full text-sm font-medium ${getSeverityBadgeColor(caseData.severity_level)}`}
+								>
+									{caseData.severity_level
+										.charAt(0)
+										.toUpperCase() +
+										caseData.severity_level.slice(1)}
+								</span>
+							)}
+							{caseData.status && (
+								<span
+									className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(caseData.status)}`}
+								>
+									{caseData.status}
+								</span>
+							)}
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
 									<Button

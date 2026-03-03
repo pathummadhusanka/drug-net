@@ -1,15 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -36,8 +29,6 @@ import {
 	MapPin,
 	Network,
 	AlertCircle,
-	MoreVertical,
-	Trash2,
 	FileText,
 	MessageSquare,
 } from "lucide-react";
@@ -142,6 +133,22 @@ export default function CasesPage() {
 				return "bg-green-100 text-green-800";
 			case "under review":
 				return "bg-yellow-100 text-yellow-800";
+			default:
+				return "bg-gray-100 text-gray-800";
+		}
+	};
+
+	const getSeverityColor = (severity: string | null) => {
+		if (!severity) return "bg-gray-100 text-gray-800";
+		switch (severity.toLowerCase()) {
+			case "low":
+				return "bg-green-100 text-green-800";
+			case "medium":
+				return "bg-yellow-100 text-yellow-800";
+			case "high":
+				return "bg-orange-100 text-orange-800";
+			case "critical":
+				return "bg-red-100 text-red-800";
 			default:
 				return "bg-gray-100 text-gray-800";
 		}
@@ -276,109 +283,99 @@ export default function CasesPage() {
 							className="cursor-pointer hover:shadow-md transition-shadow gap-2"
 							onClick={() => navigate(`/case/${caseItem.id}`)}
 						>
-							{/* Card Header */}
-							<CardHeader className="pt-1 pb-0 px-6 !space-y-0">
-								<div className="flex justify-between items-start">
-									<div className="flex-1">
-										<div className="flex items-baseline gap-2">
-											<code className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
-												{caseItem.cno}
-											</code>
-											<h3 className="text-lg font-semibold">
-												{caseItem.case_name}
-											</h3>
-										</div>
-									</div>
-									<div className="flex items-center gap-2">
-										<span
-											className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(caseItem.status)}`}
-										>
-											{caseItem.status || "Unknown"}
-										</span>
-										<DropdownMenu>
-											<DropdownMenuTrigger asChild>
-												<Button
-													variant="secondary"
-													size="sm"
-													className="cursor-pointer"
-													onClick={(e) =>
-														e.stopPropagation()
-													}
-												>
-													<MoreVertical className="h-4 w-4" />
-												</Button>
-											</DropdownMenuTrigger>
-											<DropdownMenuContent
-												align="end"
-												className="w-44"
-											>
-												<DropdownMenuItem
-													onSelect={(event) => {
-														event.preventDefault();
-														navigate(
-															`/new-case/${caseItem.id}`,
-														);
-													}}
-												>
-													Edit Case
-												</DropdownMenuItem>
-												<DropdownMenuSeparator />
-												<DropdownMenuItem
-													variant="destructive"
-													onSelect={(event) => {
-														event.preventDefault();
-														setCaseToDelete(
-															caseItem,
-														);
-														setDeleteDialogOpen(
-															true,
-														);
-													}}
-													disabled={isDeleting}
-												>
-													<Trash2 className="h-4 w-4" />
-													Delete Case
-												</DropdownMenuItem>
-											</DropdownMenuContent>
-										</DropdownMenu>
-									</div>
-								</div>
-							</CardHeader>
-
 							{/* Always visible section - Details with badges */}
-							<CardContent className="pt-0 space-y-2 pb-3">
-								{/* Details Badge - Date, Time, Description */}
-								{(caseItem.case_date ||
-									caseItem.case_time ||
-									caseItem.description) && (
-									<div className="flex items-start gap-2">
-										<Badge
-											variant="outline"
-											className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
-										>
-											<FileText className="h-3 w-3" />
-											Details
-										</Badge>
-										<p className="text-sm text-gray-700 truncate">
+							<CardContent className="pt-2 space-y-2 pb-2">
+								{/* Details Badge - Case ID, Title, Date, Time, Severity, Status, Description */}
+								<div className="flex items-start gap-2">
+									<Badge
+										variant="outline"
+										className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+									>
+										<FileText className="h-3 w-3" />
+										Details
+									</Badge>
+									<div className="flex-1 space-y-1">
+										{/* Line 1: Case ID | Case Title */}
+										<p className="text-sm text-gray-700">
 											{[
-												caseItem.case_date
-													? new Date(
-															caseItem.case_date,
-														).toLocaleDateString()
-													: null,
-												caseItem.case_time,
-												caseItem.description
-													? caseItem.description
-															.length > 50
-														? `${caseItem.description.substring(0, 50)}...`
-														: caseItem.description
-													: null,
+												caseItem.case_id,
+												caseItem.case_name,
 											]
 												.filter(Boolean)
 												.join(" | ")}
 										</p>
+
+										{/* Line 2: Date, Time, Severity, Status, Description */}
+										{(caseItem.case_date ||
+											caseItem.case_time ||
+											caseItem.severity_level ||
+											caseItem.status ||
+											caseItem.description) && (
+											<div className="flex items-center gap-2 flex-wrap text-sm text-gray-700">
+												{(caseItem.case_date ||
+													caseItem.case_time) && (
+													<>
+														<span>
+															{[
+																caseItem.case_date
+																	? new Date(
+																			caseItem.case_date,
+																		).toLocaleDateString()
+																	: null,
+																caseItem.case_time,
+															]
+																.filter(Boolean)
+																.join(" | ")}
+														</span>
+														{(caseItem.severity_level ||
+															caseItem.status ||
+															caseItem.description) && (
+															<span>|</span>
+														)}
+													</>
+												)}
+												{caseItem.severity_level && (
+													<>
+														<span
+															className={`px-2 py-0.5 rounded-full text-xs font-medium ${getSeverityColor(caseItem.severity_level)}`}
+														>
+															{caseItem.severity_level
+																.charAt(0)
+																.toUpperCase() +
+																caseItem.severity_level.slice(
+																	1,
+																)}
+														</span>
+														{(caseItem.status ||
+															caseItem.description) && (
+															<span>|</span>
+														)}
+													</>
+												)}
+												{caseItem.status && (
+													<>
+														<span
+															className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(caseItem.status)}`}
+														>
+															{caseItem.status}
+														</span>
+														{caseItem.description && (
+															<span>|</span>
+														)}
+													</>
+												)}
+												{caseItem.description && (
+													<span>
+														{caseItem.description
+															.length > 100
+															? `${caseItem.description.substring(0, 100)}...`
+															: caseItem.description}
+													</span>
+												)}
+											</div>
+										)}
 									</div>
-								)}
+								</div>
 
 								{/* Network Badge + Details */}
 								{caseItem.profiles &&
