@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { createCaseWithAreas } from "@/lib/cases";
 import { getAllAreas, type Area } from "@/lib/areas";
+import { getAllProfiles, type ProfileWithId } from "@/lib/profiles";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -74,6 +75,7 @@ const CustomNode = ({
 }: {
 	data: {
 		label: string;
+		profileId?: number;
 		isCurrentProfile?: boolean;
 		onDelete?: (id: string) => void;
 		edges?: Edge[];
@@ -255,6 +257,12 @@ export default function NewCasePage() {
 	const [areas, setAreas] = useState<string[]>([]);
 	const [pendingArea, setPendingArea] = useState("");
 	const [availableAreas, setAvailableAreas] = useState<Area[]>([]);
+
+	const [isAddProfileDialogOpen, setIsAddProfileDialogOpen] = useState(false);
+	const [availableProfiles, setAvailableProfiles] = useState<ProfileWithId[]>(
+		[],
+	);
+	const [profileSearch, setProfileSearch] = useState("");
 
 	const [isConnectionDialogOpen, setIsConnectionDialogOpen] = useState(false);
 	const [pendingConnection, setPendingConnection] = useState<
@@ -443,23 +451,31 @@ export default function NewCasePage() {
 		[setNodes, setEdges],
 	);
 
-	const addNode = useCallback(() => {
-		const newNode: Node = {
-			id: `${nodeId}`,
-			type: "custom",
-			data: {
-				label: `Profile ${nodeId}`,
-				onDelete: handleNodeDelete,
-				edges,
-			},
-			position: {
-				x: Math.random() * 400 + 100,
-				y: Math.random() * 400 + 50,
-			},
-		};
-		setNodes((nds) => [...nds, newNode]);
-		setNodeId((id) => id + 1);
-	}, [nodeId, setNodes, handleNodeDelete, edges]);
+	const addNode = useCallback(
+		(profile: ProfileWithId) => {
+			const displayName = profile.alias
+				? `${profile.full_name} (${profile.alias})`
+				: profile.full_name;
+
+			const newNode: Node = {
+				id: `${nodeId}`,
+				type: "custom",
+				data: {
+					label: displayName,
+					profileId: profile.id,
+					onDelete: handleNodeDelete,
+					edges,
+				},
+				position: {
+					x: Math.random() * 400 + 100,
+					y: Math.random() * 400 + 50,
+				},
+			};
+			setNodes((nds) => [...nds, newNode]);
+			setNodeId((id) => id + 1);
+		},
+		[nodeId, setNodes, handleNodeDelete, edges],
+	);
 
 	useEffect(() => {
 		setNodes((nds) =>
@@ -490,7 +506,7 @@ export default function NewCasePage() {
 		handleTextareaResize(descriptionTextareaRef);
 	}, [caseDescription]);
 
-	// Fetch available areas on mount
+	// Fetch available areas and profiles on mount
 	useEffect(() => {
 		const fetchAreas = async () => {
 			try {
@@ -500,7 +516,18 @@ export default function NewCasePage() {
 				console.error("Failed to fetch areas:", error);
 			}
 		};
+
+		const fetchProfiles = async () => {
+			try {
+				const allProfiles = await getAllProfiles();
+				setAvailableProfiles(allProfiles);
+			} catch (error) {
+				console.error("Failed to fetch profiles:", error);
+			}
+		};
+
 		fetchAreas();
+		fetchProfiles();
 	}, []);
 
 	const clearAll = () => {
@@ -906,7 +933,10 @@ export default function NewCasePage() {
 										variant="outline"
 										size="sm"
 										className="cursor-pointer"
-										onClick={addNode}
+										onClick={() => {
+											setProfileSearch("");
+											setIsAddProfileDialogOpen(true);
+										}}
 									>
 										<Plus className="h-4 w-4 mr-2" />
 										Add Profile
@@ -1079,11 +1109,148 @@ export default function NewCasePage() {
 									</DialogContent>
 								</Dialog>
 
+								{/* Profile Selection Dialog */}
+								<Dialog
+									open={isAddProfileDialogOpen}
+									onOpenChange={setIsAddProfileDialogOpen}
+								>
+									<DialogContent className="sm:max-w-2xl">
+										<DialogHeader>
+											<DialogTitle>
+												Add Profile to Case
+											</DialogTitle>
+											<DialogDescription>
+												Search and select a profile from
+												the database
+											</DialogDescription>
+										</DialogHeader>
+										<div className="space-y-4 py-4">
+											<Combobox>
+												<ComboboxInput
+													placeholder="Search by name or alias..."
+													showTrigger
+													value={profileSearch}
+													onChange={(e) =>
+														setProfileSearch(
+															e.target.value,
+														)
+													}
+													autoFocus
+												/>
+												<ComboboxContent>
+													<ComboboxList>
+														{availableProfiles
+															.map((profile) => ({
+																profile,
+																...fuzzyMatch(
+																	profileSearch,
+																	`${profile.full_name} ${profile.alias || ""}`,
+																),
+															}))
+															.filter(
+																({ match }) =>
+																	match,
+															)
+															.sort(
+																(a, b) =>
+																	b.score -
+																	a.score,
+															)
+															.slice(0, 50)
+															.map(
+																({
+																	profile,
+																}) => (
+																	<ComboboxItem
+																		key={
+																			profile.id
+																		}
+																		value={
+																			profile.full_name
+																		}
+																		onClick={() => {
+																			addNode(
+																				profile,
+																			);
+																			setIsAddProfileDialogOpen(
+																				false,
+																			);
+																			setProfileSearch(
+																				"",
+																			);
+																		}}
+																		className="cursor-pointer"
+																	>
+																		<div className="flex flex-col">
+																			<span className="font-medium">
+																				{
+																					profile.full_name
+																				}
+																			</span>
+																			{profile.alias && (
+																				<span className="text-sm text-muted-foreground">
+																					Alias:{" "}
+																					{
+																						profile.alias
+																					}
+																				</span>
+																			)}
+																			{profile.city && (
+																				<span className="text-xs text-muted-foreground">
+																					{
+																						profile.city
+																					}
+																				</span>
+																			)}
+																		</div>
+																	</ComboboxItem>
+																),
+															)}
+														{availableProfiles.length ===
+															0 && (
+															<div className="p-4 text-center text-sm text-muted-foreground">
+																No profiles
+																found in
+																database
+															</div>
+														)}
+														{profileSearch &&
+															availableProfiles.filter(
+																(p) =>
+																	fuzzyMatch(
+																		profileSearch,
+																		`${p.full_name} ${p.alias || ""}`,
+																	).match,
+															).length === 0 && (
+																<div className="p-4 text-center text-sm text-muted-foreground">
+																	No matching
+																	profiles
+																	found
+																</div>
+															)}
+													</ComboboxList>
+												</ComboboxContent>
+											</Combobox>
+										</div>
+										<DialogFooter>
+											<DialogClose asChild>
+												<Button
+													variant="outline"
+													type="button"
+													className="cursor-pointer"
+												>
+													Cancel
+												</Button>
+											</DialogClose>
+										</DialogFooter>
+									</DialogContent>
+								</Dialog>
+
 								<p className="text-sm text-gray-500">
-									Click "Add Profile" to create new profiles.
-									Drag profiles to reposition them, and drag
-									from one profile's edge to another to create
-									connections.
+									Click "Add Profile" to select profiles from
+									the database. Drag profiles to reposition
+									them, and drag from one profile's edge to
+									another to create connections.
 								</p>
 							</div>
 						</AccordionContent>
