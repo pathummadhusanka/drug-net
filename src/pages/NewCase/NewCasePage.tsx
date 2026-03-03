@@ -61,9 +61,13 @@ import {
 	addEdge,
 	Connection,
 	Edge,
+	EdgeProps,
+	BaseEdge,
+	EdgeLabelRenderer,
 	Node,
 	useEdgesState,
 	useNodesState,
+	getBezierPath,
 } from "reactflow";
 import ReactFlow from "reactflow";
 import "reactflow/dist/style.css";
@@ -72,6 +76,7 @@ import {
 	Check,
 	ChevronLeft,
 	Clock,
+	Info,
 	Trash2,
 	UserPlus,
 	UserSearch,
@@ -82,6 +87,7 @@ import { toast } from "sonner";
 const CustomNode = ({
 	data,
 	id,
+	isSelected,
 }: {
 	data: {
 		label: string;
@@ -95,7 +101,10 @@ const CustomNode = ({
 		edges?: Edge[];
 	};
 	id: string;
+	isSelected?: boolean;
 }) => {
+	const [tooltipOpen, setTooltipOpen] = useState(false);
+
 	const bgColor = data.isCurrentProfile ? "bg-indigo-600" : "bg-white";
 	const textColor = data.isCurrentProfile ? "text-white" : "text-black";
 	const borderColor = data.isCurrentProfile
@@ -141,90 +150,177 @@ const CustomNode = ({
 			<Handle type="source" position={Position.Right} id="right" />
 			<Handle type="source" position={Position.Bottom} id="bottom" />
 			<Handle type="source" position={Position.Left} id="left" />
-			<div className="flex items-start justify-between gap-2">
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<div className="flex flex-col cursor-help">
-							<div className="font-medium text-sm">
-								{displayName}
-							</div>
-							{displayAlias && (
-								<div className="text-xs opacity-80 italic">
-									{displayAlias}
-								</div>
-							)}
-						</div>
-					</TooltipTrigger>
-					<TooltipContent className="bg-slate-900 text-white p-3 rounded-md">
-						<div className="text-sm space-y-1">
-							{tooltipParts.map((part, idx) => (
-								<div key={idx}>{part}</div>
-							))}
-						</div>
-					</TooltipContent>
-				</Tooltip>
-				{data.onDelete && (
-					<AlertDialog>
-						<AlertDialogTrigger asChild>
+			<div className="flex flex-col gap-0.5">
+				<div className="flex items-start justify-between gap-0.5">
+					<div className="font-medium text-sm flex-1">
+						{displayName}
+					</div>
+					<Tooltip open={tooltipOpen} onOpenChange={setTooltipOpen}>
+						<TooltipTrigger asChild>
 							<button
 								onClick={(e) => {
 									e.stopPropagation();
+									setTooltipOpen(!tooltipOpen);
 								}}
-								className="hover:bg-red-100 hover:bg-opacity-20 text-current hover:text-red-600 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer p-0 shrink-0"
-								title="Delete profile"
+								className="hover:bg-blue-100 hover:bg-opacity-20 text-current hover:text-blue-600 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer p-0 flex-shrink-0"
+								title="Show profile info"
 							>
-								<X className="w-2.5 h-2.5" />
+								<Info className="w-3 h-3" />
 							</button>
-						</AlertDialogTrigger>
-						<AlertDialogContent>
-							<AlertDialogHeader>
-								<AlertDialogTitle>
-									Delete Profile
-								</AlertDialogTitle>
-								<AlertDialogDescription>
-									Are you sure you want to delete this
-									profile?
-									{connectionCount > 0 && (
-										<>
-											{" "}
-											This profile has{" "}
-											<span className="font-semibold">
-												{connectionCount}{" "}
-												{connectionCount === 1
-													? "connection"
-													: "connections"}
-											</span>{" "}
-											that will also be removed.
-										</>
-									)}{" "}
-									This action cannot be undone.
-								</AlertDialogDescription>
-							</AlertDialogHeader>
-							<AlertDialogFooter>
-								<AlertDialogCancel className="cursor-pointer">
-									Cancel
-								</AlertDialogCancel>
-								<AlertDialogAction
-									className="cursor-pointer bg-red-600 hover:bg-red-700 text-white"
-									onClick={(e: React.MouseEvent) => {
-										e.preventDefault();
+						</TooltipTrigger>
+						<TooltipContent className="bg-slate-900 text-white p-3 rounded-md">
+							<div className="text-sm space-y-1">
+								{tooltipParts.map((part, idx) => (
+									<div key={idx}>{part}</div>
+								))}
+							</div>
+						</TooltipContent>
+					</Tooltip>
+					{data.onDelete && (
+						<AlertDialog>
+							<AlertDialogTrigger asChild>
+								<button
+									onClick={(e) => {
 										e.stopPropagation();
-										data.onDelete?.(id);
 									}}
+									className="hover:bg-red-100 hover:bg-opacity-20 text-current hover:text-red-600 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer p-0 flex-shrink-0"
+									title="Delete profile"
 								>
-									Delete
-								</AlertDialogAction>
-							</AlertDialogFooter>
-						</AlertDialogContent>
-					</AlertDialog>
+									<X className="w-2.5 h-2.5" />
+								</button>
+							</AlertDialogTrigger>
+							<AlertDialogContent>
+								<AlertDialogHeader>
+									<AlertDialogTitle>
+										Delete Profile
+									</AlertDialogTitle>
+									<AlertDialogDescription>
+										Are you sure you want to delete this
+										profile?
+										{connectionCount > 0 && (
+											<>
+												{" "}
+												This profile has{" "}
+												<span className="font-semibold">
+													{connectionCount}{" "}
+													{connectionCount === 1
+														? "connection"
+														: "connections"}
+												</span>{" "}
+												that will also be removed.
+											</>
+										)}{" "}
+										This action cannot be undone.
+									</AlertDialogDescription>
+								</AlertDialogHeader>
+								<AlertDialogFooter>
+									<AlertDialogCancel className="cursor-pointer">
+										Cancel
+									</AlertDialogCancel>
+									<AlertDialogAction
+										className="cursor-pointer bg-red-600 hover:bg-red-700 text-white"
+										onClick={(e: React.MouseEvent) => {
+											e.preventDefault();
+											e.stopPropagation();
+											data.onDelete?.(id);
+										}}
+									>
+										Delete
+									</AlertDialogAction>
+								</AlertDialogFooter>
+							</AlertDialogContent>
+						</AlertDialog>
+					)}
+				</div>
+				{displayAlias && (
+					<div className="text-xs opacity-80 italic">
+						{displayAlias}
+					</div>
 				)}
 			</div>
 		</div>
 	);
 };
 
+const CustomEdge = ({
+	id,
+	sourceX,
+	sourceY,
+	targetX,
+	targetY,
+	sourcePosition,
+	targetPosition,
+	data,
+	markerEnd,
+}: EdgeProps) => {
+	const [tooltipOpen, setTooltipOpen] = useState(false);
+	const [edgePath, labelX, labelY] = getBezierPath({
+		sourceX,
+		sourceY,
+		sourcePosition,
+		targetX,
+		targetY,
+		targetPosition,
+	});
+
+	const label = (data?.label as string) || "";
+	const sourceNode = (data?.sourceNode as string) || "";
+	const targetNode = (data?.targetNode as string) || "";
+
+	// Truncate label if longer than 10 characters
+	const displayLabel =
+		label.length > 10 ? label.substring(0, 10) + "..." : label;
+
+	return (
+		<>
+			<BaseEdge id={id} path={edgePath} markerEnd={markerEnd} />
+			<EdgeLabelRenderer>
+				<div
+					style={{
+						position: "absolute",
+						transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+						pointerEvents: "all",
+					}}
+					className="nodrag nopan"
+				>
+					<Tooltip open={tooltipOpen} onOpenChange={setTooltipOpen}>
+						<TooltipTrigger asChild>
+							<div
+								onClick={(e) => {
+									e.stopPropagation();
+									setTooltipOpen(!tooltipOpen);
+								}}
+								className="px-2 py-0.5 bg-white border border-gray-300 rounded text-xs cursor-pointer hover:bg-gray-50"
+							>
+								{displayLabel}
+							</div>
+						</TooltipTrigger>
+						<TooltipContent className="bg-slate-900 text-white p-3 rounded-md">
+							<div className="text-sm space-y-1">
+								<div>
+									<strong>From:</strong> {sourceNode}
+								</div>
+								<div>
+									<strong>To:</strong> {targetNode}
+								</div>
+								<div>
+									<strong>Connection:</strong> {label}
+								</div>
+							</div>
+						</TooltipContent>
+					</Tooltip>
+				</div>
+			</EdgeLabelRenderer>
+		</>
+	);
+};
+
 const nodeTypes = {
 	custom: CustomNode,
+};
+
+const edgeTypes = {
+	custom: CustomEdge,
 };
 
 /**
@@ -482,19 +578,42 @@ export default function NewCasePage() {
 				setEdges((eds) =>
 					eds.map((edge) =>
 						edge.id === editingEdgeId
-							? { ...edge, label: connectionLabel.trim() }
+							? {
+									...edge,
+									label: connectionLabel.trim(),
+									data: {
+										...edge.data,
+										label: connectionLabel.trim(),
+									},
+								}
 							: edge,
 					),
 				);
 			} else if (pendingConnection) {
+				const sourceNode = nodes.find(
+					(n) => n.id === pendingConnection.source,
+				);
+				const targetNode = nodes.find(
+					(n) => n.id === pendingConnection.target,
+				);
+				const sourceNodeName =
+					sourceNode?.data?.fullName || sourceNode?.data?.label || "";
+				const targetNodeName =
+					targetNode?.data?.fullName || targetNode?.data?.label || "";
+
 				const newEdge = {
 					...pendingConnection,
 					label: connectionLabel.trim(),
-					type: "default",
+					type: "custom",
 					markerEnd: {
 						type: MarkerType.ArrowClosed,
 					},
 					style: { strokeWidth: 2 },
+					data: {
+						label: connectionLabel.trim(),
+						sourceNode: sourceNodeName,
+						targetNode: targetNodeName,
+					},
 				};
 				setEdges((eds) => addEdge(newEdge, eds));
 			}
@@ -1158,6 +1277,7 @@ export default function NewCasePage() {
 										nodes={nodes}
 										edges={edges}
 										nodeTypes={nodeTypes}
+										edgeTypes={edgeTypes}
 										onNodesChange={onNodesChange}
 										onEdgesChange={onEdgesChange}
 										onConnect={onConnect}
@@ -1175,7 +1295,7 @@ export default function NewCasePage() {
 											strokeWidth: 2,
 										}}
 										defaultEdgeOptions={{
-											type: "default",
+											type: "custom",
 											markerEnd: {
 												type: MarkerType.ArrowClosed,
 											},
