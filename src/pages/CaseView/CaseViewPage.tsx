@@ -59,6 +59,7 @@ import {
 	Node,
 	useEdgesState,
 	useNodesState,
+	useReactFlow,
 } from "reactflow";
 import ReactFlow from "reactflow";
 import "reactflow/dist/style.css";
@@ -68,6 +69,8 @@ import {
 	Trash2,
 	AlertCircle,
 	Info,
+	User,
+	CircleHelp,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -96,7 +99,7 @@ const ReadOnlyCustomNode = ({
 }) => {
 	const [tooltipOpen, setTooltipOpen] = useState(false);
 
-	// Truncate name to 20 characters max
+	// Truncate name to 20 characters max for compact display
 	const displayName = data.fullName
 		? data.fullName.length > 20
 			? data.fullName.substring(0, 20) + "..."
@@ -105,10 +108,11 @@ const ReadOnlyCustomNode = ({
 			? data.label.substring(0, 20) + "..."
 			: data.label;
 
-	const displayAlias = data.alias
-		? data.alias.length > 20
-			? data.alias.substring(0, 20) + "..."
-			: data.alias
+	const displaySubtitle = data.alias || data.city || null;
+	const truncatedSubtitle = displaySubtitle
+		? displaySubtitle.length > 20
+			? displaySubtitle.substring(0, 20) + "..."
+			: displaySubtitle
 		: null;
 
 	// Build tooltip with profile details
@@ -119,45 +123,97 @@ const ReadOnlyCustomNode = ({
 	if (data.city) tooltipParts.push(`City: ${data.city}`);
 
 	return (
-		<div className="px-4 py-2 shadow-md rounded-md bg-white text-black border-2 border-gray-400 relative">
-			<Handle type="target" position={Position.Top} id="top" />
-			<Handle type="target" position={Position.Right} id="right" />
-			<Handle type="target" position={Position.Bottom} id="bottom" />
-			<Handle type="target" position={Position.Left} id="left" />
-			<Handle type="source" position={Position.Top} id="top" />
-			<Handle type="source" position={Position.Right} id="right" />
-			<Handle type="source" position={Position.Bottom} id="bottom" />
-			<Handle type="source" position={Position.Left} id="left" />
-			<div className="flex flex-col gap-0.5">
-				<div className="flex items-start justify-between gap-0.5">
-					<div className="font-medium text-sm flex-1">
-						{displayName}
-					</div>
-					<Tooltip open={tooltipOpen} onOpenChange={setTooltipOpen}>
-						<TooltipTrigger asChild>
-							<button
-								onClick={(e) => {
-									e.stopPropagation();
-									setTooltipOpen(!tooltipOpen);
-								}}
-								className="hover:bg-blue-100 hover:bg-opacity-20 text-current hover:text-blue-600 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer p-0 shrink-0"
-								title="Show profile info"
-							>
-								<Info className="w-3 h-3" />
-							</button>
-						</TooltipTrigger>
-						<TooltipContent className="bg-slate-900 text-white p-3 rounded-md">
-							<div className="text-sm space-y-1">
-								{tooltipParts.map((part, idx) => (
-									<div key={idx}>{part}</div>
-								))}
-							</div>
-						</TooltipContent>
-					</Tooltip>
+		<div className="relative h-12 w-12 overflow-visible">
+			<Handle
+				type="target"
+				position={Position.Top}
+				id="top"
+				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
+			/>
+			<Handle
+				type="target"
+				position={Position.Right}
+				id="right"
+				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
+			/>
+			<Handle
+				type="target"
+				position={Position.Bottom}
+				id="bottom"
+				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
+			/>
+			<Handle
+				type="target"
+				position={Position.Left}
+				id="left"
+				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
+			/>
+			<Handle
+				type="source"
+				position={Position.Top}
+				id="top"
+				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
+			/>
+			<Handle
+				type="source"
+				position={Position.Right}
+				id="right"
+				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
+			/>
+			<Handle
+				type="source"
+				position={Position.Bottom}
+				id="bottom"
+				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
+			/>
+			<Handle
+				type="source"
+				position={Position.Left}
+				id="left"
+				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
+			/>
+
+			<div className="h-12 w-12 rounded-full border border-gray-500 bg-white shadow-sm">
+				<User className="mx-auto mt-3 h-6 w-6 text-gray-500" />
+			</div>
+
+			<div className="absolute -right-5 -top-1 flex items-center gap-1">
+				<Tooltip open={tooltipOpen} onOpenChange={setTooltipOpen}>
+					<TooltipTrigger asChild>
+						<button
+							onClick={(e) => {
+								e.stopPropagation();
+								setTooltipOpen(!tooltipOpen);
+							}}
+							className="h-4 w-4 shrink-0 cursor-pointer rounded-full bg-white text-gray-500 shadow-sm hover:bg-gray-100 hover:text-gray-700"
+							title="Show profile info"
+						>
+							<CircleHelp className="mx-auto h-2.5 w-2.5" />
+						</button>
+					</TooltipTrigger>
+					<TooltipContent className="rounded-md bg-slate-900 p-3 text-white">
+						<div className="space-y-1 text-sm">
+							{tooltipParts.map((part, idx) => (
+								<div key={idx}>{part}</div>
+							))}
+						</div>
+					</TooltipContent>
+				</Tooltip>
+			</div>
+
+			<div className="absolute left-1/2 top-full mt-1 w-32 -translate-x-1/2 text-center">
+				<div
+					className="truncate text-sm font-semibold text-gray-900"
+					title={data.fullName || data.label}
+				>
+					{displayName}
 				</div>
-				{displayAlias && (
-					<div className="text-xs opacity-80 italic">
-						{displayAlias}
+				{truncatedSubtitle && (
+					<div
+						className="truncate text-xs text-gray-500"
+						title={displaySubtitle || ""}
+					>
+						{truncatedSubtitle}
 					</div>
 				)}
 			</div>
@@ -175,19 +231,65 @@ const ReadOnlyCustomEdge = ({
 	source,
 	target,
 	data,
-	markerEnd,
+	selected,
 }: EdgeProps) => {
-	const gradientId = `edge-gradient-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+	const { getNode } = useReactFlow();
 	const label = (data?.label as string) || "";
-	const midX = (sourceX + targetX) / 2;
-	const midY = (sourceY + targetY) / 2;
-	const edgePath = `M ${sourceX},${sourceY} Q ${midX},${midY} ${targetX},${targetY}`;
-	const labelX = 0.25 * sourceX + 0.5 * midX + 0.25 * targetX;
-	const labelY = 0.25 * sourceY + 0.5 * midY + 0.25 * targetY;
 
-	// Truncate label if longer than 15 characters
+	const sourceNode = getNode(source);
+	const targetNode = getNode(target);
+
+	const sourceNodeWidth = sourceNode?.width ?? 48;
+	const sourceNodeHeight = sourceNode?.height ?? 48;
+	const targetNodeWidth = targetNode?.width ?? 48;
+	const targetNodeHeight = targetNode?.height ?? 48;
+
+	// Calculate node centers
+	const resolvedSourceX = sourceNode
+		? (sourceNode.positionAbsolute?.x ?? sourceNode.position.x) +
+			sourceNodeWidth / 2
+		: sourceX;
+	const resolvedSourceY = sourceNode
+		? (sourceNode.positionAbsolute?.y ?? sourceNode.position.y) +
+			sourceNodeHeight / 2
+		: sourceY;
+	const resolvedTargetX = targetNode
+		? (targetNode.positionAbsolute?.x ?? targetNode.position.x) +
+			targetNodeWidth / 2
+		: targetX;
+	const resolvedTargetY = targetNode
+		? (targetNode.positionAbsolute?.y ?? targetNode.position.y) +
+			targetNodeHeight / 2
+		: targetY;
+
+	// Calculate direction vector
+	const dx = resolvedTargetX - resolvedSourceX;
+	const dy = resolvedTargetY - resolvedSourceY;
+	const length = Math.sqrt(dx * dx + dy * dy);
+
+	// Node radius (circles are 48px diameter) + arrow offset
+	const nodeRadius = 24;
+	const arrowOffset = 8; // Extra space for arrow marker
+
+	// Calculate edge endpoints at circle circumference
+	const edgeSourceX = resolvedSourceX + (dx / length) * nodeRadius;
+	const edgeSourceY = resolvedSourceY + (dy / length) * nodeRadius;
+	const edgeTargetX =
+		resolvedTargetX - (dx / length) * (nodeRadius + arrowOffset);
+	const edgeTargetY =
+		resolvedTargetY - (dy / length) * (nodeRadius + arrowOffset);
+
+	const midX = (edgeSourceX + edgeTargetX) / 2;
+	const midY = (edgeSourceY + edgeTargetY) / 2;
+	const edgePath = `M ${edgeSourceX},${edgeSourceY} L ${edgeTargetX},${edgeTargetY}`;
+	const labelX = midX;
+	const labelY = midY;
+
+	// Truncate label if longer than 20 characters
 	const displayLabel =
-		label.length > 15 ? label.substring(0, 15) + "..." : label;
+		label.length > 20 ? label.substring(0, 20) + "..." : label;
+
+	const gradientId = `edge-gradient-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
 	const handleEdgeInfoClick = (
 		event: React.MouseEvent<HTMLButtonElement>,
@@ -207,54 +309,80 @@ const ReadOnlyCustomEdge = ({
 		);
 	};
 
+	const markerId = `arrow-${id}`;
+
 	return (
 		<>
 			<defs>
 				<linearGradient
 					id={gradientId}
-					x1={sourceX}
-					y1={sourceY}
-					x2={targetX}
-					y2={targetY}
+					x1={resolvedSourceX}
+					y1={resolvedSourceY}
+					x2={resolvedTargetX}
+					y2={resolvedTargetY}
 					gradientUnits="userSpaceOnUse"
 				>
-					<stop offset="0%" stopColor="#60a5fa" />
-					<stop offset="100%" stopColor="#f87171" />
+					<stop
+						offset="0%"
+						stopColor={selected ? "#2563eb" : "#3b82f6"}
+					/>
+					<stop
+						offset="100%"
+						stopColor={selected ? "#dc2626" : "#ef4444"}
+					/>
 				</linearGradient>
+				<marker
+					id={markerId}
+					viewBox="0 0 10 10"
+					refX="5"
+					refY="5"
+					markerWidth="6"
+					markerHeight="6"
+					orient="auto"
+				>
+					<path
+						d="M 0 0 L 10 5 L 0 10 z"
+						fill={selected ? "#dc2626" : "#ef4444"}
+					/>
+				</marker>
 			</defs>
 			<BaseEdge
 				id={id}
 				path={edgePath}
-				markerEnd={markerEnd}
+				markerEnd={`url(#${markerId})`}
 				style={{
 					stroke: `url(#${gradientId})`,
 					strokeWidth: 2,
 				}}
 			/>
-			{displayLabel && (
-				<EdgeLabelRenderer>
+			<EdgeLabelRenderer>
+				<div
+					style={{
+						position: "absolute",
+						transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+						pointerEvents: "all",
+					}}
+					className="nodrag nopan"
+				>
 					<div
+						className="px-2 py-1 bg-white border border-gray-300 text-xs select-none flex items-center gap-1 shadow-sm"
 						style={{
-							position: "absolute",
-							transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-							pointerEvents: "all",
+							borderRadius: "10px",
+							fontSize: "11px",
 						}}
-						className="nodrag nopan"
 					>
-						<div className="px-1.5 py-0.5 bg-white border border-gray-300 rounded text-xs select-none flex items-center gap-1">
-							<div className="cursor-default">{displayLabel}</div>
-							<button
-								type="button"
-								onClick={handleEdgeInfoClick}
-								className="w-4 h-4 rounded-full border border-gray-300 text-[10px] leading-none text-gray-500 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center cursor-pointer shrink-0"
-								title="View connection details"
-							>
-								<Info className="w-2.5 h-2.5" />
-							</button>
-						</div>
+						<div className="cursor-default">{displayLabel}</div>
+						<button
+							type="button"
+							onClick={handleEdgeInfoClick}
+							className="w-4 h-4 rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center cursor-pointer"
+							title="View connection details"
+						>
+							<Info className="h-2.5 w-2.5" />
+						</button>
 					</div>
-				</EdgeLabelRenderer>
-			)}
+				</div>
+			</EdgeLabelRenderer>
 		</>
 	);
 };
@@ -274,7 +402,7 @@ export default function CaseViewPage() {
 		source: string;
 		target: string;
 	} | null>(null);
-	const [nodes, setNodes] = useNodesState([]);
+	const [nodes, setNodes, onNodesChange] = useNodesState([]);
 	const [edges, setEdges] = useEdgesState([]);
 
 	useEffect(() => {
@@ -365,9 +493,59 @@ export default function CaseViewPage() {
 			);
 			const profileDetails = await Promise.all(profileDetailsPromises);
 
+			// Generate random non-overlapping positions
+			const generateNonOverlappingPosition = (
+				existingPositions: { x: number; y: number }[],
+				canvasWidth: number,
+				canvasHeight: number,
+				minDistance: number,
+			): { x: number; y: number } => {
+				const margin = 100;
+				const maxAttempts = 100;
+
+				for (let attempt = 0; attempt < maxAttempts; attempt++) {
+					const x =
+						margin + Math.random() * (canvasWidth - 2 * margin);
+					const y =
+						margin + Math.random() * (canvasHeight - 2 * margin);
+
+					// Check if this position is far enough from all existing positions
+					const isFarEnough = existingPositions.every((pos) => {
+						const dx = pos.x - x;
+						const dy = pos.y - y;
+						const distance = Math.sqrt(dx * dx + dy * dy);
+						return distance >= minDistance;
+					});
+
+					if (isFarEnough) {
+						return { x, y };
+					}
+				}
+
+				// Fallback: return a position even if not ideal
+				return {
+					x: margin + Math.random() * (canvasWidth - 2 * margin),
+					y: margin + Math.random() * (canvasHeight - 2 * margin),
+				};
+			};
+
+			const canvasWidth = 1200;
+			const canvasHeight = 500;
+			const minDistance = 200; // Minimum distance between node centers
+
+			const positions: { x: number; y: number }[] = [];
+
 			// Create nodes from profiles with full details
 			const newNodes: Node[] = profiles.map((profile, idx) => {
 				const fullProfile = profileDetails[idx];
+				const position = generateNonOverlappingPosition(
+					positions,
+					canvasWidth,
+					canvasHeight,
+					minDistance,
+				);
+				positions.push(position);
+
 				return {
 					id: profile[0].toString(),
 					data: {
@@ -377,10 +555,7 @@ export default function CaseViewPage() {
 						alias: fullProfile?.alias || null,
 						city: fullProfile?.city || null,
 					},
-					position: {
-						x: (idx % 3) * 300 + 50,
-						y: Math.floor(idx / 3) * 250 + 50,
-					},
+					position,
 					type: "custom",
 				};
 			});
@@ -629,6 +804,7 @@ export default function CaseViewPage() {
 								<ReactFlow
 									nodes={nodes}
 									edges={edges}
+									onNodesChange={onNodesChange}
 									nodeTypes={{ custom: ReadOnlyCustomNode }}
 									edgeTypes={{ custom: ReadOnlyCustomEdge }}
 								>
