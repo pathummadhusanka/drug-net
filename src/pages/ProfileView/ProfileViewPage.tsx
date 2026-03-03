@@ -242,6 +242,7 @@ const CustomNode = ({
 								<AlertDialogAction
 									className="cursor-pointer bg-red-600 hover:bg-red-700 text-white"
 									onClick={(e: React.MouseEvent) => {
+										e.preventDefault();
 										e.stopPropagation();
 										data.onDelete?.(id);
 									}}
@@ -452,6 +453,7 @@ export default function ProfileView() {
 
 	const handleConnectionSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
+		e.stopPropagation();
 		if (connectionLabel.trim()) {
 			if (editingEdgeId) {
 				// Update existing edge
