@@ -3,7 +3,11 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { createCaseWithAreas } from "@/lib/cases";
 import { getAllAreas, type Area } from "@/lib/areas";
-import { getAllProfiles, type ProfileWithId } from "@/lib/profiles";
+import {
+	createProfile,
+	getAllProfiles,
+	type ProfileWithId,
+} from "@/lib/profiles";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -263,6 +267,16 @@ export default function NewCasePage() {
 		[],
 	);
 	const [profileSearch, setProfileSearch] = useState("");
+	const [isNewProfileDialogOpen, setIsNewProfileDialogOpen] = useState(false);
+	const [newProfileFullName, setNewProfileFullName] = useState("");
+	const [newProfileAlias, setNewProfileAlias] = useState("");
+	const [newProfileNic, setNewProfileNic] = useState("");
+	const [newProfileAddressLine1, setNewProfileAddressLine1] = useState("");
+	const [newProfileAddressLine2, setNewProfileAddressLine2] = useState("");
+	const [newProfileCity, setNewProfileCity] = useState("");
+	const [newProfileNotes, setNewProfileNotes] = useState("");
+	const [isCreatingProfile, setIsCreatingProfile] = useState(false);
+	const newProfileNotesRef = useRef<HTMLTextAreaElement>(null);
 
 	const [isConnectionDialogOpen, setIsConnectionDialogOpen] = useState(false);
 	const [pendingConnection, setPendingConnection] = useState<
@@ -506,6 +520,87 @@ export default function NewCasePage() {
 		handleTextareaResize(descriptionTextareaRef);
 	}, [caseDescription]);
 
+	useEffect(() => {
+		handleTextareaResize(newProfileNotesRef);
+	}, [newProfileNotes]);
+
+	const fetchProfiles = useCallback(async () => {
+		try {
+			const allProfiles = await getAllProfiles();
+			setAvailableProfiles(allProfiles);
+		} catch (error) {
+			console.error("Failed to fetch profiles:", error);
+		}
+	}, []);
+
+	const resetNewProfileForm = useCallback(() => {
+		setNewProfileFullName("");
+		setNewProfileAlias("");
+		setNewProfileNic("");
+		setNewProfileAddressLine1("");
+		setNewProfileAddressLine2("");
+		setNewProfileCity("");
+		setNewProfileNotes("");
+	}, []);
+
+	const handleCreateNewProfile = async (e: React.FormEvent) => {
+		e.preventDefault();
+
+		if (!newProfileFullName.trim()) {
+			toast.error("Full name is required", {
+				position: "top-center",
+			});
+			return;
+		}
+
+		setIsCreatingProfile(true);
+		try {
+			const profilePayload = {
+				full_name: newProfileFullName.trim(),
+				alias: newProfileAlias.trim() || null,
+				nic: newProfileNic.trim() || null,
+				address_line1: newProfileAddressLine1.trim() || null,
+				address_line2: newProfileAddressLine2.trim() || null,
+				city: newProfileCity.trim() || null,
+				notes: newProfileNotes.trim() || null,
+			};
+
+			const createdId = await createProfile(profilePayload);
+			const createdProfile: ProfileWithId = {
+				id: createdId,
+				full_name: profilePayload.full_name,
+				alias: profilePayload.alias,
+				nic: profilePayload.nic,
+				address_line1: profilePayload.address_line1,
+				address_line2: profilePayload.address_line2,
+				city: profilePayload.city,
+				risk_level: null,
+				status: null,
+				notes: profilePayload.notes,
+				created_at: null,
+				updated_at: null,
+			};
+
+			addNode(createdProfile);
+			setAvailableProfiles((prev) => [createdProfile, ...prev]);
+			setIsNewProfileDialogOpen(false);
+			resetNewProfileForm();
+			setProfileSearch("");
+			fetchProfiles();
+
+			toast.success("Profile created and added to network", {
+				position: "top-center",
+			});
+		} catch (error) {
+			console.error("Failed to create profile:", error);
+			toast.error("Failed to create profile", {
+				position: "top-center",
+			});
+		} finally {
+			setIsCreatingProfile(false);
+		}
+	};
+
 	// Fetch available areas and profiles on mount
 	useEffect(() => {
 		const fetchAreas = async () => {
@@ -517,18 +612,9 @@ export default function NewCasePage() {
 			}
 		};
 
-		const fetchProfiles = async () => {
-			try {
-				const allProfiles = await getAllProfiles();
-				setAvailableProfiles(allProfiles);
-			} catch (error) {
-				console.error("Failed to fetch profiles:", error);
-			}
-		};
-
 		fetchAreas();
 		fetchProfiles();
-	}, []);
+	}, [fetchProfiles]);
 
 	const clearAll = () => {
 		setCaseNotes("");
@@ -928,19 +1014,33 @@ export default function NewCasePage() {
 												: "connections"}
 										</p>
 									</div>
-									<Button
-										type="button"
-										variant="outline"
-										size="sm"
-										className="cursor-pointer"
-										onClick={() => {
-											setProfileSearch("");
-											setIsAddProfileDialogOpen(true);
-										}}
-									>
-										<Plus className="h-4 w-4 mr-2" />
-										Add Profile
-									</Button>
+									<div className="flex items-center gap-2">
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											className="cursor-pointer"
+											onClick={() => {
+												setProfileSearch("");
+												setIsAddProfileDialogOpen(true);
+											}}
+										>
+											<Plus className="h-4 w-4 mr-2" />
+											Add Profile
+										</Button>
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											className="cursor-pointer"
+											onClick={() => {
+												resetNewProfileForm();
+												setIsNewProfileDialogOpen(true);
+											}}
+										>
+											New Profile
+										</Button>
+									</div>
 								</div>
 								<div className="border rounded-lg connection-canvas h-125">
 									<style>{`
@@ -1103,6 +1203,190 @@ export default function NewCasePage() {
 															: "Add"}{" "}
 														Connection
 													</Button>
+												</div>
+											</DialogFooter>
+										</form>
+									</DialogContent>
+								</Dialog>
+
+								<Dialog
+									open={isNewProfileDialogOpen}
+									onOpenChange={(open) => {
+										setIsNewProfileDialogOpen(open);
+										if (!open) {
+											resetNewProfileForm();
+										}
+									}}
+								>
+									<DialogContent className="sm:max-w-2xl">
+										<form onSubmit={handleCreateNewProfile}>
+											<DialogHeader>
+												<DialogTitle>
+													Create New Profile
+												</DialogTitle>
+												<DialogDescription>
+													Create a profile and add it
+													to this case network
+												</DialogDescription>
+											</DialogHeader>
+											<div className="grid gap-4 py-4 max-h-[65vh] overflow-y-auto pr-1">
+												<div className="grid gap-2">
+													<Label htmlFor="new-profile-full-name">
+														Full Name
+													</Label>
+													<Input
+														id="new-profile-full-name"
+														placeholder="John Doe"
+														value={
+															newProfileFullName
+														}
+														onChange={(e) =>
+															setNewProfileFullName(
+																e.target.value,
+															)
+														}
+														required
+														autoFocus
+													/>
+												</div>
+												<div className="grid gap-2">
+													<Label htmlFor="new-profile-nic">
+														NIC
+													</Label>
+													<Input
+														id="new-profile-nic"
+														placeholder="Optional (must be unique)"
+														value={newProfileNic}
+														onChange={(e) =>
+															setNewProfileNic(
+																e.target.value,
+															)
+														}
+													/>
+												</div>
+												<div className="grid gap-2">
+													<Label htmlFor="new-profile-alias">
+														Alias
+													</Label>
+													<Input
+														id="new-profile-alias"
+														placeholder="Optional"
+														value={newProfileAlias}
+														onChange={(e) =>
+															setNewProfileAlias(
+																e.target.value,
+															)
+														}
+													/>
+												</div>
+
+												<div className="grid gap-2">
+													<Label htmlFor="new-profile-address-line1">
+														Address Line 1
+													</Label>
+													<Input
+														id="new-profile-address-line1"
+														placeholder="Optional"
+														value={
+															newProfileAddressLine1
+														}
+														onChange={(e) =>
+															setNewProfileAddressLine1(
+																e.target.value,
+															)
+														}
+													/>
+												</div>
+												<div className="grid gap-2">
+													<Label htmlFor="new-profile-address-line2">
+														Address Line 2
+													</Label>
+													<Input
+														id="new-profile-address-line2"
+														placeholder="Optional"
+														value={
+															newProfileAddressLine2
+														}
+														onChange={(e) =>
+															setNewProfileAddressLine2(
+																e.target.value,
+															)
+														}
+													/>
+												</div>
+												<div className="grid gap-2">
+													<Label htmlFor="new-profile-city">
+														City
+													</Label>
+													<Input
+														id="new-profile-city"
+														placeholder="Optional"
+														value={newProfileCity}
+														onChange={(e) =>
+															setNewProfileCity(
+																e.target.value,
+															)
+														}
+													/>
+												</div>
+
+												<div className="grid gap-2">
+													<Label htmlFor="new-profile-notes">
+														Notes
+													</Label>
+													<Textarea
+														ref={newProfileNotesRef}
+														id="new-profile-notes"
+														maxLength={500}
+														placeholder="Include notes"
+														value={newProfileNotes}
+														onChange={(e) =>
+															setNewProfileNotes(
+																e.target.value,
+															)
+														}
+														className="resize-none overflow-hidden"
+													/>
+													<div className="text-sm text-gray-500">
+														{newProfileNotes.length}
+														/500
+													</div>
+												</div>
+											</div>
+											<DialogFooter>
+												<div className="flex w-full justify-between gap-2">
+													<Button
+														type="button"
+														variant="outline"
+														onClick={
+															resetNewProfileForm
+														}
+														className="cursor-pointer"
+													>
+														Clear
+													</Button>
+													<div className="flex gap-2">
+														<DialogClose asChild>
+															<Button
+																type="button"
+																variant="outline"
+																className="cursor-pointer"
+															>
+																Cancel
+															</Button>
+														</DialogClose>
+														<Button
+															type="submit"
+															className="cursor-pointer"
+															disabled={
+																isCreatingProfile
+															}
+														>
+															{isCreatingProfile
+																? "Creating..."
+																: "Save Profile"}
+														</Button>
+													</div>
 												</div>
 											</DialogFooter>
 										</form>
