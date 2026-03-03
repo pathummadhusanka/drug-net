@@ -25,7 +25,7 @@ import {
 	MenubarMenu,
 	MenubarTrigger,
 } from "@/components/ui/menubar";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, CirclePlus } from "lucide-react";
 import { toast } from "sonner";
 import {
 	getAllDrugs,
@@ -171,7 +171,7 @@ export default function SettingsPage() {
 							onClick={() => setAddDrugDialogOpen(true)}
 							className="cursor-pointer"
 						>
-							<Plus className="h-4 w-4 mr-2" />
+							<CirclePlus className="h-4 w-4 mr-2" />
 							New Drug
 						</Button>
 					</div>
@@ -302,7 +302,7 @@ export default function SettingsPage() {
 							onClick={handleAddDrug}
 							className="cursor-pointer"
 						>
-							<Plus className="h-4 w-4 mr-2" />
+							<CirclePlus className="h-4 w-4 mr-2" />
 							Add Drug
 						</Button>
 					</DialogFooter>
