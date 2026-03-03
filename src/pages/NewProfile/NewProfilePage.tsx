@@ -59,6 +59,29 @@ export default function NewProfile() {
 		}
 	};
 
+	const handleSaveAndFileCases = async (e: React.FormEvent) => {
+		e.preventDefault();
+
+		try {
+			const id = await invoke<number>("create_profile", {
+				profile: {
+					full_name: fullName,
+					alias: alias || null,
+					nic: nic || null,
+					address_line1: addressLine1 || null,
+					address_line2: addressLine2 || null,
+					city: city || null,
+					notes: notes || null,
+				},
+			});
+
+			console.log("Inserted profile ID:", id);
+			navigate(`/new-case/${id}`);
+		} catch (err) {
+			console.error("Insert failed:", err);
+		}
+	};
+
 	function clearFields() {
 		{
 			setFullName("");
@@ -213,6 +236,7 @@ export default function NewProfile() {
 										type="button"
 										variant="default"
 										className="cursor-pointer"
+										onClick={handleSaveAndFileCases}
 									>
 										Save & File Cases
 									</Button>

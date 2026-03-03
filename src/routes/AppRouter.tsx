@@ -16,6 +16,7 @@ export function AppRouter() {
 				<Route path="/new-profile" element={<NewProfile />} />
 				<Route path="/cases" element={<Cases />} />
 				<Route path="/new-case" element={<NewCasePage />} />
+				<Route path="/new-case/:id" element={<NewCasePage />} />
 			</Route>
 		</Routes>
 	);
