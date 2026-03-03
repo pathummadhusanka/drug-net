@@ -145,7 +145,7 @@ const CustomNode = ({
 						</div>
 					)}
 				</div>
-				{!data.isCurrentProfile && data.onDelete && (
+				{data.onDelete && (
 					<AlertDialog>
 						<AlertDialogTrigger asChild>
 							<button
@@ -275,12 +275,11 @@ export default function NewCasePage() {
 	const navigate = useNavigate();
 	const location = useLocation();
 	type NewCaseLocationState = {
-		defaultProfileLabel?: string;
+		defaultProfile?: ProfileWithId;
 	} | null;
-	const defaultProfileLabel = (
-		location.state as NewCaseLocationState
-	)?.defaultProfileLabel?.trim();
-	const hasDefaultProfile = Boolean(defaultProfileLabel);
+	const defaultProfile = (location.state as NewCaseLocationState)
+		?.defaultProfile;
+	const hasDefaultProfile = Boolean(defaultProfile);
 	const [caseNotes, setCaseNotes] = useState("");
 	const [caseId, setCaseId] = useState("");
 	const [caseTitle, setCaseTitle] = useState("");
@@ -326,20 +325,25 @@ export default function NewCasePage() {
 	const [editingEdgeId, setEditingEdgeId] = useState<string | null>(null);
 	const [isValidConnection, setIsValidConnection] = useState(false);
 
-	const initialNodes: Node[] = hasDefaultProfile
-		? [
-				{
-					id: "1",
-					type: "custom",
-					data: {
-						label: defaultProfileLabel || "Current Profile",
-						isCurrentProfile: true,
-						edges: [],
+	const initialNodes: Node[] =
+		hasDefaultProfile && defaultProfile
+			? [
+					{
+						id: "1",
+						type: "custom",
+						data: {
+							label: defaultProfile.full_name,
+							profileId: defaultProfile.id,
+							fullName: defaultProfile.full_name,
+							alias: defaultProfile.alias,
+							city: defaultProfile.city,
+							isCurrentProfile: true,
+							edges: [],
+						},
+						position: { x: 400, y: 200 },
 					},
-					position: { x: 400, y: 200 },
-				},
-			]
-		: [];
+				]
+			: [];
 	const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
 	const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 	const [nodeId, setNodeId] = useState(hasDefaultProfile ? 2 : 1);
@@ -505,6 +509,25 @@ export default function NewCasePage() {
 		},
 		[setNodes, setEdges],
 	);
+
+	// Add delete callback to initial default profile node
+	useEffect(() => {
+		if (hasDefaultProfile) {
+			setNodes((nds) =>
+				nds.map((node) =>
+					node.id === "1"
+						? {
+								...node,
+								data: {
+									...node.data,
+									onDelete: handleNodeDelete,
+								},
+							}
+						: node,
+				),
+			);
+		}
+	}, [hasDefaultProfile, setNodes, handleNodeDelete]);
 
 	const addNode = useCallback(
 		(profile: ProfileWithId) => {

@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { getAllProfiles, type ProfileWithId } from "@/lib/profiles";
 import {
 	FolderPlus,
 	Plus,
@@ -139,10 +140,10 @@ const CustomNode = ({
 	};
 	id: string;
 }) => {
-	const bgColor = data.isCurrentProfile ? "bg-indigo-600" : "bg-white";
+	const bgColor = data.isCurrentProfile ? "bg-violet-600" : "bg-white";
 	const textColor = data.isCurrentProfile ? "text-white" : "text-black";
 	const borderColor = data.isCurrentProfile
-		? "border-indigo-700"
+		? "border-violet-700"
 		: "border-gray-400";
 
 	// Count connections for this node
@@ -319,6 +320,13 @@ export default function ProfileView() {
 	const [editingEdgeId, setEditingEdgeId] = useState<string | null>(null);
 	const [isValidConnection, setIsValidConnection] = useState(false);
 
+	// Add profile dialog state
+	const [isAddProfileDialogOpen, setIsAddProfileDialogOpen] = useState(false);
+	const [profileSearch, setProfileSearch] = useState("");
+	const [availableProfiles, setAvailableProfiles] = useState<ProfileWithId[]>(
+		[],
+	);
+
 	// React Flow state
 	const initialNodes: Node[] = [
 		{
@@ -326,6 +334,7 @@ export default function ProfileView() {
 			type: "custom",
 			data: {
 				label: profile?.full_name || "Current Profile",
+				profileId: profile?.id,
 				fullName: profile?.full_name,
 				alias: profile?.alias,
 				city: profile?.city,
@@ -510,23 +519,65 @@ export default function ProfileView() {
 		[setNodes, setEdges],
 	);
 
+	const addNodeWithProfile = useCallback(
+		(prof: ProfileWithId) => {
+			// Check if profile is already on canvas
+			const profileExists = nodes.some(
+				(node) => node.data?.profileId === prof.id,
+			);
+
+			if (profileExists) {
+				toast.error("Profile already added to canvas");
+				return;
+			}
+
+			const displayName = prof.alias
+				? `${prof.full_name} (${prof.alias})`
+				: prof.full_name;
+
+			const newNode: Node = {
+				id: `${nodeId}`,
+				type: "custom",
+				data: {
+					label: displayName,
+					profileId: prof.id,
+					fullName: prof.full_name,
+					alias: prof.alias,
+					city: prof.city,
+					onDelete: handleNodeDelete,
+					edges,
+				},
+				position: {
+					x: Math.random() * 400 + 100,
+					y: Math.random() * 400 + 50,
+				},
+			};
+			setNodes((nds) => [...nds, newNode]);
+			setNodeId((id) => id + 1);
+		},
+		[nodeId, nodes, setNodes, handleNodeDelete, edges],
+	);
+
 	const addNode = useCallback(() => {
-		const newNode: Node = {
-			id: `${nodeId}`,
-			type: "custom",
-			data: {
-				label: `Profile ${nodeId}`,
-				onDelete: handleNodeDelete,
-				edges,
-			},
-			position: {
-				x: Math.random() * 400 + 100,
-				y: Math.random() * 400 + 50,
-			},
-		};
-		setNodes((nds) => [...nds, newNode]);
-		setNodeId((id) => id + 1);
-	}, [nodeId, setNodes, handleNodeDelete, edges]);
+		setIsAddProfileDialogOpen(true);
+	}, []);
+
+	// Fetch all profiles for the dialog
+	useEffect(() => {
+		async function fetchProfiles() {
+			try {
+				const allProfiles = await getAllProfiles();
+				// Filter out the current profile
+				const filtered = allProfiles.filter(
+					(p: ProfileWithId) => p.id !== (profile?.id || null),
+				);
+				setAvailableProfiles(filtered);
+			} catch (error) {
+				console.error("Failed to fetch profiles:", error);
+			}
+		}
+		fetchProfiles();
+	}, [profile?.id]);
 
 	// Update initial node when profile loads
 	useEffect(() => {
@@ -538,6 +589,7 @@ export default function ProfileView() {
 								...node,
 								data: {
 									label: profile.full_name,
+									profileId: profile.id,
 									fullName: profile.full_name,
 									alias: profile.alias,
 									city: profile.city,
@@ -1009,9 +1061,7 @@ export default function ProfileView() {
 											onClick={() =>
 												navigate("/new-case", {
 													state: {
-														defaultProfileLabel:
-															profile?.full_name ||
-															"Current Profile",
+														defaultProfile: profile,
 													},
 												})
 											}
@@ -2186,6 +2236,177 @@ export default function ProfileView() {
 																			</div>
 																		</DialogFooter>
 																	</form>
+																</DialogContent>
+															</Dialog>
+
+															{/* Add Profile Dialog */}
+															<Dialog
+																open={
+																	isAddProfileDialogOpen
+																}
+																onOpenChange={
+																	setIsAddProfileDialogOpen
+																}
+															>
+																<DialogContent className="sm:max-w-md">
+																	<DialogHeader>
+																		<DialogTitle>
+																			Add
+																			Profile
+																			to
+																			Network
+																		</DialogTitle>
+																		<DialogDescription>
+																			Search
+																			and
+																			select
+																			a
+																			profile
+																			to
+																			add
+																		</DialogDescription>
+																	</DialogHeader>
+																	<div className="space-y-4 py-4">
+																		<Input
+																			type="text"
+																			placeholder="Search profiles..."
+																			value={
+																				profileSearch
+																			}
+																			onChange={(
+																				e,
+																			) =>
+																				setProfileSearch(
+																					e
+																						.target
+																						.value,
+																				)
+																			}
+																			className="w-full"
+																		/>
+																		<div className="border rounded-md max-h-60 overflow-y-auto">
+																			{(() => {
+																				const filteredProfiles =
+																					availableProfiles.filter(
+																						({
+																							full_name,
+																							alias,
+																						}) => {
+																							const searchLower =
+																								profileSearch.toLowerCase();
+																							return (
+																								full_name
+																									.toLowerCase()
+																									.includes(
+																										searchLower,
+																									) ||
+																								(alias &&
+																									alias
+																										.toLowerCase()
+																										.includes(
+																											searchLower,
+																										))
+																							);
+																						},
+																					);
+
+																				if (
+																					filteredProfiles.length ===
+																					0
+																				) {
+																					return (
+																						<div className="p-4 text-center text-sm text-muted-foreground">
+																							No
+																							matching
+																							profiles
+																							found
+																						</div>
+																					);
+																				}
+
+																				return filteredProfiles.map(
+																					(
+																						prof,
+																					) => {
+																						const isProfileAdded =
+																							nodes.some(
+																								(
+																									node,
+																								) =>
+																									node
+																										.data
+																										?.profileId ===
+																									prof.id,
+																							);
+
+																						return (
+																							<button
+																								key={
+																									prof.id
+																								}
+																								type="button"
+																								disabled={
+																									isProfileAdded
+																								}
+																								onClick={() => {
+																									addNodeWithProfile(
+																										prof,
+																									);
+																									setIsAddProfileDialogOpen(
+																										false,
+																									);
+																									setProfileSearch(
+																										"",
+																									);
+																								}}
+																								className={`w-full border-b px-3 py-2 text-left last:border-b-0 ${
+																									isProfileAdded
+																										? "opacity-50 cursor-not-allowed bg-muted/30 hover:bg-muted/30"
+																										: "hover:bg-muted/50 cursor-pointer"
+																								}`}
+																							>
+																								<div className="flex flex-col">
+																									<span className="font-medium">
+																										{
+																											prof.full_name
+																										}
+																									</span>
+																									{prof.alias && (
+																										<span className="text-sm text-muted-foreground">
+																											Alias:{" "}
+																											{
+																												prof.alias
+																											}
+																										</span>
+																									)}
+																									{prof.city && (
+																										<span className="text-xs text-muted-foreground">
+																											{
+																												prof.city
+																											}
+																										</span>
+																									)}
+																								</div>
+																							</button>
+																						);
+																					},
+																				);
+																			})()}
+																		</div>
+																	</div>
+																	<DialogFooter>
+																		<DialogClose
+																			asChild
+																		>
+																			<Button
+																				type="button"
+																				variant="outline"
+																				className="cursor-pointer"
+																			>
+																				Close
+																			</Button>
+																		</DialogClose>
+																	</DialogFooter>
 																</DialogContent>
 															</Dialog>
 
