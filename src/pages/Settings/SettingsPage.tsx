@@ -3,13 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
-import {
 	Table,
 	TableBody,
 	TableCell,
@@ -163,14 +156,16 @@ export default function SettingsPage() {
 
 			{/* Drug Management Section */}
 			{activeSection === "drugs" && (
-				<Card>
-					<CardHeader className="flex flex-row items-center justify-between">
+				<div className="space-y-6">
+					<div className="flex flex-row items-center justify-between">
 						<div>
-							<CardTitle>Drug Management</CardTitle>
-							<CardDescription>
+							<h2 className="text-2xl font-bold">
+								Drug Management
+							</h2>
+							<p className="text-muted-foreground">
 								Add or remove drug types and their units of
 								measurement
-							</CardDescription>
+							</p>
 						</div>
 						<Button
 							onClick={() => setAddDrugDialogOpen(true)}
@@ -179,87 +174,77 @@ export default function SettingsPage() {
 							<Plus className="h-4 w-4 mr-2" />
 							New Drug
 						</Button>
-					</CardHeader>
-					<CardContent className="space-y-6">
-						{/* Drugs Table */}
-						<div className="border rounded-lg">
-							<Table>
-								<TableHeader>
+					</div>
+					{/* Drugs Table */}
+					<div className="border rounded-lg">
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead>Drug Name</TableHead>
+									<TableHead>Quantified By</TableHead>
+									<TableHead>Status</TableHead>
+									<TableHead className="text-right">
+										Actions
+									</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{drugs.length === 0 ? (
 									<TableRow>
-										<TableHead>Drug Name</TableHead>
-										<TableHead>Quantified By</TableHead>
-										<TableHead>Status</TableHead>
-										<TableHead className="text-right">
-											Actions
-										</TableHead>
+										<TableCell
+											colSpan={4}
+											className="text-center text-muted-foreground"
+										>
+											No drugs found
+										</TableCell>
 									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{drugs.length === 0 ? (
-										<TableRow>
-											<TableCell
-												colSpan={4}
-												className="text-center text-muted-foreground"
-											>
-												No drugs found
+								) : (
+									drugs.map((drug) => (
+										<TableRow key={drug.id}>
+											<TableCell className="font-medium">
+												{drug.name}
+											</TableCell>
+											<TableCell>
+												{drug.quantified_by}
+											</TableCell>
+											<TableCell>
+												{drugInUseStatus[drug.id] ? (
+													<span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+														In Use
+													</span>
+												) : (
+													<span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+														Not Used
+													</span>
+												)}
+											</TableCell>
+											<TableCell className="text-right">
+												<Button
+													variant="ghost"
+													size="icon"
+													onClick={() =>
+														handleDeleteClick(drug)
+													}
+													disabled={
+														drugInUseStatus[drug.id]
+													}
+													className="cursor-pointer"
+													title={
+														drugInUseStatus[drug.id]
+															? "Cannot delete drug in use"
+															: "Delete drug"
+													}
+												>
+													<Trash2 className="h-4 w-4" />
+												</Button>
 											</TableCell>
 										</TableRow>
-									) : (
-										drugs.map((drug) => (
-											<TableRow key={drug.id}>
-												<TableCell className="font-medium">
-													{drug.name}
-												</TableCell>
-												<TableCell>
-													{drug.quantified_by}
-												</TableCell>
-												<TableCell>
-													{drugInUseStatus[
-														drug.id
-													] ? (
-														<span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-															In Use
-														</span>
-													) : (
-														<span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-															Not Used
-														</span>
-													)}
-												</TableCell>
-												<TableCell className="text-right">
-													<Button
-														variant="ghost"
-														size="icon"
-														onClick={() =>
-															handleDeleteClick(
-																drug,
-															)
-														}
-														disabled={
-															drugInUseStatus[
-																drug.id
-															]
-														}
-														className="cursor-pointer"
-														title={
-															drugInUseStatus[
-																drug.id
-															]
-																? "Cannot delete drug in use"
-																: "Delete drug"
-														}
-													>
-														<Trash2 className="h-4 w-4" />
-													</Button>
-												</TableCell>
-											</TableRow>
-										))
-									)}
-								</TableBody>
-							</Table>
-						</div>
-					</CardContent>
-				</Card>
+									))
+								)}
+							</TableBody>
+						</Table>
+					</div>
+				</div>
 			)}
 
 			{/* Add Drug Modal */}
