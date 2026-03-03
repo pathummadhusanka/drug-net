@@ -296,6 +296,7 @@ const CustomEdge = ({
 	const label = (data?.label as string) || "";
 	const labelOffsetX = Number(data?.labelOffsetX ?? 0);
 	const labelOffsetY = Number(data?.labelOffsetY ?? 0);
+	const gradientId = `edge-gradient-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
 	const midX = (sourceX + targetX) / 2;
 	const midY = (sourceY + targetY) / 2;
 	const controlX = midX + labelOffsetX;
@@ -364,7 +365,28 @@ const CustomEdge = ({
 
 	return (
 		<>
-			<BaseEdge id={id} path={edgePath} markerEnd={markerEnd} />
+			<defs>
+				<linearGradient
+					id={gradientId}
+					x1={sourceX}
+					y1={sourceY}
+					x2={targetX}
+					y2={targetY}
+					gradientUnits="userSpaceOnUse"
+				>
+					<stop offset="0%" stopColor="#60a5fa" />
+					<stop offset="100%" stopColor="#f87171" />
+				</linearGradient>
+			</defs>
+			<BaseEdge
+				id={id}
+				path={edgePath}
+				markerEnd={markerEnd}
+				style={{
+					stroke: `url(#${gradientId})`,
+					strokeWidth: 2,
+				}}
+			/>
 			<EdgeLabelRenderer>
 				<div
 					style={{
