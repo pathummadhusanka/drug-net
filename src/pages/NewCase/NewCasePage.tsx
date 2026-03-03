@@ -64,6 +64,7 @@ import {
 import {
 	Background,
 	BackgroundVariant,
+	ConnectionLineType,
 	Controls,
 	Handle,
 	MarkerType,
@@ -149,49 +150,49 @@ const BubbleProfileNode = ({
 				type="target"
 				position={Position.Top}
 				id="top"
-				className="h-2 w-2 border border-white bg-gray-300 opacity-70"
+				className="h-1.5 w-2.5 !rounded-sm !border-orange-100 !bg-orange-400/80 shadow-sm"
 			/>
 			<Handle
 				type="target"
 				position={Position.Right}
 				id="right"
-				className="h-2 w-2 border border-white bg-gray-300 opacity-70"
+				className="h-1.5 w-2.5 !rounded-sm !border-orange-100 !bg-orange-400/80 shadow-sm"
 			/>
 			<Handle
 				type="target"
 				position={Position.Bottom}
 				id="bottom"
-				className="h-2 w-2 border border-white bg-gray-300 opacity-70"
+				className="h-1.5 w-2.5 !rounded-sm !border-orange-100 !bg-orange-400/80 shadow-sm"
 			/>
 			<Handle
 				type="target"
 				position={Position.Left}
 				id="left"
-				className="h-2 w-2 border border-white bg-gray-300 opacity-70"
+				className="h-1.5 w-2.5 !rounded-sm !border-orange-100 !bg-orange-400/80 shadow-sm"
 			/>
 			<Handle
 				type="source"
 				position={Position.Top}
 				id="top"
-				className="h-2 w-2 border border-white bg-gray-300 opacity-70"
+				className="h-1.5 w-2.5 !rounded-sm !border-orange-100 !bg-orange-400/80 shadow-sm"
 			/>
 			<Handle
 				type="source"
 				position={Position.Right}
 				id="right"
-				className="h-2 w-2 border border-white bg-gray-300 opacity-70"
+				className="h-1.5 w-2.5 !rounded-sm !border-orange-100 !bg-orange-400/80 shadow-sm"
 			/>
 			<Handle
 				type="source"
 				position={Position.Bottom}
 				id="bottom"
-				className="h-2 w-2 border border-white bg-gray-300 opacity-70"
+				className="h-1.5 w-2.5 !rounded-sm !border-orange-100 !bg-orange-400/80 shadow-sm"
 			/>
 			<Handle
 				type="source"
 				position={Position.Left}
 				id="left"
-				className="h-2 w-2 border border-white bg-gray-300 opacity-70"
+				className="h-1.5 w-2.5 !rounded-sm !border-orange-100 !bg-orange-400/80 shadow-sm"
 			/>
 
 			<div
@@ -314,10 +315,8 @@ const CustomEdge = ({
 	markerEnd,
 	selected,
 }: EdgeProps) => {
-	const { setEdges, getNode } = useReactFlow();
+	const { getNode } = useReactFlow();
 	const label = (data?.label as string) || "";
-	const labelOffsetX = Number(data?.labelOffsetX ?? 0);
-	const labelOffsetY = Number(data?.labelOffsetY ?? 0);
 
 	const sourceNode = getNode(source);
 	const targetNode = getNode(target);
@@ -346,86 +345,15 @@ const CustomEdge = ({
 
 	const midX = (resolvedSourceX + resolvedTargetX) / 2;
 	const midY = (resolvedSourceY + resolvedTargetY) / 2;
-	const controlX = midX + labelOffsetX;
-	const controlY = midY + labelOffsetY;
-	const edgePath = `M ${resolvedSourceX},${resolvedSourceY} Q ${controlX},${controlY} ${resolvedTargetX},${resolvedTargetY}`;
-	const labelX =
-		0.25 * resolvedSourceX + 0.5 * controlX + 0.25 * resolvedTargetX;
-	const labelY =
-		0.25 * resolvedSourceY + 0.5 * controlY + 0.25 * resolvedTargetY;
+	const edgePath = `M ${resolvedSourceX},${resolvedSourceY} L ${resolvedTargetX},${resolvedTargetY}`;
+	const labelX = midX;
+	const labelY = midY;
 
 	// Truncate label if longer than 10 characters
 	const displayLabel =
 		label.length > 10 ? label.substring(0, 10) + "..." : label;
 
 	const gradientId = `edge-gradient-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
-
-	const handleLabelDragStart = (event: React.MouseEvent<HTMLDivElement>) => {
-		event.preventDefault();
-		event.stopPropagation();
-
-		const startX = event.clientX;
-		const startY = event.clientY;
-		const initialOffsetX = labelOffsetX;
-		const initialOffsetY = labelOffsetY;
-		let didDrag = false;
-		let nextOffsetX = initialOffsetX;
-		let nextOffsetY = initialOffsetY;
-		let animationFrameId: number | null = null;
-
-		const flushDragUpdate = () => {
-			animationFrameId = null;
-			setEdges((edges) =>
-				edges.map((edge) =>
-					edge.id === id
-						? {
-								...edge,
-								data: {
-									...edge.data,
-									labelOffsetX: nextOffsetX,
-									labelOffsetY: nextOffsetY,
-								},
-							}
-						: edge,
-				),
-			);
-		};
-
-		const handleMouseMove = (moveEvent: MouseEvent) => {
-			const deltaX = moveEvent.clientX - startX;
-			const deltaY = moveEvent.clientY - startY;
-			if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
-				didDrag = true;
-			}
-			nextOffsetX = initialOffsetX + deltaX;
-			nextOffsetY = initialOffsetY + deltaY;
-
-			if (animationFrameId === null) {
-				animationFrameId =
-					window.requestAnimationFrame(flushDragUpdate);
-			}
-		};
-
-		const handleMouseUp = () => {
-			if (didDrag) {
-				(
-					window as Window & {
-						__edgeDragSuppressUntil?: number;
-					}
-				).__edgeDragSuppressUntil = Date.now() + 250;
-			}
-			if (animationFrameId !== null) {
-				window.cancelAnimationFrame(animationFrameId);
-				animationFrameId = null;
-			}
-			flushDragUpdate();
-			window.removeEventListener("mousemove", handleMouseMove);
-			window.removeEventListener("mouseup", handleMouseUp);
-		};
-
-		window.addEventListener("mousemove", handleMouseMove);
-		window.addEventListener("mouseup", handleMouseUp);
-	};
 
 	const handleEdgeEditClick = (
 		event: React.MouseEvent<HTMLButtonElement>,
@@ -493,12 +421,7 @@ const CustomEdge = ({
 							fontSize: "11px",
 						}}
 					>
-						<div
-							onMouseDown={handleLabelDragStart}
-							className="cursor-move"
-						>
-							{displayLabel}
-						</div>
+						<div className="cursor-default">{displayLabel}</div>
 						<button
 							type="button"
 							onClick={handleEdgeEditClick}
@@ -663,6 +586,19 @@ export default function NewCasePage() {
 	const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 	const [nodeId, setNodeId] = useState(hasDefaultProfile ? 2 : 1);
 
+	const hasConnectionBetweenProfiles = useCallback(
+		(sourceId?: string | null, targetId?: string | null) => {
+			if (!sourceId || !targetId) return false;
+
+			return edges.some(
+				(edge) =>
+					(edge.source === sourceId && edge.target === targetId) ||
+					(edge.source === targetId && edge.target === sourceId),
+			);
+		},
+		[edges],
+	);
+
 	useEffect(() => {
 		const handleOpenConnectionEditDialog = (event: Event) => {
 			const customEvent = event as CustomEvent<{
@@ -732,10 +668,9 @@ export default function NewCasePage() {
 				return;
 			}
 
-			const connectionExists = edges.some(
-				(edge) =>
-					edge.source === params.source &&
-					edge.target === params.target,
+			const connectionExists = hasConnectionBetweenProfiles(
+				params.source,
+				params.target,
 			);
 
 			if (connectionExists) {
@@ -752,7 +687,7 @@ export default function NewCasePage() {
 			setConnectionLabel("supporter");
 			setIsConnectionDialogOpen(true);
 		},
-		[edges],
+		[hasConnectionBetweenProfiles],
 	);
 
 	const onEdgeClick = useCallback((event: React.MouseEvent) => {
@@ -772,15 +707,14 @@ export default function NewCasePage() {
 		(connection: Connection | Edge) => {
 			const isValid =
 				connection.source !== connection.target &&
-				!edges.some(
-					(edge) =>
-						edge.source === connection.source &&
-						edge.target === connection.target,
+				!hasConnectionBetweenProfiles(
+					connection.source,
+					connection.target,
 				);
 			setIsValidConnection(isValid);
 			return isValid;
 		},
-		[edges],
+		[hasConnectionBetweenProfiles],
 	);
 
 	const handleConnectionSubmit = (e: React.FormEvent) => {
@@ -803,6 +737,21 @@ export default function NewCasePage() {
 					),
 				);
 			} else if (pendingConnection) {
+				if (
+					hasConnectionBetweenProfiles(
+						pendingConnection.source,
+						pendingConnection.target,
+					)
+				) {
+					toast.error(
+						"A connection already exists between these profiles",
+						{
+							position: "top-center",
+						},
+					);
+					return;
+				}
+
 				const sourceNode = nodes.find(
 					(n) => n.id === pendingConnection.source,
 				);
@@ -1621,6 +1570,9 @@ export default function NewCasePage() {
 											isValidConnectionCheck
 										}
 										connectionRadius={50}
+										connectionLineType={
+											ConnectionLineType.Straight
+										}
 										connectionLineStyle={{
 											stroke: isValidConnection
 												? "#22c55e"
