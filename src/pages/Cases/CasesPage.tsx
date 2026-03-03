@@ -294,7 +294,7 @@ export default function CasesPage() {
 					cases.map((caseItem) => (
 						<Card
 							key={caseItem.id}
-							className="cursor-pointer hover:shadow-md transition-shadow gap-2"
+							className="cursor-pointer gap-2 hover:bg-blue-50/50 transition-colors"
 							onClick={() => navigate(`/case/${caseItem.id}`)}
 						>
 							{/* Always visible section - Details with badges */}
