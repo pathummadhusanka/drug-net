@@ -5,6 +5,7 @@ import Network from "@/pages/Network/NetworkPage";
 import ProfileView from "@/pages/ProfileView/ProfileViewPage";
 import NewProfile from "@/pages/NewProfile/NewProfilePage";
 import Cases from "@/pages/Cases/CasesPage";
+import CaseViewPage from "@/pages/CaseView/CaseViewPage";
 import NewCasePage from "@/pages/NewCase/NewCasePage";
 import SettingsPage from "@/pages/Settings/SettingsPage";
 import HelpPage from "@/pages/Help/HelpPage";
@@ -16,7 +17,8 @@ export function AppRouter() {
 				<Route path="/network" element={<Network />} />
 				<Route path="/profile/:id" element={<ProfileView />} />
 				<Route path="/new-profile" element={<NewProfile />} />
-				<Route path="/cases" element={<Cases />} />
+				<Route path="/cases" element={<Cases />} />{" "}
+				<Route path="/case/:id" element={<CaseViewPage />} />{" "}
 				<Route path="/new-case" element={<NewCasePage />} />
 				<Route path="/new-case/:id" element={<NewCasePage />} />
 				<Route path="/settings" element={<SettingsPage />} />

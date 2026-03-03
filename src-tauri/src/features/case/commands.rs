@@ -67,3 +67,16 @@ pub async fn get_case_relationships(
 ) -> Result<Vec<CaseRelationshipData>, String> {
     super::service::get_case_relationships(&state.db, case_id)
 }
+
+#[tauri::command]
+pub async fn delete_case(state: State<'_, AppState>, case_id: i64) -> Result<(), String> {
+    super::service::delete_case(&state.db, case_id)
+}
+
+#[tauri::command]
+pub async fn get_case_profiles(
+    state: State<'_, AppState>,
+    case_id: i64,
+) -> Result<Vec<(i64, String)>, String> {
+    super::service::get_case_profiles(&state.db, case_id)
+}

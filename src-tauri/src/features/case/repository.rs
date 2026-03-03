@@ -321,3 +321,36 @@ pub fn get_case_relationships(
 
     Ok(relationships)
 }
+
+pub fn delete_case(db: &DbConnection, case_id: i64) -> Result<(), String> {
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    conn.execute("DELETE FROM cases WHERE id = ?1", params![case_id])
+        .map_err(|e| format!("Failed to delete case: {}", e))?;
+
+    Ok(())
+}
+
+pub fn get_case_profiles(db: &DbConnection, case_id: i64) -> Result<Vec<(i64, String)>, String> {
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    let mut stmt = conn.prepare(
+        "SELECT p.id, p.full_name
+         FROM profiles p
+         JOIN case_profiles cp ON cp.profile_id = p.id
+         WHERE cp.case_id = ?1
+         ORDER BY p.full_name ASC"
+    )
+    .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+    let profiles = stmt.query_map(params![case_id], |row| {
+        Ok((row.get(0)?, row.get(1)?))
+    })
+    .map_err(|e| format!("Query error: {}", e))?
+    .collect::<Result<Vec<(i64, String)>, _>>()
+    .map_err(|e| format!("Failed to collect results: {}", e))?;
+
+    Ok(profiles)
+}

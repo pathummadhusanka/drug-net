@@ -22,6 +22,8 @@ use features::case::commands::{
     get_case_areas,
     save_case_relationships,
     get_case_relationships,
+    delete_case,
+    get_case_profiles,
 };
 use features::drug::commands::{
     get_all_drugs,
@@ -87,6 +89,8 @@ pub fn run() {
             get_case_areas,
             save_case_relationships,
             get_case_relationships,
+            delete_case,
+            get_case_profiles,
             get_all_drugs,
             save_case_drugs,
             get_case_drugs,

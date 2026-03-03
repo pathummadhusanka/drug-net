@@ -1,140 +1,605 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import { FolderPlus } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+	getAllCases,
+	type CaseWithDetails,
+	getCaseAreas,
+	getCaseRelationships,
+	deleteCase,
+	getCaseProfiles,
+} from "@/lib/cases";
+import { getCaseDrugs } from "@/lib/drugs";
+import { getProfile, type ProfileWithId } from "@/lib/profiles";
+import {
+	FolderPlus,
+	Pill,
+	MapPin,
+	Network,
+	AlertCircle,
+	MoreVertical,
+	Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
 
-const dummyCases = [
-	{
-		id: "C-2026-001",
-		title: "Harbor Route Distribution",
-		leadOfficer: "P. Jayasinghe",
-		status: "Open",
-		priority: "High",
-		updatedAt: "2026-02-25",
-	},
-	{
-		id: "C-2026-002",
-		title: "Urban Cell Monitoring",
-		leadOfficer: "S. Fernando",
-		status: "Under Review",
-		priority: "Medium",
-		updatedAt: "2026-02-21",
-	},
-	{
-		id: "C-2026-003",
-		title: "Cross-District Supply Chain",
-		leadOfficer: "R. Perera",
-		status: "Open",
-		priority: "High",
-		updatedAt: "2026-02-19",
-	},
-	{
-		id: "C-2026-004",
-		title: "Local Storage Unit Raid",
-		leadOfficer: "N. Silva",
-		status: "Closed",
-		priority: "Low",
-		updatedAt: "2026-02-12",
-	},
-];
+interface CaseWithMetadata extends CaseWithDetails {
+	hasDrugs: boolean;
+	hasAreas: boolean;
+	hasNetwork: boolean;
+	profileCount: number;
+	drugs?: { drug_name: string; quantity: string }[];
+	areas?: string[];
+	profiles?: [number, string][]; // [profile_id, profile_name]
+	relationships?: {
+		source_profile_id: number;
+		target_profile_id: number;
+		relationship_type: string | null;
+	}[];
+}
 
 export default function CasesPage() {
 	const navigate = useNavigate();
-	const openCount = dummyCases.filter(
-		(caseItem) => caseItem.status === "Open",
-	).length;
-	const reviewCount = dummyCases.filter(
-		(caseItem) => caseItem.status === "Under Review",
-	).length;
-	const closedCount = dummyCases.filter(
-		(caseItem) => caseItem.status === "Closed",
-	).length;
+	const [cases, setCases] = useState<CaseWithMetadata[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [caseToDelete, setCaseToDelete] = useState<CaseWithMetadata | null>(
+		null,
+	);
+	const [isDeleting, setIsDeleting] = useState(false);
+	const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+	const [selectedProfile, setSelectedProfile] =
+		useState<ProfileWithId | null>(null);
+	const [loadingProfile, setLoadingProfile] = useState(false);
+
+	useEffect(() => {
+		fetchCases();
+	}, []);
+
+	const fetchCases = async () => {
+		try {
+			setLoading(true);
+			const allCases = await getAllCases();
+
+			// Enrich each case with metadata
+			const enrichedCases = await Promise.all(
+				allCases.map(async (caseItem) => {
+					try {
+						const [drugs, areas, relationships, profiles] =
+							await Promise.all([
+								getCaseDrugs(caseItem.id),
+								getCaseAreas(caseItem.id),
+								getCaseRelationships(caseItem.id),
+								getCaseProfiles(caseItem.id),
+							]);
+
+						return {
+							...caseItem,
+							hasDrugs: drugs.length > 0,
+							hasAreas: areas.length > 0,
+							hasNetwork: relationships.length > 0,
+							profileCount: profiles.length,
+							drugs: drugs,
+							areas: areas,
+							profiles: profiles,
+							relationships: relationships,
+						};
+					} catch (error) {
+						console.error(
+							`Failed to fetch metadata for case ${caseItem.id}:`,
+							error,
+						);
+						return {
+							...caseItem,
+							hasDrugs: false,
+							hasAreas: false,
+							hasNetwork: false,
+							profileCount: 0,
+							drugs: [],
+							areas: [],
+							profiles: [],
+							relationships: [],
+						};
+					}
+				}),
+			);
+
+			setCases(enrichedCases);
+		} catch (error) {
+			console.error("Failed to fetch cases:", error);
+			toast.error("Failed to load cases", { position: "top-center" });
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const getStatusColor = (status: string | null) => {
+		if (!status) return "bg-gray-100 text-gray-800";
+		switch (status.toLowerCase()) {
+			case "open":
+				return "bg-blue-100 text-blue-800";
+			case "closed":
+				return "bg-green-100 text-green-800";
+			case "under review":
+				return "bg-yellow-100 text-yellow-800";
+			default:
+				return "bg-gray-100 text-gray-800";
+		}
+	};
+
+	const handleProfileClick = async (profileId: number) => {
+		try {
+			setLoadingProfile(true);
+			const profile = await getProfile(profileId);
+			if (profile) {
+				setSelectedProfile(profile);
+				setProfileDialogOpen(true);
+			}
+		} catch (error) {
+			console.error("Failed to fetch profile:", error);
+			toast.error("Failed to load profile details", {
+				position: "top-center",
+			});
+		} finally {
+			setLoadingProfile(false);
+		}
+	};
+
+	const handleDeleteCase = async () => {
+		if (!caseToDelete) return;
+
+		try {
+			setIsDeleting(true);
+			await deleteCase(caseToDelete.id);
+			toast.success("Case deleted successfully", {
+				position: "top-center",
+			});
+			setCases(cases.filter((c) => c.id !== caseToDelete.id));
+			setDeleteDialogOpen(false);
+			setCaseToDelete(null);
+		} catch (error) {
+			console.error("Failed to delete case:", error);
+			toast.error("Failed to delete case", { position: "top-center" });
+		} finally {
+			setIsDeleting(false);
+		}
+	};
+
+	if (loading) {
+		return (
+			<div className="container mx-auto flex items-center justify-center py-12">
+				<p className="text-gray-500">Loading cases...</p>
+			</div>
+		);
+	}
 
 	return (
-		<div className="container mx-auto space-y-4">
-			<div className="flex justify-end items-center">
+		<div className="container mx-auto space-y-6 pb-6">
+			{/* Header with stats */}
+			<div className="flex justify-between items-center">
+				<div>
+					<h1 className="text-2xl font-bold">Cases</h1>
+					<p className="text-sm text-gray-500 mt-1">
+						{cases.length} case{cases.length !== 1 ? "s" : ""} in
+						system
+					</p>
+				</div>
 				<Button
-					variant="secondary"
 					className="cursor-pointer"
 					onClick={() => navigate("/new-case")}
 				>
 					<FolderPlus className="h-4 w-4 mr-2" />
-					File Case
+					File New Case
 				</Button>
 			</div>
 
-			<div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+			{/* Summary stats */}
+			<div className="grid gap-4 grid-cols-1 md:grid-cols-4">
 				<Card>
-					<CardContent className="py-1">
-						<p className="text-sm font-medium">
-							Open Cases:{" "}
-							<span className="font-semibold">{openCount}</span>
-						</p>
+					<CardContent className="pt-6">
+						<p className="text-2xl font-bold">{cases.length}</p>
+						<p className="text-sm text-gray-500">Total Cases</p>
 					</CardContent>
 				</Card>
 				<Card>
-					<CardContent className="py-1">
-						<p className="text-sm font-medium">
-							Under Review:{" "}
-							<span className="font-semibold">{reviewCount}</span>
+					<CardContent className="pt-6">
+						<p className="text-2xl font-bold">
+							{
+								cases.filter(
+									(c) =>
+										c.status &&
+										c.status.toLowerCase() === "open",
+								).length
+							}
 						</p>
+						<p className="text-sm text-gray-500">Open</p>
 					</CardContent>
 				</Card>
 				<Card>
-					<CardContent className="py-1">
-						<p className="text-sm font-medium">
-							Closed Cases:{" "}
-							<span className="font-semibold">{closedCount}</span>
+					<CardContent className="pt-6">
+						<p className="text-2xl font-bold">
+							{cases.filter((c) => c.hasDrugs).length}
 						</p>
+						<p className="text-sm text-gray-500">Drug Cases</p>
+					</CardContent>
+				</Card>
+				<Card>
+					<CardContent className="pt-6">
+						<p className="text-2xl font-bold">
+							{cases.filter((c) => c.hasNetwork).length}
+						</p>
+						<p className="text-sm text-gray-500">Network Cases</p>
 					</CardContent>
 				</Card>
 			</div>
 
-			<Card>
-				<CardHeader className="pb-2">
-					<CardTitle className="text-base font-semibold">
-						Recent Cases
-					</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>Case ID</TableHead>
-								<TableHead>Title</TableHead>
-								<TableHead>Lead Officer</TableHead>
-								<TableHead>Status</TableHead>
-								<TableHead>Priority</TableHead>
-								<TableHead>Last Updated</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{dummyCases.map((caseItem) => (
-								<TableRow key={caseItem.id}>
-									<TableCell className="font-medium">
-										{caseItem.id}
-									</TableCell>
-									<TableCell>{caseItem.title}</TableCell>
-									<TableCell>
-										{caseItem.leadOfficer}
-									</TableCell>
-									<TableCell>{caseItem.status}</TableCell>
-									<TableCell>{caseItem.priority}</TableCell>
-									<TableCell>{caseItem.updatedAt}</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</CardContent>
-			</Card>
+			{/* Cases grid */}
+			<div className="space-y-4">
+				{cases.length === 0 ? (
+					<Card>
+						<CardContent className="pt-12 pb-12 text-center">
+							<AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+							<p className="text-gray-500">No cases yet</p>
+							<Button
+								variant="outline"
+								className="mt-4 cursor-pointer"
+								onClick={() => navigate("/new-case")}
+							>
+								Create the first case
+							</Button>
+						</CardContent>
+					</Card>
+				) : (
+					cases.map((caseItem) => (
+						<Card
+							key={caseItem.id}
+							className="cursor-pointer hover:shadow-md transition-shadow"
+							onClick={() => navigate(`/case/${caseItem.id}`)}
+						>
+							{/* Card Header */}
+							<CardHeader className="pb-3">
+								<div className="space-y-2">
+									<div className="flex justify-between items-start">
+										<div className="flex-1">
+											<div className="flex items-baseline gap-2">
+												<code className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+													{caseItem.cno}
+												</code>
+												<h3 className="text-lg font-semibold">
+													{caseItem.case_name}
+												</h3>
+											</div>
+										</div>
+										<div className="flex items-center gap-2">
+											<span
+												className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(caseItem.status)}`}
+											>
+												{caseItem.status || "Unknown"}
+											</span>
+											<DropdownMenu>
+												<DropdownMenuTrigger asChild>
+													<Button
+														variant="secondary"
+														size="sm"
+														className="cursor-pointer"
+														onClick={(e) =>
+															e.stopPropagation()
+														}
+													>
+														<MoreVertical className="h-4 w-4" />
+													</Button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent
+													align="end"
+													className="w-44"
+												>
+													<DropdownMenuItem
+														onSelect={(event) => {
+															event.preventDefault();
+															navigate(
+																`/new-case/${caseItem.id}`,
+															);
+														}}
+													>
+														Edit Case
+													</DropdownMenuItem>
+													<DropdownMenuSeparator />
+													<DropdownMenuItem
+														variant="destructive"
+														onSelect={(event) => {
+															event.preventDefault();
+															setCaseToDelete(
+																caseItem,
+															);
+															setDeleteDialogOpen(
+																true,
+															);
+														}}
+														disabled={isDeleting}
+													>
+														<Trash2 className="h-4 w-4" />
+														Delete Case
+													</DropdownMenuItem>
+												</DropdownMenuContent>
+											</DropdownMenu>
+										</div>
+									</div>
+								</div>
+							</CardHeader>
+
+							{/* Always visible section - Details with badges */}
+							<CardContent className="pt-0 space-y-2 pb-3">
+								{/* Profiles Badge + Details */}
+								{caseItem.profiles &&
+									caseItem.profiles.length > 0 && (
+										<div className="flex items-start gap-2">
+											<Badge
+												variant="outline"
+												className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+											>
+												<Network className="h-3 w-3" />
+												Network
+											</Badge>
+											<div className="text-sm text-gray-700 flex flex-wrap gap-1">
+												{caseItem.profiles.map((p) => (
+													<span
+														key={p[0]}
+														onClick={(e) => {
+															e.stopPropagation();
+															handleProfileClick(
+																p[0],
+															);
+														}}
+														className="cursor-pointer hover:underline text-blue-600 hover:text-blue-800"
+													>
+														{p[1]}
+														{caseItem.profiles!.indexOf(
+															p,
+														) !==
+														caseItem.profiles!
+															.length -
+															1
+															? ","
+															: ""}
+													</span>
+												))}
+											</div>
+										</div>
+									)}
+
+								{/* Drugs Badge + Details */}
+								{caseItem.drugs &&
+									caseItem.drugs.length > 0 && (
+										<div className="flex items-start gap-2">
+											<Badge
+												variant="outline"
+												className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+											>
+												<Pill className="h-3 w-3" />
+												Drugs
+											</Badge>
+											<p className="text-sm text-gray-700">
+												{caseItem.drugs
+													.map((d) => d.drug_name)
+													.join(", ")}
+											</p>
+										</div>
+									)}
+
+								{/* Areas Badge + Details */}
+								{caseItem.areas &&
+									caseItem.areas.length > 0 && (
+										<div className="flex items-start gap-2">
+											<Badge
+												variant="outline"
+												className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+											>
+												<MapPin className="h-3 w-3" />
+												Areas
+											</Badge>
+											<p className="text-sm text-gray-700">
+												{caseItem.areas.join(", ")}
+											</p>
+										</div>
+									)}
+
+								{/* Created At */}
+								{caseItem.created_at && (
+									<div className="flex items-start gap-2">
+										<Badge
+											variant="secondary"
+											className="flex-shrink-0 mt-0.5 text-xs"
+										>
+											Created At
+										</Badge>
+										<p className="text-sm text-gray-700">
+											{new Date(
+												caseItem.created_at,
+											).toLocaleDateString()}
+										</p>
+									</div>
+								)}
+
+								{/* Updated At */}
+								{caseItem.created_at && (
+									<div className="flex items-start gap-2">
+										<Badge
+											variant="secondary"
+											className="flex-shrink-0 mt-0.5 text-xs"
+										>
+											Updated At
+										</Badge>
+										<p className="text-sm text-gray-700">
+											{new Date(
+												caseItem.created_at,
+											).toLocaleDateString()}
+										</p>
+									</div>
+								)}
+							</CardContent>
+						</Card>
+					))
+				)}
+			</div>
+
+			{/* Delete Confirmation Dialog */}
+			<AlertDialog
+				open={deleteDialogOpen}
+				onOpenChange={setDeleteDialogOpen}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete Case</AlertDialogTitle>
+						<AlertDialogDescription>
+							Are you sure you want to delete case{" "}
+							<strong>{caseToDelete?.cno}</strong> (
+							{caseToDelete?.case_name})? This action cannot be
+							undone.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={handleDeleteCase}
+							disabled={isDeleting}
+							className="cursor-pointer"
+						>
+							{isDeleting ? "Deleting..." : "Delete"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			{/* Profile Details Dialog */}
+			<AlertDialog
+				open={profileDialogOpen}
+				onOpenChange={setProfileDialogOpen}
+			>
+				<AlertDialogContent className="max-w-md">
+					<AlertDialogHeader>
+						<AlertDialogTitle>
+							{selectedProfile?.full_name || "Profile Details"}
+						</AlertDialogTitle>
+					</AlertDialogHeader>
+					{loadingProfile ? (
+						<p className="text-center text-gray-500 py-4">
+							Loading profile details...
+						</p>
+					) : selectedProfile ? (
+						<div className="space-y-2 text-sm">
+							{selectedProfile.alias && (
+								<div>
+									<span className="font-semibold text-gray-600">
+										Alias:
+									</span>
+									<span className="ml-2">
+										{selectedProfile.alias}
+									</span>
+								</div>
+							)}
+							{selectedProfile.nic && (
+								<div>
+									<span className="font-semibold text-gray-600">
+										NIC:
+									</span>
+									<span className="ml-2">
+										{selectedProfile.nic}
+									</span>
+								</div>
+							)}
+							{selectedProfile.city && (
+								<div>
+									<span className="font-semibold text-gray-600">
+										City:
+									</span>
+									<span className="ml-2">
+										{selectedProfile.city}
+									</span>
+								</div>
+							)}
+							{selectedProfile.address_line1 && (
+								<div>
+									<span className="font-semibold text-gray-600">
+										Address:
+									</span>
+									<span className="ml-2">
+										{selectedProfile.address_line1}
+										{selectedProfile.address_line2
+											? `, ${selectedProfile.address_line2}`
+											: ""}
+									</span>
+								</div>
+							)}
+							{selectedProfile.risk_level && (
+								<div>
+									<span className="font-semibold text-gray-600">
+										Risk Level:
+									</span>
+									<span className="ml-2">
+										{selectedProfile.risk_level}
+									</span>
+								</div>
+							)}
+							{selectedProfile.status && (
+								<div>
+									<span className="font-semibold text-gray-600">
+										Status:
+									</span>
+									<span className="ml-2">
+										{selectedProfile.status}
+									</span>
+								</div>
+							)}
+							{selectedProfile.notes && (
+								<div>
+									<span className="font-semibold text-gray-600">
+										Notes:
+									</span>
+									<p className="ml-2 text-gray-700 whitespace-pre-wrap">
+										{selectedProfile.notes}
+									</p>
+								</div>
+							)}
+						</div>
+					) : null}
+					<AlertDialogFooter>
+						<AlertDialogCancel
+							onClick={() => setProfileDialogOpen(false)}
+						>
+							Close
+						</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={() => {
+								if (selectedProfile) {
+									navigate(`/profile/${selectedProfile.id}`);
+									setProfileDialogOpen(false);
+								}
+							}}
+							className="cursor-pointer"
+						>
+							View Profile
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 }

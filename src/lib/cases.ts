@@ -142,6 +142,27 @@ export async function getCaseRelationships(
 }
 
 /**
+ * Delete a case from the database
+ * @param caseId - The case ID to delete
+ */
+export async function deleteCase(caseId: number): Promise<void> {
+	return await invoke<void>("delete_case", {
+		caseId,
+	});
+}
+
+/**
+ * Get all profiles associated with a case
+ * @param caseId - The case ID
+ * @returns Array of tuples: [profile_id, profile_name]
+ */
+export async function getCaseProfiles(
+	caseId: number,
+): Promise<[number, string][]> {
+	return await invoke<[number, string][]>("get_case_profiles", { caseId });
+}
+
+/**
  * Load a case with its complete network (profiles, relationships)
  * This retrieves all profiles and relationships associated with a case
  * @param caseId - The case ID

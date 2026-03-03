@@ -57,3 +57,11 @@ pub fn get_case_relationships(
 ) -> Result<Vec<CaseRelationshipData>, String> {
     super::repository::get_case_relationships(db, case_id)
 }
+
+pub fn delete_case(db: &DbConnection, case_id: i64) -> Result<(), String> {
+    super::repository::delete_case(db, case_id)
+}
+
+pub fn get_case_profiles(db: &DbConnection, case_id: i64) -> Result<Vec<(i64, String)>, String> {
+    super::repository::get_case_profiles(db, case_id)
+}
