@@ -2468,21 +2468,9 @@ export default function NewCasePage() {
 					>
 						Clear All
 					</Button>
-					<div className="flex gap-4">
-						<Button
-							type="button"
-							variant="outline"
-							className="cursor-pointer"
-							onClick={() => {
-								console.log("Save draft");
-							}}
-						>
-							Save Draft
-						</Button>
-						<Button type="submit" className="cursor-pointer">
-							Save Case
-						</Button>
-					</div>
+					<Button type="submit" className="cursor-pointer">
+						Save Case
+					</Button>
 				</div>
 			</form>
 		</div>
