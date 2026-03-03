@@ -2088,6 +2088,11 @@ export default function NewCasePage() {
 											onChange={(e) =>
 												setDrugSearch(e.target.value)
 											}
+											onKeyDown={(e) => {
+												if (e.key === "Enter") {
+													e.preventDefault();
+												}
+											}}
 										/>
 										<ComboboxContent>
 											<ComboboxList>
