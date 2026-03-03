@@ -294,7 +294,6 @@ const CustomEdge = ({
 	data,
 	markerEnd,
 }: EdgeProps) => {
-	const [tooltipOpen, setTooltipOpen] = useState(false);
 	const [edgePath, labelX, labelY] = getBezierPath({
 		sourceX,
 		sourceY,
@@ -305,8 +304,6 @@ const CustomEdge = ({
 	});
 
 	const label = (data?.label as string) || "";
-	const sourceNode = (data?.sourceNode as string) || "";
-	const targetNode = (data?.targetNode as string) || "";
 
 	// Truncate label if longer than 10 characters
 	const displayLabel =
@@ -324,32 +321,9 @@ const CustomEdge = ({
 					}}
 					className="nodrag nopan"
 				>
-					<Tooltip open={tooltipOpen} onOpenChange={setTooltipOpen}>
-						<TooltipTrigger asChild>
-							<div
-								onClick={(e) => {
-									e.stopPropagation();
-									setTooltipOpen(!tooltipOpen);
-								}}
-								className="px-2 py-0.5 bg-white border border-gray-300 rounded text-xs cursor-pointer hover:bg-gray-50"
-							>
-								{displayLabel}
-							</div>
-						</TooltipTrigger>
-						<TooltipContent className="bg-slate-900 text-white p-3 rounded-md">
-							<div className="text-sm space-y-1">
-								<div>
-									<strong>From:</strong> {sourceNode}
-								</div>
-								<div>
-									<strong>To:</strong> {targetNode}
-								</div>
-								<div>
-									<strong>Connection:</strong> {label}
-								</div>
-							</div>
-						</TooltipContent>
-					</Tooltip>
+					<div className="px-2 py-0.5 bg-white border border-gray-300 rounded text-xs">
+						{displayLabel}
+					</div>
 				</div>
 			</EdgeLabelRenderer>
 		</>
