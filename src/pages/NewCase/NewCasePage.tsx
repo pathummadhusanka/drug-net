@@ -101,11 +101,20 @@ const CustomNode = ({
 				.length
 		: 0;
 
-	// Truncate label to 20 characters max
-	const displayLabel =
-		data.label.length > 20
+	// Truncate name and alias to 20 characters max
+	const displayName = data.fullName
+		? data.fullName.length > 20
+			? data.fullName.substring(0, 20) + "..."
+			: data.fullName
+		: data.label.length > 20
 			? data.label.substring(0, 20) + "..."
 			: data.label;
+
+	const displayAlias = data.alias
+		? data.alias.length > 20
+			? data.alias.substring(0, 20) + "..."
+			: data.alias
+		: null;
 
 	// Build tooltip with profile details
 	const tooltipParts = [];
@@ -127,59 +136,69 @@ const CustomNode = ({
 			<Handle type="source" position={Position.Right} id="right" />
 			<Handle type="source" position={Position.Bottom} id="bottom" />
 			<Handle type="source" position={Position.Left} id="left" />
-			{!data.isCurrentProfile && data.onDelete && (
-				<AlertDialog>
-					<AlertDialogTrigger asChild>
-						<button
-							onClick={(e) => {
-								e.stopPropagation();
-							}}
-							className="absolute -top-1 -right-1 bg-white hover:bg-red-50 border border-gray-300 hover:border-red-400 text-gray-500 hover:text-red-600 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer leading-none p-0 text-[12px]"
-							title="Delete profile"
-						>
-							×
-						</button>
-					</AlertDialogTrigger>
-					<AlertDialogContent>
-						<AlertDialogHeader>
-							<AlertDialogTitle>Delete Profile</AlertDialogTitle>
-							<AlertDialogDescription>
-								Are you sure you want to delete this profile?
-								{connectionCount > 0 && (
-									<>
-										{" "}
-										This profile has{" "}
-										<span className="font-semibold">
-											{connectionCount}{" "}
-											{connectionCount === 1
-												? "connection"
-												: "connections"}
-										</span>{" "}
-										that will also be removed.
-									</>
-								)}{" "}
-								This action cannot be undone.
-							</AlertDialogDescription>
-						</AlertDialogHeader>
-						<AlertDialogFooter>
-							<AlertDialogCancel className="cursor-pointer">
-								Cancel
-							</AlertDialogCancel>
-							<AlertDialogAction
-								className="cursor-pointer"
-								onClick={(e: React.MouseEvent) => {
+			<div className="flex items-start justify-between gap-2">
+				<div className="flex flex-col" title={tooltip}>
+					<div className="font-medium text-sm">{displayName}</div>
+					{displayAlias && (
+						<div className="text-xs opacity-80 italic">
+							{displayAlias}
+						</div>
+					)}
+				</div>
+				{!data.isCurrentProfile && data.onDelete && (
+					<AlertDialog>
+						<AlertDialogTrigger asChild>
+							<button
+								onClick={(e) => {
 									e.stopPropagation();
-									data.onDelete?.(id);
 								}}
+								className="hover:bg-red-100 hover:bg-opacity-20 text-current hover:text-red-600 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer p-0 shrink-0"
+								title="Delete profile"
 							>
-								Delete
-							</AlertDialogAction>
-						</AlertDialogFooter>
-					</AlertDialogContent>
-				</AlertDialog>
-			)}
-			<div className="font-medium" title={tooltip}>
-				{displayLabel}
+								<X className="w-2.5 h-2.5" />
+							</button>
+						</AlertDialogTrigger>
+						<AlertDialogContent>
+							<AlertDialogHeader>
+								<AlertDialogTitle>
+									Delete Profile
+								</AlertDialogTitle>
+								<AlertDialogDescription>
+									Are you sure you want to delete this
+									profile?
+									{connectionCount > 0 && (
+										<>
+											{" "}
+											This profile has{" "}
+											<span className="font-semibold">
+												{connectionCount}{" "}
+												{connectionCount === 1
+													? "connection"
+													: "connections"}
+											</span>{" "}
+											that will also be removed.
+										</>
+									)}{" "}
+									This action cannot be undone.
+								</AlertDialogDescription>
+							</AlertDialogHeader>
+							<AlertDialogFooter>
+								<AlertDialogCancel className="cursor-pointer">
+									Cancel
+								</AlertDialogCancel>
+								<AlertDialogAction
+									className="cursor-pointer bg-red-600 hover:bg-red-700 text-white"
+									onClick={(e: React.MouseEvent) => {
+										e.stopPropagation();
+										data.onDelete?.(id);
+									}}
+								>
+									Delete
+								</AlertDialogAction>
+							</AlertDialogFooter>
+						</AlertDialogContent>
+					</AlertDialog>
+				)}
 			</div>
 		</div>
 	);
