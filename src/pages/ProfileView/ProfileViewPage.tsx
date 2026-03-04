@@ -4267,18 +4267,29 @@ export default function ProfileView() {
 																		const percentage =
 																			totalQuantity >
 																			0
-																				? (
-																						(drug.total_quantity /
-																							totalQuantity) *
-																						100
-																					).toFixed(
-																						2,
-																					)
-																				: "0.00";
+																				? (drug.total_quantity /
+																						totalQuantity) *
+																					100
+																				: 0;
+																		const percentageLabel =
+																			percentage.toFixed(
+																				2,
+																			);
+																		const barFillClass =
+																			percentage <=
+																			25
+																				? "bg-yellow-400/70"
+																				: percentage <=
+																					  50
+																					? "bg-green-400/70"
+																					: percentage <=
+																						  75
+																						? "bg-rose-400/70"
+																						: "bg-violet-400/70";
 																		return (
 																			<div
 																				key={`${drug.drug_name}-${drug.quantified_by}-${index}`}
-																				className="border rounded-md px-3 py-2 space-y-1"
+																				className="border rounded-md px-3 py-2 space-y-2 bg-white"
 																			>
 																				<div className="flex items-center justify-between">
 																					<span className="text-sm font-semibold text-gray-900">
@@ -4313,10 +4324,19 @@ export default function ProfileView() {
 																					</p>
 																					<p className="text-sm font-medium text-gray-600">
 																						{
-																							percentage
+																							percentageLabel
 																						}
+
 																						%
 																					</p>
+																				</div>
+																				<div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+																					<div
+																						className={`h-full rounded-full ${barFillClass}`}
+																						style={{
+																							width: `${Math.max(0, Math.min(100, percentage))}%`,
+																						}}
+																					/>
 																				</div>
 																			</div>
 																		);
