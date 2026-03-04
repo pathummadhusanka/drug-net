@@ -279,6 +279,17 @@ export default function CasesPage() {
 		).sort((a, b) => a.localeCompare(b));
 	}, [cases]);
 
+	// Fuzzy search helper - matches if query chars appear in order
+	const fuzzyMatch = (str: string, query: string): boolean => {
+		let queryIdx = 0;
+		for (let i = 0; i < str.length && queryIdx < query.length; i++) {
+			if (str[i] === query[queryIdx]) {
+				queryIdx++;
+			}
+		}
+		return queryIdx === query.length;
+	};
+
 	const visibleCases = useMemo(() => {
 		const query = searchText.trim().toLowerCase();
 
@@ -322,19 +333,29 @@ export default function CasesPage() {
 
 			if (!query) return true;
 
-			const searchableText = [
+			// Build searchable text from all fields
+			const searchableFields = [
 				caseItem.case_id,
 				caseItem.case_name,
+				caseItem.description,
+				caseItem.notes,
 				caseItem.case_type,
 				caseItem.severity_level,
 				caseItem.status,
-				caseItem.description,
+				caseItem.case_date,
+				...(caseItem.profiles?.map((p) => p[1]) || []),
+				...(caseItem.areas || []),
+				...(caseItem.drugs?.map((d) => d.drug_name) || []),
 			]
 				.filter(Boolean)
-				.join(" ")
-				.toLowerCase();
+				.map((field) => String(field).toLowerCase());
 
-			return searchableText.includes(query);
+			// Check both exact substring match and fuzzy match
+			return searchableFields.some(
+				(field) =>
+					field.includes(query) || // Exact substring match
+					fuzzyMatch(field, query), // Fuzzy match
+			);
 		});
 
 		const sorted = [...filtered].sort((a, b) => {
@@ -445,7 +466,7 @@ export default function CasesPage() {
 					<Input
 						value={searchText}
 						onChange={(e) => setSearchText(e.target.value)}
-						placeholder="Search by ID, title, type, status..."
+						placeholder="Search by ID, title, description, notes, profiles, areas, drugs..."
 						className="flex-1"
 					/>
 					<Popover>
