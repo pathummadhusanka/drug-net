@@ -701,9 +701,21 @@ export default function ProfileView() {
 			}
 		});
 
-		return Object.values(drugMap).sort((a, b) =>
-			a.drug_name.localeCompare(b.drug_name),
-		);
+		return Object.values(drugMap).sort((a, b) => {
+			const nameOrder = a.drug_name.localeCompare(
+				b.drug_name,
+				undefined,
+				{
+					sensitivity: "base",
+				},
+			);
+			if (nameOrder !== 0) {
+				return nameOrder;
+			}
+			return a.quantified_by.localeCompare(b.quantified_by, undefined, {
+				sensitivity: "base",
+			});
+		});
 	}, [profileCases]);
 
 	useEffect(() => {
