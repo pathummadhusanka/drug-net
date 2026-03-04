@@ -539,12 +539,24 @@ export default function CasesPage() {
 			{/* Filters & Sort */}
 			<div className="flex flex-col gap-3">
 				<div className="flex gap-3">
-					<Input
-						value={searchText}
-						onChange={(e) => setSearchText(e.target.value)}
-						placeholder="Search by ID, title, description, notes, profiles, areas, drugs..."
-						className="flex-1"
-					/>
+					<div className="relative flex-1">
+						<Input
+							value={searchText}
+							onChange={(e) => setSearchText(e.target.value)}
+							placeholder="Search by ID, title, description, notes, profiles, areas, drugs..."
+							className="flex-1 pr-10"
+						/>
+						{searchText && (
+							<button
+								type="button"
+								onClick={() => setSearchText("")}
+								className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+								aria-label="Clear search"
+							>
+								<X className="h-4 w-4" />
+							</button>
+						)}
+					</div>
 					<Popover>
 						<PopoverTrigger asChild>
 							<Button

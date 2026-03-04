@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { columns, DrugDealer } from "./columns";
 import { DataTable } from "./data-table";
 import { useNavigate } from "react-router-dom";
-import { UserPlus } from "lucide-react";
+import { UserPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -290,12 +290,24 @@ export default function Profiles() {
 
 			<div className="flex flex-col gap-3">
 				<div className="flex gap-3">
-					<Input
-						value={searchText}
-						onChange={(e) => setSearchText(e.target.value)}
-						placeholder="Search by name, alias, area, risk, status..."
-						className="flex-1"
-					/>
+					<div className="relative flex-1">
+						<Input
+							value={searchText}
+							onChange={(e) => setSearchText(e.target.value)}
+							placeholder="Search by name, alias, area, risk, status..."
+							className="flex-1 pr-10"
+						/>
+						{searchText && (
+							<button
+								type="button"
+								onClick={() => setSearchText("")}
+								className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+								aria-label="Clear search"
+							>
+								<X className="h-4 w-4" />
+							</button>
+						)}
+					</div>
 				</div>
 
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
