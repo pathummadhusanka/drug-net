@@ -5,6 +5,7 @@ mod features;
 
 use database::connection::{init_connection, DbConnection};
 use database::migrations::run_migrations;
+use database::operations::reset_database as reset_db_operation;
 use features::area::commands::{
     create_area,
     get_area,
@@ -60,6 +61,11 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+#[tauri::command]
+fn reset_database(state: tauri::State<AppState>) -> Result<(), String> {
+    reset_db_operation(&state.db)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Initialize database connection
@@ -77,7 +83,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
-            greet, 
+            greet,
+            reset_database,
             create_profile,
             update_profile,
             get_profile,

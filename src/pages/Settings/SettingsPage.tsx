@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +26,7 @@ import {
 	MenubarMenu,
 	MenubarTrigger,
 } from "@/components/ui/menubar";
-import { Trash2, CirclePlus } from "lucide-react";
+import { Trash2, CirclePlus, Database } from "lucide-react";
 import { toast } from "sonner";
 import {
 	getAllDrugs,
@@ -46,7 +47,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function SettingsPage() {
-	const [activeSection, setActiveSection] = useState<"drugs">("drugs");
 	const [drugs, setDrugs] = useState<Drug[]>([]);
 	const [newDrugName, setNewDrugName] = useState("");
 	const [newDrugUnit, setNewDrugUnit] = useState("");
@@ -56,6 +56,11 @@ export default function SettingsPage() {
 	const [addDrugDialogOpen, setAddDrugDialogOpen] = useState(false);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [drugToDelete, setDrugToDelete] = useState<Drug | null>(null);
+	const [activeSection, setActiveSection] = useState<"drugs" | "dangerZone">(
+		"drugs",
+	);
+	const [resetDbDialogOpen, setResetDbDialogOpen] = useState(false);
+	const [resetConfirmationText, setResetConfirmationText] = useState("");
 
 	useEffect(() => {
 		fetchDrugs();
@@ -122,6 +127,29 @@ export default function SettingsPage() {
 		}
 	};
 
+	const handleResetDatabase = async () => {
+		if (resetConfirmationText !== "deleteDB") {
+			toast.error("Please type 'deleteDB' to confirm");
+			return;
+		}
+
+		try {
+			await invoke("reset_database");
+			toast.success("Database reset successfully");
+			setResetDbDialogOpen(false);
+			setResetConfirmationText("");
+			// Refresh drugs list after reset
+			fetchDrugs();
+		} catch (error) {
+			console.error("Failed to reset database:", error);
+			toast.error(
+				error instanceof Error
+					? error.message
+					: "Failed to reset database",
+			);
+		}
+	};
+
 	return (
 		<div className="container mx-auto p-6 space-y-6">
 			<div className="space-y-4">
@@ -148,6 +176,25 @@ export default function SettingsPage() {
 								className="cursor-pointer"
 							>
 								Drug Management
+							</MenubarItem>
+						</MenubarContent>
+					</MenubarMenu>
+					<MenubarMenu>
+						<MenubarTrigger
+							className={`cursor-pointer ${
+								activeSection === "dangerZone"
+									? "bg-secondary"
+									: ""
+							}`}
+						>
+							System
+						</MenubarTrigger>
+						<MenubarContent>
+							<MenubarItem
+								onClick={() => setActiveSection("dangerZone")}
+								className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+							>
+								Danger Zone
 							</MenubarItem>
 						</MenubarContent>
 					</MenubarMenu>
@@ -247,6 +294,44 @@ export default function SettingsPage() {
 				</div>
 			)}
 
+			{/* Danger Zone Section */}
+			{activeSection === "dangerZone" && (
+				<div className="space-y-6">
+					<div>
+						<h2 className="text-2xl font-bold text-red-600">
+							Danger Zone
+						</h2>
+						<p className="text-muted-foreground mt-2">
+							Irreversible and destructive actions
+						</p>
+					</div>
+
+					<div className="border rounded-lg p-4">
+						<div className="flex flex-row items-center justify-between">
+							<div className="space-y-1">
+								<h3 className="font-semibold text-red-700">
+									Reset Database
+								</h3>
+								<p className="text-sm text-muted-foreground">
+									Delete all user data and reset the database
+									to a fresh state. This will remove all
+									profiles, cases, relationships, and custom
+									drugs.
+								</p>
+							</div>
+							<Button
+								variant="destructive"
+								onClick={() => setResetDbDialogOpen(true)}
+								className="cursor-pointer ml-4"
+							>
+								<Database className="h-4 w-4 mr-2" />
+								Reset Database
+							</Button>
+						</div>
+					</div>
+				</div>
+			)}
+
 			{/* Add Drug Modal */}
 			<Dialog
 				open={addDrugDialogOpen}
@@ -331,6 +416,79 @@ export default function SettingsPage() {
 							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
 						>
 							Delete
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			{/* Reset Database Confirmation Dialog */}
+			<AlertDialog
+				open={resetDbDialogOpen}
+				onOpenChange={(open) => {
+					setResetDbDialogOpen(open);
+					if (!open) {
+						setResetConfirmationText("");
+					}
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle className="text-red-600">
+							Reset Database to Factory Defaults?
+						</AlertDialogTitle>
+						<AlertDialogDescription>
+							<span className="font-semibold text-red-600">
+								WARNING: This action is irreversible!
+							</span>
+							<br />
+							<br />
+							All the following data will be permanently deleted:
+							<ul className="list-disc list-inside mt-2 space-y-1">
+								<li>All profiles and their information</li>
+								<li>All cases and associated data</li>
+								<li>All relationships and connections</li>
+								<li>
+									All custom drugs (system default drugs will
+									remain)
+								</li>
+							</ul>
+							<br />
+							The database will be reset to a clean state as if
+							the application was just installed.
+							<br />
+							<br />
+							<div className="mt-4">
+								<Label
+									htmlFor="confirmText"
+									className="text-sm font-semibold"
+								>
+									Please type{" "}
+									<span className="font-mono bg-muted px-1 rounded">
+										deleteDB
+									</span>{" "}
+									to confirm:
+								</Label>
+								<Input
+									id="confirmText"
+									value={resetConfirmationText}
+									onChange={(e) =>
+										setResetConfirmationText(e.target.value)
+									}
+									placeholder="Type deleteDB here"
+									className="mt-2"
+									autoComplete="off"
+								/>
+							</div>
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={handleResetDatabase}
+							disabled={resetConfirmationText !== "deleteDB"}
+							className="bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+						>
+							Reset Database
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
