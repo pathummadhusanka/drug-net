@@ -128,11 +128,6 @@ interface Profile {
 	updated_at: string | null;
 }
 
-interface ProfileDrug {
-	id: number;
-	name: string;
-}
-
 interface ProfileArea {
 	id: number;
 	name: string;
@@ -501,7 +496,6 @@ export default function ProfileView() {
 	const { id } = useParams();
 	const navigate = useNavigate();
 	const [profile, setProfile] = useState<Profile | null>(null);
-	const [profileDrugs, setProfileDrugs] = useState<ProfileDrug[]>([]);
 	const [profileAreas, setProfileAreas] = useState<ProfileArea[]>([]);
 	const [profileRelationships, setProfileRelationships] = useState<
 		ProfileRelationship[]
@@ -670,6 +664,47 @@ export default function ProfileView() {
 		}
 		return pages;
 	}, [casesCurrentPage, totalCasePages]);
+
+	// Aggregate drugs from all profile cases
+	const aggregatedDrugs = useMemo(() => {
+		const drugMap: {
+			[key: string]: {
+				drug_name: string;
+				quantified_by: string;
+				total_quantity: number;
+				case_count: number;
+				cases: number[];
+			};
+		} = {};
+
+		profileCases.forEach((caseItem) => {
+			if (caseItem.drugs && caseItem.drugs.length > 0) {
+				caseItem.drugs.forEach((drug) => {
+					const key = `${drug.drug_name}||${drug.quantified_by}`;
+					if (!drugMap[key]) {
+						drugMap[key] = {
+							drug_name: drug.drug_name,
+							quantified_by: drug.quantified_by,
+							total_quantity: 0,
+							case_count: 0,
+							cases: [],
+						};
+					}
+					// Try to parse quantity as number, default to 0 if not a number
+					const qty = parseFloat(drug.quantity) || 0;
+					drugMap[key].total_quantity += qty;
+					if (!drugMap[key].cases.includes(caseItem.id)) {
+						drugMap[key].cases.push(caseItem.id);
+						drugMap[key].case_count += 1;
+					}
+				});
+			}
+		});
+
+		return Object.values(drugMap).sort((a, b) =>
+			a.drug_name.localeCompare(b.drug_name),
+		);
+	}, [profileCases]);
 
 	useEffect(() => {
 		setCasesCurrentPage(1);
@@ -1331,7 +1366,6 @@ export default function ProfileView() {
 				if (!result) {
 					setError("Profile not found");
 					setProfile(null);
-					setProfileDrugs([]);
 					setProfileAreas([]);
 					setProfileRelationships([]);
 					setProfileCases([]);
@@ -1341,30 +1375,23 @@ export default function ProfileView() {
 
 				// Profile exists, now fetch related data using allSettled
 				// so that if some fail, we still show the profile with empty sections
-				const [
-					drugsResult,
-					areasResult,
-					relationshipsResult,
-					casesResult,
-				] = await Promise.allSettled([
-					invoke<ProfileDrug[]>("get_profile_drugs", {
-						id: profileId,
-					}),
-					invoke<ProfileArea[]>("get_profile_areas", {
-						id: profileId,
-					}),
-					invoke<ProfileRelationship[]>("get_profile_relationships", {
-						id: profileId,
-					}),
-					invoke<CaseWithDetails[]>("get_profile_cases", {
-						profileId: profileId,
-					}),
-				]);
+				const [areasResult, relationshipsResult, casesResult] =
+					await Promise.allSettled([
+						invoke<ProfileArea[]>("get_profile_areas", {
+							profileId: profileId,
+						}),
+						invoke<ProfileRelationship[]>(
+							"get_profile_relationships",
+							{
+								profileId: profileId,
+							},
+						),
+						invoke<CaseWithDetails[]>("get_profile_cases", {
+							profileId: profileId,
+						}),
+					]);
 
 				setProfile(result);
-				setProfileDrugs(
-					drugsResult.status === "fulfilled" ? drugsResult.value : [],
-				);
 				setProfileAreas(
 					areasResult.status === "fulfilled" ? areasResult.value : [],
 				);
@@ -1386,7 +1413,6 @@ export default function ProfileView() {
 				console.error("Failed to fetch profile:", err);
 				setError("Failed to load profile");
 				setProfile(null);
-				setProfileDrugs([]);
 				setProfileAreas([]);
 				setProfileRelationships([]);
 				setProfileCases([]);
@@ -4216,26 +4242,89 @@ export default function ProfileView() {
 										</TabsContent>
 										<TabsContent value="reports">
 											<div className="space-y-2">
-												{profileDrugs.length === 0 ? (
+												{aggregatedDrugs.length ===
+												0 ? (
 													<p className="text-sm text-gray-500">
-														No drugs linked in
-														database.
+														No drugs linked in any
+														cases.
 													</p>
 												) : (
-													<div className="flex gap-2 flex-wrap">
-														{profileDrugs.map(
-															(drug) => (
-																<div
-																	key={
-																		drug.id
-																	}
-																	className="inline-flex items-center rounded-md bg-secondary px-2.5 py-0.5 text-sm font-medium text-secondary-foreground"
-																>
-																	{drug.name}
-																</div>
-															),
-														)}
-													</div>
+													(() => {
+														const totalQuantity =
+															aggregatedDrugs.reduce(
+																(sum, drug) =>
+																	sum +
+																	drug.total_quantity,
+																0,
+															);
+														return (
+															<div className="space-y-4">
+																{aggregatedDrugs.map(
+																	(
+																		drug,
+																		index,
+																	) => {
+																		const percentage =
+																			totalQuantity >
+																			0
+																				? (
+																						(drug.total_quantity /
+																							totalQuantity) *
+																						100
+																					).toFixed(
+																						2,
+																					)
+																				: "0.00";
+																		return (
+																			<div
+																				key={`${drug.drug_name}-${drug.quantified_by}-${index}`}
+																				className="border rounded-md px-3 py-2 space-y-1"
+																			>
+																				<div className="flex items-center justify-between">
+																					<span className="text-sm font-semibold text-gray-900">
+																						{
+																							drug.drug_name
+																						}{" "}
+																						(
+																						<span className="text-gray-500 font-medium">
+																							{
+																								drug.quantified_by
+																							}
+																						</span>
+
+																						)
+																					</span>
+																					<span className="text-sm font-semibold text-gray-900">
+																						{
+																							drug.total_quantity
+																						}
+																					</span>
+																				</div>
+																				<div className="flex items-center justify-between">
+																					<p className="text-sm text-gray-500">
+																						from{" "}
+																						{
+																							drug.case_count
+																						}{" "}
+																						{drug.case_count ===
+																						1
+																							? "case"
+																							: "cases"}
+																					</p>
+																					<p className="text-sm font-medium text-gray-600">
+																						{
+																							percentage
+																						}
+																						%
+																					</p>
+																				</div>
+																			</div>
+																		);
+																	},
+																)}
+															</div>
+														);
+													})()
 												)}
 											</div>
 										</TabsContent>
