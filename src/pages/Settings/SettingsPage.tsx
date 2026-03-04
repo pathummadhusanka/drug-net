@@ -168,14 +168,14 @@ export default function SettingsPage() {
 								activeSection === "drugs" ? "bg-secondary" : ""
 							}`}
 						>
-							Drugs
+							Customize
 						</MenubarTrigger>
 						<MenubarContent>
 							<MenubarItem
 								onClick={() => setActiveSection("drugs")}
 								className="cursor-pointer"
 							>
-								Drug Management
+								Edit Drugs
 							</MenubarItem>
 						</MenubarContent>
 					</MenubarMenu>
@@ -496,3 +496,5 @@ export default function SettingsPage() {
 		</div>
 	);
 }
+
+
