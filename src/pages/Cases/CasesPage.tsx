@@ -16,7 +16,6 @@ import {
 	ComboboxContent,
 	ComboboxList,
 	ComboboxItem,
-	ComboboxEmpty,
 } from "@/components/ui/combobox";
 import { format } from "date-fns";
 import { type DateRange } from "react-day-picker";
@@ -91,15 +90,42 @@ export default function CasesPage() {
 		useState<ProfileWithId | null>(null);
 	const [loadingProfile, setLoadingProfile] = useState(false);
 	const [searchText, setSearchText] = useState("");
-	const [filterType, setFilterType] = useState("all");
-	const [filterSeverity, setFilterSeverity] = useState("all");
-	const [filterStatus, setFilterStatus] = useState("all");
+	const [filterType, setFilterType] = useState("All Types");
+	const [filterSeverity, setFilterSeverity] = useState("All Severities");
+	const [filterStatus, setFilterStatus] = useState("All Statuses");
 	const [dateRange, setDateRange] = useState<DateRange | undefined>();
 	const [sortBy, setSortBy] = useState("updated-desc");
 	const [currentPage, setCurrentPage] = useState(1);
 	const dividerClass = "text-muted-foreground";
 	const dividerText = "\u00A0\u00A0|\u00A0\u00A0";
 	const ITEMS_PER_PAGE = 10;
+
+	// Predefined options to always show
+	const ALL_CASE_TYPES = [
+		{ value: "trafficking", label: "Trafficking" },
+		{ value: "distribution", label: "Distribution" },
+		{ value: "possession", label: "Possession" },
+		{ value: "manufacturing", label: "Manufacturing" },
+		{ value: "cultivation", label: "Cultivation" },
+		{ value: "import-export", label: "Import / Export" },
+	];
+
+	const ALL_SEVERITY_LEVELS = [
+		{ value: "low", label: "Low" },
+		{ value: "medium", label: "Medium" },
+		{ value: "high", label: "High" },
+		{ value: "critical", label: "Critical" },
+	];
+
+	const ALL_STATUSES = [
+		{ value: "active", label: "Active" },
+		{ value: "under-surveillance", label: "Under Surveillance" },
+		{ value: "closed", label: "Closed" },
+	];
+
+	const ALL_TYPES_FILTER_VALUE = "All Types";
+	const ALL_SEVERITIES_FILTER_VALUE = "All Severities";
+	const ALL_STATUSES_FILTER_VALUE = "All Statuses";
 
 	// Replace one or more consecutive newlines with a single backslash
 	const formatTextWithNewlineIndicator = (text: string) => {
@@ -206,17 +232,17 @@ export default function CasesPage() {
 
 	const resetFilters = () => {
 		setSearchText("");
-		setFilterType("all");
-		setFilterSeverity("all");
-		setFilterStatus("all");
+		setFilterType(ALL_TYPES_FILTER_VALUE);
+		setFilterSeverity(ALL_SEVERITIES_FILTER_VALUE);
+		setFilterStatus(ALL_STATUSES_FILTER_VALUE);
 		setDateRange(undefined);
 	};
 
 	const hasActiveFilters =
 		searchText !== "" ||
-		filterType !== "all" ||
-		filterSeverity !== "all" ||
-		filterStatus !== "all" ||
+		filterType !== ALL_TYPES_FILTER_VALUE ||
+		filterSeverity !== ALL_SEVERITIES_FILTER_VALUE ||
+		filterStatus !== ALL_STATUSES_FILTER_VALUE ||
 		dateRange !== undefined;
 
 	const handleProfileClick = async (profileId: number) => {
@@ -258,33 +284,32 @@ export default function CasesPage() {
 	};
 
 	const caseTypeOptions = useMemo(() => {
-		return Array.from(
-			new Set(
-				cases
-					.map((c) => c.case_type?.trim())
-					.filter((value): value is string => Boolean(value)),
-			),
-		).sort((a, b) => a.localeCompare(b));
+		return ALL_CASE_TYPES.map((type) => {
+			const count = cases.filter(
+				(c) => c.case_type?.toLowerCase() === type.value.toLowerCase(),
+			).length;
+			return { ...type, count };
+		});
 	}, [cases]);
 
 	const severityOptions = useMemo(() => {
-		return Array.from(
-			new Set(
-				cases
-					.map((c) => c.severity_level?.trim())
-					.filter((value): value is string => Boolean(value)),
-			),
-		).sort((a, b) => a.localeCompare(b));
+		return ALL_SEVERITY_LEVELS.map((severity) => {
+			const count = cases.filter(
+				(c) =>
+					c.severity_level?.toLowerCase() ===
+					severity.value.toLowerCase(),
+			).length;
+			return { ...severity, count };
+		});
 	}, [cases]);
 
 	const statusOptions = useMemo(() => {
-		return Array.from(
-			new Set(
-				cases
-					.map((c) => c.status?.trim())
-					.filter((value): value is string => Boolean(value)),
-			),
-		).sort((a, b) => a.localeCompare(b));
+		return ALL_STATUSES.map((status) => {
+			const count = cases.filter(
+				(c) => c.status?.toLowerCase() === status.value.toLowerCase(),
+			).length;
+			return { ...status, count };
+		});
 	}, [cases]);
 
 	// Fuzzy search helper - matches if query chars appear in order
@@ -303,21 +328,21 @@ export default function CasesPage() {
 
 		const filtered = cases.filter((caseItem) => {
 			if (
-				filterType !== "all" &&
+				filterType !== ALL_TYPES_FILTER_VALUE &&
 				(caseItem.case_type || "").toLowerCase() !==
 					filterType.toLowerCase()
 			) {
 				return false;
 			}
 			if (
-				filterSeverity !== "all" &&
+				filterSeverity !== ALL_SEVERITIES_FILTER_VALUE &&
 				(caseItem.severity_level || "").toLowerCase() !==
 					filterSeverity.toLowerCase()
 			) {
 				return false;
 			}
 			if (
-				filterStatus !== "all" &&
+				filterStatus !== ALL_STATUSES_FILTER_VALUE &&
 				(caseItem.status || "").toLowerCase() !==
 					filterStatus.toLowerCase()
 			) {
@@ -535,7 +560,9 @@ export default function CasesPage() {
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
 					<Combobox
 						value={filterType}
-						onValueChange={(value) => setFilterType(value || "all")}
+						onValueChange={(value) =>
+							setFilterType(value || ALL_TYPES_FILTER_VALUE)
+						}
 					>
 						<ComboboxInput
 							placeholder="All Types"
@@ -543,22 +570,36 @@ export default function CasesPage() {
 						/>
 						<ComboboxContent>
 							<ComboboxList>
-								<ComboboxItem value="all">
-									All Types
+								<ComboboxItem value={ALL_TYPES_FILTER_VALUE}>
+									<div className="flex items-center justify-between w-full">
+										<span>All Types</span>
+										<span className="text-xs text-muted-foreground">
+											{cases.length}
+										</span>
+									</div>
 								</ComboboxItem>
 								{caseTypeOptions.map((option) => (
-									<ComboboxItem key={option} value={option}>
-										{option}
+									<ComboboxItem
+										key={option.value}
+										value={option.value}
+									>
+										<div className="flex items-center justify-between w-full">
+											<span>{option.label}</span>
+											<span className="text-xs text-muted-foreground">
+												{option.count}
+											</span>
+										</div>
 									</ComboboxItem>
 								))}
-								<ComboboxEmpty>No types found.</ComboboxEmpty>
 							</ComboboxList>
 						</ComboboxContent>
 					</Combobox>
 					<Combobox
 						value={filterSeverity}
 						onValueChange={(value) =>
-							setFilterSeverity(value || "all")
+							setFilterSeverity(
+								value || ALL_SEVERITIES_FILTER_VALUE,
+							)
 						}
 					>
 						<ComboboxInput
@@ -567,24 +608,36 @@ export default function CasesPage() {
 						/>
 						<ComboboxContent>
 							<ComboboxList>
-								<ComboboxItem value="all">
-									All Severities
+								<ComboboxItem
+									value={ALL_SEVERITIES_FILTER_VALUE}
+								>
+									<div className="flex items-center justify-between w-full">
+										<span>All Severities</span>
+										<span className="text-xs text-muted-foreground">
+											{cases.length}
+										</span>
+									</div>
 								</ComboboxItem>
 								{severityOptions.map((option) => (
-									<ComboboxItem key={option} value={option}>
-										{option}
+									<ComboboxItem
+										key={option.value}
+										value={option.value}
+									>
+										<div className="flex items-center justify-between w-full">
+											<span>{option.label}</span>
+											<span className="text-xs text-muted-foreground">
+												{option.count}
+											</span>
+										</div>
 									</ComboboxItem>
 								))}
-								<ComboboxEmpty>
-									No severities found.
-								</ComboboxEmpty>
 							</ComboboxList>
 						</ComboboxContent>
 					</Combobox>
 					<Combobox
 						value={filterStatus}
 						onValueChange={(value) =>
-							setFilterStatus(value || "all")
+							setFilterStatus(value || ALL_STATUSES_FILTER_VALUE)
 						}
 					>
 						<ComboboxInput
@@ -593,17 +646,27 @@ export default function CasesPage() {
 						/>
 						<ComboboxContent>
 							<ComboboxList>
-								<ComboboxItem value="all">
-									All Statuses
+								<ComboboxItem value={ALL_STATUSES_FILTER_VALUE}>
+									<div className="flex items-center justify-between w-full">
+										<span>All Statuses</span>
+										<span className="text-xs text-muted-foreground">
+											{cases.length}
+										</span>
+									</div>
 								</ComboboxItem>
 								{statusOptions.map((option) => (
-									<ComboboxItem key={option} value={option}>
-										{option}
+									<ComboboxItem
+										key={option.value}
+										value={option.value}
+									>
+										<div className="flex items-center justify-between w-full">
+											<span>{option.label}</span>
+											<span className="text-xs text-muted-foreground">
+												{option.count}
+											</span>
+										</div>
 									</ComboboxItem>
 								))}
-								<ComboboxEmpty>
-									No statuses found.
-								</ComboboxEmpty>
 							</ComboboxList>
 						</ComboboxContent>
 					</Combobox>
