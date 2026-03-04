@@ -649,13 +649,13 @@ export default function CasesPage() {
 								{/* Details Badge - Case ID, Title, Date, Time, Severity, Status, Description */}
 								<div className="flex items-start gap-2">
 									<Badge
-										variant="outline"
+										variant="secondary"
 										className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
 									>
 										<FileText className="h-3 w-3" />
 										Info
 									</Badge>
-									<div className="flex-1 space-y-1">
+									<div className="flex-1 space-y-1 font-semibold">
 										{/* Line 1: Case ID | Case Title + Type/Severity/Status badges */}
 										<div className="flex items-start justify-between gap-3 text-sm text-gray-700">
 											<div className="min-w-0 flex items-center gap-2 flex-wrap">
@@ -828,13 +828,13 @@ export default function CasesPage() {
 									caseItem.profiles.length > 0 && (
 										<div className="flex items-start gap-2">
 											<Badge
-												variant="outline"
+												variant="secondary"
 												className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
 											>
 												<Network className="h-3 w-3" />
 												Network
 											</Badge>
-											<div className="text-sm text-gray-700 truncate">
+											<div className="text-sm text-gray-700 truncate font-semibold">
 												{caseItem.profiles.map((p) => (
 													<span
 														key={p[0]}
@@ -864,13 +864,13 @@ export default function CasesPage() {
 									caseItem.drugs.length > 0 && (
 										<div className="flex items-start gap-2">
 											<Badge
-												variant="outline"
+												variant="secondary"
 												className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
 											>
 												<Pill className="h-3 w-3" />
 												Drugs
 											</Badge>
-											<p className="text-sm text-gray-700">
+											<p className="text-sm text-gray-700 font-semibold">
 												{caseItem.drugs.map(
 													(d, index) => (
 														<span
@@ -893,13 +893,13 @@ export default function CasesPage() {
 									caseItem.areas.length > 0 && (
 										<div className="flex items-start gap-2">
 											<Badge
-												variant="outline"
+												variant="secondary"
 												className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
 											>
 												<MapPin className="h-3 w-3" />
 												Areas
 											</Badge>
-											<p className="text-sm text-gray-700">
+											<p className="text-sm text-gray-700 font-semibold">
 												{caseItem.areas.map(
 													(area, index) => (
 														<span
@@ -921,13 +921,13 @@ export default function CasesPage() {
 								{caseItem.notes && (
 									<div className="flex items-start gap-2">
 										<Badge
-											variant="outline"
+											variant="secondary"
 											className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
 										>
 											<MessageSquare className="h-3 w-3" />
 											Notes
 										</Badge>
-										<p className="text-sm text-gray-700 truncate">
+										<p className="text-sm text-gray-700 truncate font-semibold">
 											{formatTextWithNewlineIndicator(
 												caseItem.notes,
 											)}
