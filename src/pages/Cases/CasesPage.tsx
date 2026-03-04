@@ -725,30 +725,66 @@ export default function CasesPage() {
 													<>
 														{caseItem.case_date && (
 															<span>
-																{new Date(
-																	caseItem.case_date,
-																).toLocaleDateString()}
+																{caseItem.case_time
+																	? (() => {
+																			try {
+																				// Combine date and time
+																				const dateObj =
+																					new Date(
+																						caseItem.case_date,
+																					);
+																				const [
+																					hours,
+																					minutes,
+																				] =
+																					caseItem.case_time.split(
+																						":",
+																					);
+																				dateObj.setHours(
+																					parseInt(
+																						hours,
+																					),
+																					parseInt(
+																						minutes,
+																					),
+																				);
+																				return dateObj.toLocaleString(
+																					"en-US",
+																					{
+																						month: "short",
+																						day: "numeric",
+																						year: "numeric",
+																						hour: "2-digit",
+																						minute: "2-digit",
+																						hour12: false,
+																					},
+																				);
+																			} catch {
+																				return new Date(
+																					caseItem.case_date,
+																				).toLocaleDateString();
+																			}
+																		})()
+																	: new Date(
+																			caseItem.case_date,
+																		).toLocaleString(
+																			"en-US",
+																			{
+																				month: "short",
+																				day: "numeric",
+																				year: "numeric",
+																			},
+																		)}
 															</span>
 														)}
-														{caseItem.case_date &&
+														{!caseItem.case_date &&
 															caseItem.case_time && (
-																<span
-																	className={
-																		dividerClass
-																	}
-																>
+																<span>
 																	{
-																		dividerText
+																		caseItem.case_time
 																	}
 																</span>
 															)}
-														{caseItem.case_time && (
-															<span>
-																{
-																	caseItem.case_time
-																}
-															</span>
-														)}
 														{caseItem.description && (
 															<span
 																className={
@@ -930,6 +966,7 @@ export default function CasesPage() {
 											year: "numeric",
 											hour: "2-digit",
 											minute: "2-digit",
+											hour12: false,
 										})}
 										{caseItem.updated_at && (
 											<>
@@ -945,6 +982,7 @@ export default function CasesPage() {
 													year: "numeric",
 													hour: "2-digit",
 													minute: "2-digit",
+													hour12: false,
 												})}
 											</>
 										)}
