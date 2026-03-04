@@ -360,6 +360,16 @@ pub fn delete_case(db: &DbConnection, case_id: i64) -> Result<(), String> {
     conn.execute("DELETE FROM cases WHERE id = ?1", params![case_id])
         .map_err(|e| format!("Failed to delete case: {}", e))?;
 
+    conn.execute(
+        "DELETE FROM relationships
+         WHERE id NOT IN (
+             SELECT DISTINCT relationship_id
+             FROM case_relationships
+         )",
+        [],
+    )
+    .map_err(|e| format!("Failed to clean orphan relationships: {}", e))?;
+
     Ok(())
 }
 
