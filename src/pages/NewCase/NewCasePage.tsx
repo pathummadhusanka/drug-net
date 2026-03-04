@@ -2083,24 +2083,6 @@ export default function NewCasePage() {
 														/>
 													</div>
 													<div className="grid gap-2">
-														<Label htmlFor="new-profile-nic">
-															NIC
-														</Label>
-														<Input
-															id="new-profile-nic"
-															placeholder="Optional (must be unique)"
-															value={
-																newProfileNic
-															}
-															onChange={(e) =>
-																setNewProfileNic(
-																	e.target
-																		.value,
-																)
-															}
-														/>
-													</div>
-													<div className="grid gap-2">
 														<Label htmlFor="new-profile-alias">
 															Alias
 														</Label>
@@ -2112,6 +2094,24 @@ export default function NewCasePage() {
 															}
 															onChange={(e) =>
 																setNewProfileAlias(
+																	e.target
+																		.value,
+																)
+															}
+														/>
+													</div>
+													<div className="grid gap-2">
+														<Label htmlFor="new-profile-nic">
+															NIC
+														</Label>
+														<Input
+															id="new-profile-nic"
+															placeholder="Optional (must be unique)"
+															value={
+																newProfileNic
+															}
+															onChange={(e) =>
+																setNewProfileNic(
 																	e.target
 																		.value,
 																)

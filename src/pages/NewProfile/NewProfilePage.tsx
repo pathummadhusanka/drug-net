@@ -132,16 +132,6 @@ export default function NewProfile() {
 								/>
 							</div>
 							<div className="grid gap-2">
-								<Label htmlFor="nic">NIC</Label>
-								<Input
-									id="nic"
-									type="text"
-									placeholder="Optional (must be unique)"
-									value={nic}
-									onChange={(e) => setNic(e.target.value)}
-								/>
-							</div>
-							<div className="grid gap-2">
 								<Label htmlFor="alias">Alias</Label>
 								<Input
 									id="alias"
@@ -149,6 +139,16 @@ export default function NewProfile() {
 									placeholder="Optional"
 									value={alias}
 									onChange={(e) => setAlias(e.target.value)}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="nic">NIC</Label>
+								<Input
+									id="nic"
+									type="text"
+									placeholder="Optional (must be unique)"
+									value={nic}
+									onChange={(e) => setNic(e.target.value)}
 								/>
 							</div>
 
