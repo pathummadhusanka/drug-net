@@ -9,6 +9,11 @@ pub async fn create_case(state: State<'_, AppState>, case: Case) -> Result<i64, 
 }
 
 #[tauri::command]
+pub async fn update_case(state: State<'_, AppState>, id: i64, case: Case) -> Result<(), String> {
+    super::service::update_case(&state.db, id, case)
+}
+
+#[tauri::command]
 pub async fn get_case(state: State<'_, AppState>, id: i64) -> Result<Option<CaseWithDetails>, String> {
     super::service::get_case(&state.db, id)
 }

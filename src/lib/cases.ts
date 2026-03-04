@@ -46,6 +46,15 @@ export async function createCase(caseData: Case): Promise<number> {
 }
 
 /**
+ * Update an existing case
+ * @param id - The case ID to update
+ * @param caseData - The updated case data
+ */
+export async function updateCase(id: number, caseData: Case): Promise<void> {
+	return await invoke<void>("update_case", { id, case: caseData });
+}
+
+/**
  * Get a case by its ID
  * @param id - The case ID
  * @returns The case if found, null otherwise

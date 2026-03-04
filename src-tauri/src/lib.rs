@@ -14,6 +14,7 @@ use features::area::commands::{
 };
 use features::case::commands::{
     create_case,
+    update_case,
     get_case,
     get_all_cases,
     assign_case_to_profile,
@@ -86,6 +87,7 @@ pub fn run() {
             get_all_profiles,
             delete_profile,
             create_case,
+            update_case,
             get_case,
             get_all_cases,
             assign_case_to_profile,

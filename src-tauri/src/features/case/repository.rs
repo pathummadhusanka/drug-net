@@ -44,6 +44,34 @@ pub fn insert_case(db: &DbConnection, case: Case) -> Result<i64, String> {
     Ok(conn.last_insert_rowid())
 }
 
+pub fn update_case(db: &DbConnection, id: i64, case: Case) -> Result<(), String> {
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    conn.execute(
+        "UPDATE cases 
+         SET case_id = ?1, case_name = ?2, description = ?3, case_type = ?4, 
+             status = ?5, severity_level = ?6, notes = ?7, case_date = ?8, case_time = ?9,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?10",
+        params![
+            case.case_id,
+            case.case_name,
+            case.description,
+            case.case_type,
+            case.status,
+            case.severity_level,
+            case.notes,
+            case.case_date,
+            case.case_time,
+            id,
+        ],
+    )
+    .map_err(|e| format!("Database error: {}", e))?;
+
+    Ok(())
+}
+
 pub fn get_case_by_id(db: &DbConnection, id: i64) -> Result<Option<CaseWithDetails>, String> {
     let conn = db.lock()
         .map_err(|e| format!("Failed to acquire database lock: {}", e))?;

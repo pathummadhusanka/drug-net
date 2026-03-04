@@ -66,6 +66,7 @@ import "reactflow/dist/style.css";
 import {
 	ChevronLeft,
 	MoreVertical,
+	Pencil,
 	Trash2,
 	AlertCircle,
 	Info,
@@ -715,6 +716,7 @@ export default function CaseViewPage() {
 								}
 								className="cursor-pointer"
 							>
+								<Pencil className="h-4 w-4 mr-2" />
 								Edit Case
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />

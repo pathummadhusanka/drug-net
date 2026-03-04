@@ -1,22 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
 	createCaseWithAreas,
+	updateCase,
+	getCase,
+	getCaseAreas,
+	getCaseRelationships,
+	getCaseProfiles,
 	saveCaseRelationships,
 	assignCaseToProfile,
+	linkCaseToArea,
 	type CaseRelationshipData,
 } from "@/lib/cases";
-import { getAllAreas, type Area } from "@/lib/areas";
+import { getAllAreas, getAreaByName, createArea, type Area } from "@/lib/areas";
 import {
 	getAllDrugs,
 	saveCaseDrugs,
+	getCaseDrugs,
 	type Drug,
 	type CaseDrugData,
 } from "@/lib/drugs";
 import {
 	createProfile,
 	getAllProfiles,
+	getProfile,
 	type ProfileWithId,
 } from "@/lib/profiles";
 import { Label } from "@/components/ui/label";
@@ -553,6 +561,10 @@ function fuzzyMatch(
 export default function NewCasePage() {
 	const navigate = useNavigate();
 	const location = useLocation();
+	const { id } = useParams<{ id: string }>();
+	const isEditMode = Boolean(id);
+	const [isLoading, setIsLoading] = useState(false);
+
 	type NewCaseLocationState = {
 		defaultProfile?: ProfileWithId;
 	} | null;
@@ -676,6 +688,131 @@ export default function NewCasePage() {
 			);
 		};
 	}, []);
+
+	// Load case data when in edit mode
+	useEffect(() => {
+		if (isEditMode && id) {
+			const loadCaseData = async () => {
+				setIsLoading(true);
+				try {
+					const caseNumId = parseInt(id, 10);
+
+					// Load case details
+					const caseData = await getCase(caseNumId);
+					if (!caseData) {
+						toast.error("Case not found", {
+							position: "top-center",
+						});
+						navigate("/cases");
+						return;
+					}
+
+					// Populate case fields
+					setCaseId(caseData.case_id || "");
+					setCaseTitle(caseData.case_name);
+					setCaseDescription(caseData.description || "");
+					setCaseType(caseData.case_type || "");
+					setCaseStatus(caseData.status || "");
+					setSeverityLevel(caseData.severity_level || "");
+					setCaseNotes(caseData.notes || "");
+					setCaseDate(caseData.case_date || "");
+					setCaseTime(caseData.case_time || "");
+
+					// Load areas
+					const caseAreas = await getCaseAreas(caseNumId);
+					setAreas(caseAreas);
+
+					// Load drugs
+					const caseDrugs = await getCaseDrugs(caseNumId);
+					const drugsMap: { [key: number]: string } = {};
+					caseDrugs.forEach((drug) => {
+						drugsMap[drug.drug_id] = drug.quantity;
+					});
+					setSelectedDrugs(drugsMap);
+
+					// Load profiles and relationships
+					const caseProfiles = await getCaseProfiles(caseNumId);
+					const relationships = await getCaseRelationships(caseNumId);
+
+					// Create nodes for each profile
+					const profileNodes: Node[] = [];
+					let nextNodeId = 1;
+					for (const [profileId] of caseProfiles) {
+						const profile = await getProfile(profileId);
+						if (profile) {
+							profileNodes.push({
+								id: String(nextNodeId),
+								type: "custom",
+								data: {
+									label: profile.full_name,
+									profileId: profile.id,
+									fullName: profile.full_name,
+									nic: profile.nic,
+									alias: profile.alias,
+									city: profile.city,
+									isCurrentProfile: false,
+									edges: [],
+								},
+								position: {
+									x: 200 + (nextNodeId - 1) * 150,
+									y: 200 + ((nextNodeId - 1) % 3) * 100,
+								},
+							});
+							nextNodeId++;
+						}
+					}
+					setNodes(profileNodes);
+					setNodeId(nextNodeId);
+
+					// Create edges for relationships
+					const profileIdToNodeId = new Map<number, string>();
+					profileNodes.forEach((node) => {
+						if (node.data.profileId) {
+							profileIdToNodeId.set(node.data.profileId, node.id);
+						}
+					});
+
+					const relationshipEdges: Edge[] = relationships
+						.map((rel, idx) => {
+							const sourceNodeId = profileIdToNodeId.get(
+								rel.source_profile_id,
+							);
+							const targetNodeId = profileIdToNodeId.get(
+								rel.target_profile_id,
+							);
+
+							return {
+								id: `e${idx + 1}`,
+								source: sourceNodeId || "",
+								target: targetNodeId || "",
+								type: "custom",
+								markerEnd: {
+									type: MarkerType.ArrowClosed,
+									width: 20,
+									height: 20,
+									color: "#9CA3AF",
+								},
+								data: {
+									label: rel.relationship_type || "",
+								},
+							};
+						})
+						.filter((edge) => edge.source && edge.target);
+
+					setEdges(relationshipEdges);
+				} catch (error) {
+					console.error("Failed to load case:", error);
+					toast.error("Failed to load case data", {
+						position: "top-center",
+					});
+				} finally {
+					setIsLoading(false);
+				}
+			};
+
+			loadCaseData();
+		}
+	}, [isEditMode, id, navigate]);
 
 	const getDrugDisplayName = (drug: Drug) => {
 		return `${drug.name} (${drug.quantified_by})`;
@@ -1079,7 +1216,9 @@ export default function NewCasePage() {
 	return (
 		<div className="w-full mx-auto space-y-1">
 			<div className="flex items-center justify-between">
-				<h2 className="text-xl font-semibold">File New Case</h2>
+				<h2 className="text-xl font-semibold">
+					{isEditMode ? "Edit Case" : "File New Case"}
+				</h2>
 				<Button
 					type="button"
 					variant="outline"
@@ -1091,501 +1230,595 @@ export default function NewCasePage() {
 				</Button>
 			</div>
 			<p className="text-sm text-gray-500">
-				Complete the following steps to file a new case for this
-				profile.
+				{isEditMode
+					? "Update the case details and network below."
+					: "Complete the following steps to file a new case for this profile."}
 			</p>
 
-			<form
-				onSubmit={async (e) => {
-					e.preventDefault();
+			{isLoading ? (
+				<div className="flex items-center justify-center h-64">
+					<p className="text-gray-500">Loading case data...</p>
+				</div>
+			) : (
+				<form
+					onSubmit={async (e) => {
+						e.preventDefault();
 
-					// Validate at least one profile exists
-					if (nodes.length === 0) {
-						toast.error(
-							"Please add at least one profile to the network",
-							{
-								position: "top-center",
-							},
-						);
-						return;
-					}
-
-					const invalidDrugQuantity = Object.entries(
-						selectedDrugs,
-					).find(
-						([_, quantity]) =>
-							quantity.trim() !== "" &&
-							!isValidDrugQuantity(quantity.trim()),
-					);
-
-					if (invalidDrugQuantity) {
-						toast.error("Drug quantity must be a valid number", {
-							position: "top-center",
-						});
-						return;
-					}
-
-					try {
-						// Create case with areas and get case ID
-						const newCaseId = await createCaseWithAreas(
-							{
-								case_id: caseId || null,
-								case_name: caseTitle || "Untitled Case",
-								description: caseDescription || null,
-								case_type: caseType || null,
-								status: caseStatus || null,
-								severity_level: severityLevel || null,
-								notes: caseNotes || null,
-								case_date: caseDate || null,
-								case_time: caseTime || null,
-							},
-							areas,
-						);
-
-						// Link all profiles to the case
-						console.log(
-							"Linking profiles to case. Nodes:",
-							nodes.map((n) => ({
-								nodeId: n.id,
-								profileId: n.data.profileId,
-								label: n.data.label,
-							})),
-						);
-
-						for (const node of nodes) {
-							const profileId = node.data.profileId;
-							if (profileId && !isNaN(profileId)) {
-								console.log(
-									`Linking profile ${profileId} to case ${newCaseId}`,
-								);
-								await assignCaseToProfile(newCaseId, profileId);
-							} else {
-								console.warn(
-									`Node ${node.id} has invalid profileId:`,
-									profileId,
-								);
-							}
+						// Validate at least one profile exists
+						if (nodes.length === 0) {
+							toast.error(
+								"Please add at least one profile to the network",
+								{
+									position: "top-center",
+								},
+							);
+							return;
 						}
 
-						// Extract relationships from edges
-						console.log(
-							"Extracting relationships from edges:",
-							edges,
+						const invalidDrugQuantity = Object.entries(
+							selectedDrugs,
+						).find(
+							([_, quantity]) =>
+								quantity.trim() !== "" &&
+								!isValidDrugQuantity(quantity.trim()),
 						);
 
-						// Create mapping from node ID to profile ID
-						const nodeToProfileMap = new Map<string, number>();
-						nodes.forEach((node) => {
-							if (node.data.profileId) {
-								nodeToProfileMap.set(
-									node.id,
-									node.data.profileId,
+						if (invalidDrugQuantity) {
+							toast.error(
+								"Drug quantity must be a valid number",
+								{
+									position: "top-center",
+								},
+							);
+							return;
+						}
+
+						try {
+							let targetCaseId: number;
+
+							if (isEditMode && id) {
+								// Update existing case
+								targetCaseId = parseInt(id, 10);
+
+								const caseData = {
+									case_id: caseId || null,
+									case_name: caseTitle || "Untitled Case",
+									description: caseDescription || null,
+									case_type: caseType || null,
+									status: caseStatus || null,
+									severity_level: severityLevel || null,
+									notes: caseNotes || null,
+									case_date: caseDate || null,
+									case_time: caseTime || null,
+								};
+
+								await updateCase(targetCaseId, caseData);
+
+								// For areas, we need to handle them manually
+								// Since there's no clear API, we'll keep the existing areas as-is
+								// and add new ones if needed
+								for (const areaName of areas) {
+									if (areaName.trim()) {
+										const areaData = await getAreaByName(
+											areaName.trim(),
+										);
+										let areaId: number;
+										if (areaData) {
+											areaId = areaData.id;
+										} else {
+											areaId = await createArea({
+												name: areaName.trim(),
+											});
+										}
+										await linkCaseToArea(
+											targetCaseId,
+											areaId,
+										);
+									}
+								}
+							} else {
+								// Create new case with areas and get case ID
+								targetCaseId = await createCaseWithAreas(
+									{
+										case_id: caseId || null,
+										case_name: caseTitle || "Untitled Case",
+										description: caseDescription || null,
+										case_type: caseType || null,
+										status: caseStatus || null,
+										severity_level: severityLevel || null,
+										notes: caseNotes || null,
+										case_date: caseDate || null,
+										case_time: caseTime || null,
+									},
+									areas,
 								);
 							}
-						});
 
-						console.log(
-							"Node to Profile mapping:",
-							Object.fromEntries(nodeToProfileMap),
-						);
-
-						const relationships: CaseRelationshipData[] = edges
-							.map((edge) => {
-								const sourceProfileId = nodeToProfileMap.get(
-									edge.source,
-								);
-								const targetProfileId = nodeToProfileMap.get(
-									edge.target,
-								);
-								return {
-									source_profile_id: sourceProfileId || 0,
-									target_profile_id: targetProfileId || 0,
-									relationship_type: edge.data?.label || null,
-								};
-							})
-							.filter(
-								(rel) =>
-									rel.source_profile_id > 0 &&
-									rel.target_profile_id > 0,
-							);
-
-						console.log("Extracted relationships:", relationships);
-
-						// Save relationships if any exist
-						if (relationships.length > 0) {
+							// Link all profiles to the case
 							console.log(
-								`Saving ${relationships.length} relationships`,
+								"Linking profiles to case. Nodes:",
+								nodes.map((n) => ({
+									nodeId: n.id,
+									profileId: n.data.profileId,
+									label: n.data.label,
+								})),
 							);
-							await saveCaseRelationships(
-								newCaseId,
+
+							for (const node of nodes) {
+								const profileId = node.data.profileId;
+								if (profileId && !isNaN(profileId)) {
+									console.log(
+										`Linking profile ${profileId} to case ${targetCaseId}`,
+									);
+									await assignCaseToProfile(
+										targetCaseId,
+										profileId,
+									);
+								} else {
+									console.warn(
+										`Node ${node.id} has invalid profileId:`,
+										profileId,
+									);
+								}
+							}
+
+							// Extract relationships from edges
+							console.log(
+								"Extracting relationships from edges:",
+								edges,
+							);
+
+							// Create mapping from node ID to profile ID
+							const nodeToProfileMap = new Map<string, number>();
+							nodes.forEach((node) => {
+								if (node.data.profileId) {
+									nodeToProfileMap.set(
+										node.id,
+										node.data.profileId,
+									);
+								}
+							});
+
+							console.log(
+								"Node to Profile mapping:",
+								Object.fromEntries(nodeToProfileMap),
+							);
+
+							const relationships: CaseRelationshipData[] = edges
+								.map((edge) => {
+									const sourceProfileId =
+										nodeToProfileMap.get(edge.source);
+									const targetProfileId =
+										nodeToProfileMap.get(edge.target);
+									return {
+										source_profile_id: sourceProfileId || 0,
+										target_profile_id: targetProfileId || 0,
+										relationship_type:
+											edge.data?.label || null,
+									};
+								})
+								.filter(
+									(rel) =>
+										rel.source_profile_id > 0 &&
+										rel.target_profile_id > 0,
+								);
+
+							console.log(
+								"Extracted relationships:",
 								relationships,
 							);
+
+							// Save relationships if any exist
+							if (relationships.length > 0) {
+								console.log(
+									`Saving ${relationships.length} relationships`,
+								);
+								await saveCaseRelationships(
+									targetCaseId,
+									relationships,
+								);
+							}
+
+							// Save case drugs if any exist
+							const caseDrugs: CaseDrugData[] = Object.entries(
+								selectedDrugs,
+							)
+								.filter(
+									([_, quantity]) => quantity.trim() !== "",
+								)
+								.map(([drugIdStr, quantity]) => ({
+									drug_id: Number(drugIdStr),
+									quantity: quantity.trim(),
+								}));
+
+							if (caseDrugs.length > 0) {
+								console.log(`Saving ${caseDrugs.length} drugs`);
+								await saveCaseDrugs(targetCaseId, caseDrugs);
+							}
+
+							toast.success(
+								isEditMode
+									? "Case has been updated successfully!"
+									: "Case has been filed successfully!",
+								{
+									position: "top-center",
+								},
+							);
+
+							// Navigate back or to cases page
+							setTimeout(() => navigate("/cases"), 1000);
+						} catch (error) {
+							console.error(
+								isEditMode
+									? "Failed to update case:"
+									: "Failed to create case:",
+								error,
+							);
+							toast.error(
+								isEditMode
+									? "Failed to update case. Please try again."
+									: "Failed to file case. Please try again.",
+								{
+									position: "top-center",
+								},
+							);
 						}
-
-						// Save case drugs if any exist
-						const caseDrugs: CaseDrugData[] = Object.entries(
-							selectedDrugs,
-						)
-							.filter(([_, quantity]) => quantity.trim() !== "")
-							.map(([drugIdStr, quantity]) => ({
-								drug_id: Number(drugIdStr),
-								quantity: quantity.trim(),
-							}));
-
-						if (caseDrugs.length > 0) {
-							console.log(`Saving ${caseDrugs.length} drugs`);
-							await saveCaseDrugs(newCaseId, caseDrugs);
-						}
-
-						toast.success("Case has been filed successfully!", {
-							position: "top-center",
-						});
-
-						// Navigate back or to cases page
-						setTimeout(() => navigate("/cases"), 1000);
-					} catch (error) {
-						console.error("Failed to create case:", error);
-						toast.error("Failed to file case. Please try again.", {
-							position: "top-center",
-						});
-					}
-				}}
-				className="space-y-4"
-			>
-				<Accordion
-					type="single"
-					collapsible
-					value={activeAccordion}
-					onValueChange={(value) => setActiveAccordion(value || "")}
-					className="w-full"
+					}}
+					className="space-y-4"
 				>
-					<AccordionItem
-						value="case-details"
-						className={
-							activeAccordion === "case-details"
-								? "border-l-4 border-blue-500 bg-blue-50/50"
-								: ""
+					<Accordion
+						type="single"
+						collapsible
+						value={activeAccordion}
+						onValueChange={(value) =>
+							setActiveAccordion(value || "")
 						}
+						className="w-full"
 					>
-						<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors px-2">
-							<div className="flex justify-between items-center w-full mr-2">
-								<div className="flex items-center gap-2">
-									{completedSections.includes(
-										"case-details",
-									) && (
-										<Check className="h-4 w-4 text-green-600" />
-									)}
-									<span>[1] Info</span>
-									<span className="text-xs text-gray-400 ml-2">
-										({caseDetailsFilledFields}/
-										{caseDetailsTotalFields})
+						<AccordionItem
+							value="case-details"
+							className={
+								activeAccordion === "case-details"
+									? "border-l-4 border-blue-500 bg-blue-50/50"
+									: ""
+							}
+						>
+							<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors px-2">
+								<div className="flex justify-between items-center w-full mr-2">
+									<div className="flex items-center gap-2">
+										{completedSections.includes(
+											"case-details",
+										) && (
+											<Check className="h-4 w-4 text-green-600" />
+										)}
+										<span>[1] Info</span>
+										<span className="text-xs text-gray-400 ml-2">
+											({caseDetailsFilledFields}/
+											{caseDetailsTotalFields})
+										</span>
+									</div>
+									<span className="text-gray-500 text-sm text-right">
+										Basic information about the case
 									</span>
 								</div>
-								<span className="text-gray-500 text-sm text-right">
-									Basic information about the case
-								</span>
-							</div>
-						</AccordionTrigger>
-						<AccordionContent>
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 px-2 ml-4">
-								<div className="space-y-2">
-									<Label htmlFor="case-id">Case ID</Label>
-									<Input
-										id="case-id"
-										name="caseId"
-										placeholder="Enter case ID"
-										value={caseId}
-										onChange={(e) =>
-											setCaseId(e.target.value)
-										}
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="case-type">Case Type</Label>
-									<Combobox
-										value={caseType}
-										onValueChange={(value) =>
-											setCaseType(value || "")
-										}
-									>
-										<ComboboxInput
-											placeholder="Select case type"
-											showClear={!!caseType}
-										/>
-										<ComboboxContent>
-											<ComboboxList>
-												<ComboboxItem value="trafficking">
-													Trafficking - Large scale
-													transportation or movement
-													of illegal drugs across
-													regions or borders
-												</ComboboxItem>
-												<ComboboxItem value="distribution">
-													Distribution - Supplying or
-													selling drugs within a
-													network
-												</ComboboxItem>
-												<ComboboxItem value="possession">
-													Possession - Individual
-													found holding illegal drugs
-													(personal or commercial
-													quantity)
-												</ComboboxItem>
-												<ComboboxItem value="manufacturing">
-													Manufacturing - Production
-													or processing of narcotics
-												</ComboboxItem>
-												<ComboboxItem value="cultivation">
-													Cultivation - Growing
-													illegal drug producing
-													plants
-												</ComboboxItem>
-												<ComboboxItem value="import-export">
-													Import / Export - Cross
-													border smuggling of drugs
-												</ComboboxItem>
-											</ComboboxList>
-										</ComboboxContent>
-									</Combobox>
-								</div>
-								<div className="space-y-2 md:col-span-2">
-									<Label htmlFor="case-title">Title</Label>
-									<Input
-										id="case-title"
-										name="title"
-										placeholder="Enter case title"
-										maxLength={100}
-										value={caseTitle}
-										onChange={(e) =>
-											setCaseTitle(e.target.value)
-										}
-									/>
-									<div className="text-sm text-gray-500">
-										{caseTitle.length}/100
-									</div>
-								</div>
-								<div className="space-y-2 md:col-span-2">
-									<Label htmlFor="case-description">
-										Description
-									</Label>
-									<Textarea
-										ref={descriptionTextareaRef}
-										maxLength={250}
-										id="case-description"
-										name="description"
-										placeholder="Enter case description"
-										value={caseDescription}
-										onChange={(e) => {
-											setCaseDescription(e.target.value);
-											handleTextareaResize(
-												descriptionTextareaRef,
-											);
-										}}
-										className="resize-none overflow-hidden"
-									/>
-									<div className="text-sm text-gray-500">
-										{caseDescription.length}/250
-									</div>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="case-date">Date</Label>
-									<div className="relative">
-										<Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+							</AccordionTrigger>
+							<AccordionContent>
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 px-2 ml-4">
+									<div className="space-y-2">
+										<Label htmlFor="case-id">Case ID</Label>
 										<Input
-											id="case-date"
-											name="date"
-											type="date"
-											value={caseDate}
+											id="case-id"
+											name="caseId"
+											placeholder="Enter case ID"
+											value={caseId}
 											onChange={(e) =>
-												setCaseDate(e.target.value)
+												setCaseId(e.target.value)
 											}
-											className={`pl-8 ${caseDate ? "pr-8" : ""}`}
 										/>
-										{caseDate && (
-											<button
-												type="button"
-												aria-label="Clear date"
-												onClick={() => setCaseDate("")}
-												className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-											>
-												<X className="h-4 w-4" />
-											</button>
-										)}
 									</div>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="case-time">Time</Label>
-									<div className="relative">
-										<Clock className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-										<Input
-											id="case-time"
-											name="time"
-											type="time"
-											value={caseTime}
-											onChange={(e) =>
-												setCaseTime(e.target.value)
-											}
-											className={`pl-8 ${caseTime ? "pr-8" : ""}`}
-										/>
-										{caseTime && (
-											<button
-												type="button"
-												aria-label="Clear time"
-												onClick={() => setCaseTime("")}
-												className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-											>
-												<X className="h-4 w-4" />
-											</button>
-										)}
-									</div>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="severity-level">
-										Severity Level
-									</Label>
-									<Combobox
-										value={severityLevel}
-										onValueChange={(value) =>
-											setSeverityLevel(value || "")
-										}
-									>
-										<ComboboxInput
-											placeholder="Select severity level"
-											showClear={!!severityLevel}
-										/>
-										<ComboboxContent>
-											<ComboboxList>
-												<ComboboxItem value="low">
-													Low
-												</ComboboxItem>
-												<ComboboxItem value="medium">
-													Medium
-												</ComboboxItem>
-												<ComboboxItem value="high">
-													High
-												</ComboboxItem>
-												<ComboboxItem value="critical">
-													Critical
-												</ComboboxItem>
-											</ComboboxList>
-										</ComboboxContent>
-									</Combobox>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="case-status">
-										Case Status
-									</Label>
-									<Combobox
-										value={caseStatus}
-										onValueChange={(value) =>
-											setCaseStatus(value || "")
-										}
-									>
-										<ComboboxInput
-											placeholder="Select case status"
-											showClear={!!caseStatus}
-										/>
-										<ComboboxContent>
-											<ComboboxList>
-												<ComboboxItem value="active">
-													Active
-												</ComboboxItem>
-												<ComboboxItem value="under-surveillance">
-													Under Surveillance
-												</ComboboxItem>
-												<ComboboxItem value="closed">
-													Closed
-												</ComboboxItem>
-											</ComboboxList>
-										</ComboboxContent>
-									</Combobox>
-								</div>
-							</div>
-						</AccordionContent>
-					</AccordionItem>
-
-					<AccordionItem
-						value="connections"
-						className={
-							activeAccordion === "connections"
-								? "border-l-4 border-blue-500 bg-blue-50/50"
-								: ""
-						}
-					>
-						<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors px-2">
-							<div className="flex justify-between items-center w-full mr-2">
-								<div className="flex items-center gap-2">
-									{completedSections.includes(
-										"connections",
-									) && (
-										<Check className="h-4 w-4 text-green-600" />
-									)}
-									<span>[2] Network</span>
-									<span className="text-xs text-gray-400 ml-2">
-										{nodes.length}{" "}
-										{nodes.length === 1
-											? "profile"
-											: "profiles"}
-										, {edges.length}{" "}
-										{edges.length === 1
-											? "connection"
-											: "connections"}
-									</span>
-								</div>
-								<span className="text-gray-500 text-sm text-right">
-									Add connected profiles
-								</span>
-							</div>
-						</AccordionTrigger>
-						<AccordionContent>
-							<div className="space-y-4 pt-2 px-2 ml-4">
-								<div className="flex justify-between items-center">
-									<div className="space-y-1">
-										<Label className="text-base">
-											Connection Network
+									<div className="space-y-2">
+										<Label htmlFor="case-type">
+											Case Type
 										</Label>
-										<p className="text-sm text-gray-500">
+										<Combobox
+											value={caseType}
+											onValueChange={(value) =>
+												setCaseType(value || "")
+											}
+										>
+											<ComboboxInput
+												placeholder="Select case type"
+												showClear={!!caseType}
+											/>
+											<ComboboxContent>
+												<ComboboxList>
+													<ComboboxItem value="trafficking">
+														Trafficking - Large
+														scale transportation or
+														movement of illegal
+														drugs across regions or
+														borders
+													</ComboboxItem>
+													<ComboboxItem value="distribution">
+														Distribution - Supplying
+														or selling drugs within
+														a network
+													</ComboboxItem>
+													<ComboboxItem value="possession">
+														Possession - Individual
+														found holding illegal
+														drugs (personal or
+														commercial quantity)
+													</ComboboxItem>
+													<ComboboxItem value="manufacturing">
+														Manufacturing -
+														Production or processing
+														of narcotics
+													</ComboboxItem>
+													<ComboboxItem value="cultivation">
+														Cultivation - Growing
+														illegal drug producing
+														plants
+													</ComboboxItem>
+													<ComboboxItem value="import-export">
+														Import / Export - Cross
+														border smuggling of
+														drugs
+													</ComboboxItem>
+												</ComboboxList>
+											</ComboboxContent>
+										</Combobox>
+									</div>
+									<div className="space-y-2 md:col-span-2">
+										<Label htmlFor="case-title">
+											Title
+										</Label>
+										<Input
+											id="case-title"
+											name="title"
+											placeholder="Enter case title"
+											maxLength={100}
+											value={caseTitle}
+											onChange={(e) =>
+												setCaseTitle(e.target.value)
+											}
+										/>
+										<div className="text-sm text-gray-500">
+											{caseTitle.length}/100
+										</div>
+									</div>
+									<div className="space-y-2 md:col-span-2">
+										<Label htmlFor="case-description">
+											Description
+										</Label>
+										<Textarea
+											ref={descriptionTextareaRef}
+											maxLength={250}
+											id="case-description"
+											name="description"
+											placeholder="Enter case description"
+											value={caseDescription}
+											onChange={(e) => {
+												setCaseDescription(
+													e.target.value,
+												);
+												handleTextareaResize(
+													descriptionTextareaRef,
+												);
+											}}
+											className="resize-none overflow-hidden"
+										/>
+										<div className="text-sm text-gray-500">
+											{caseDescription.length}/250
+										</div>
+									</div>
+									<div className="space-y-2">
+										<Label htmlFor="case-date">Date</Label>
+										<div className="relative">
+											<Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+											<Input
+												id="case-date"
+												name="date"
+												type="date"
+												value={caseDate}
+												onChange={(e) =>
+													setCaseDate(e.target.value)
+												}
+												className={`pl-8 ${caseDate ? "pr-8" : ""}`}
+											/>
+											{caseDate && (
+												<button
+													type="button"
+													aria-label="Clear date"
+													onClick={() =>
+														setCaseDate("")
+													}
+													className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+												>
+													<X className="h-4 w-4" />
+												</button>
+											)}
+										</div>
+									</div>
+									<div className="space-y-2">
+										<Label htmlFor="case-time">Time</Label>
+										<div className="relative">
+											<Clock className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+											<Input
+												id="case-time"
+												name="time"
+												type="time"
+												value={caseTime}
+												onChange={(e) =>
+													setCaseTime(e.target.value)
+												}
+												className={`pl-8 ${caseTime ? "pr-8" : ""}`}
+											/>
+											{caseTime && (
+												<button
+													type="button"
+													aria-label="Clear time"
+													onClick={() =>
+														setCaseTime("")
+													}
+													className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+												>
+													<X className="h-4 w-4" />
+												</button>
+											)}
+										</div>
+									</div>
+									<div className="space-y-2">
+										<Label htmlFor="severity-level">
+											Severity Level
+										</Label>
+										<Combobox
+											value={severityLevel}
+											onValueChange={(value) =>
+												setSeverityLevel(value || "")
+											}
+										>
+											<ComboboxInput
+												placeholder="Select severity level"
+												showClear={!!severityLevel}
+											/>
+											<ComboboxContent>
+												<ComboboxList>
+													<ComboboxItem value="low">
+														Low
+													</ComboboxItem>
+													<ComboboxItem value="medium">
+														Medium
+													</ComboboxItem>
+													<ComboboxItem value="high">
+														High
+													</ComboboxItem>
+													<ComboboxItem value="critical">
+														Critical
+													</ComboboxItem>
+												</ComboboxList>
+											</ComboboxContent>
+										</Combobox>
+									</div>
+									<div className="space-y-2">
+										<Label htmlFor="case-status">
+											Case Status
+										</Label>
+										<Combobox
+											value={caseStatus}
+											onValueChange={(value) =>
+												setCaseStatus(value || "")
+											}
+										>
+											<ComboboxInput
+												placeholder="Select case status"
+												showClear={!!caseStatus}
+											/>
+											<ComboboxContent>
+												<ComboboxList>
+													<ComboboxItem value="active">
+														Active
+													</ComboboxItem>
+													<ComboboxItem value="under-surveillance">
+														Under Surveillance
+													</ComboboxItem>
+													<ComboboxItem value="closed">
+														Closed
+													</ComboboxItem>
+												</ComboboxList>
+											</ComboboxContent>
+										</Combobox>
+									</div>
+								</div>
+							</AccordionContent>
+						</AccordionItem>
+
+						<AccordionItem
+							value="connections"
+							className={
+								activeAccordion === "connections"
+									? "border-l-4 border-blue-500 bg-blue-50/50"
+									: ""
+							}
+						>
+							<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors px-2">
+								<div className="flex justify-between items-center w-full mr-2">
+									<div className="flex items-center gap-2">
+										{completedSections.includes(
+											"connections",
+										) && (
+											<Check className="h-4 w-4 text-green-600" />
+										)}
+										<span>[2] Network</span>
+										<span className="text-xs text-gray-400 ml-2">
 											{nodes.length}{" "}
 											{nodes.length === 1
 												? "profile"
-												: "profiles"}{" "}
-											• {edges.length}{" "}
+												: "profiles"}
+											, {edges.length}{" "}
 											{edges.length === 1
 												? "connection"
 												: "connections"}
-										</p>
+										</span>
 									</div>
-									<div className="flex items-center gap-2">
-										<Button
-											type="button"
-											variant="outline"
-											size="sm"
-											className="cursor-pointer"
-											onClick={() => {
-												setProfileSearch("");
-												setIsAddProfileDialogOpen(true);
-											}}
-										>
-											<UserSearch className="h-4 w-4 mr-2" />
-											Add Profile
-										</Button>
-										<Button
-											type="button"
-											variant="outline"
-											size="sm"
-											className="cursor-pointer"
-											onClick={() => {
-												resetNewProfileForm();
-												setIsNewProfileDialogOpen(true);
-											}}
-										>
-											<UserPlus className="h-4 w-4 mr-2" />
-											New Profile
-										</Button>
-									</div>
+									<span className="text-gray-500 text-sm text-right">
+										Add connected profiles
+									</span>
 								</div>
-								<div className="border rounded-lg connection-canvas h-125">
-									<style>{`
+							</AccordionTrigger>
+							<AccordionContent>
+								<div className="space-y-4 pt-2 px-2 ml-4">
+									<div className="flex justify-between items-center">
+										<div className="space-y-1">
+											<Label className="text-base">
+												Connection Network
+											</Label>
+											<p className="text-sm text-gray-500">
+												{nodes.length}{" "}
+												{nodes.length === 1
+													? "profile"
+													: "profiles"}{" "}
+												• {edges.length}{" "}
+												{edges.length === 1
+													? "connection"
+													: "connections"}
+											</p>
+										</div>
+										<div className="flex items-center gap-2">
+											<Button
+												type="button"
+												variant="outline"
+												size="sm"
+												className="cursor-pointer"
+												onClick={() => {
+													setProfileSearch("");
+													setIsAddProfileDialogOpen(
+														true,
+													);
+												}}
+											>
+												<UserSearch className="h-4 w-4 mr-2" />
+												Add Profile
+											</Button>
+											<Button
+												type="button"
+												variant="outline"
+												size="sm"
+												className="cursor-pointer"
+												onClick={() => {
+													resetNewProfileForm();
+													setIsNewProfileDialogOpen(
+														true,
+													);
+												}}
+											>
+												<UserPlus className="h-4 w-4 mr-2" />
+												New Profile
+											</Button>
+										</div>
+									</div>
+									<div className="border rounded-lg connection-canvas h-125">
+										<style>{`
 										.connection-canvas .react-flow__node.connectingto {
 											box-shadow: 0 0 0 3px #22c55e !important;
 										}
@@ -1598,359 +1831,192 @@ export default function NewCasePage() {
 											font-weight: 500;
 										}
 									`}</style>
-									<ReactFlow
-										nodes={nodes}
-										edges={edges}
-										nodeTypes={nodeTypes}
-										edgeTypes={edgeTypes}
-										onNodesChange={onNodesChange}
-										onEdgesChange={onEdgesChange}
-										onConnect={onConnect}
-										onEdgeClick={onEdgeClick}
-										onConnectStart={onConnectStart}
-										onConnectEnd={onConnectEnd}
-										isValidConnection={
-											isValidConnectionCheck
-										}
-										connectionRadius={50}
-										connectionLineType={
-											ConnectionLineType.Straight
-										}
-										connectionLineStyle={{
-											stroke: isValidConnection
-												? "#22c55e"
-												: "#ef4444",
-											strokeWidth: 2,
-										}}
-										defaultEdgeOptions={{
-											type: "custom",
-											markerEnd: {
-												type: MarkerType.ArrowClosed,
-												color: "#ef4444",
-											},
-											style: {
+										<ReactFlow
+											nodes={nodes}
+											edges={edges}
+											nodeTypes={nodeTypes}
+											edgeTypes={edgeTypes}
+											onNodesChange={onNodesChange}
+											onEdgesChange={onEdgesChange}
+											onConnect={onConnect}
+											onEdgeClick={onEdgeClick}
+											onConnectStart={onConnectStart}
+											onConnectEnd={onConnectEnd}
+											isValidConnection={
+												isValidConnectionCheck
+											}
+											connectionRadius={50}
+											connectionLineType={
+												ConnectionLineType.Straight
+											}
+											connectionLineStyle={{
+												stroke: isValidConnection
+													? "#22c55e"
+													: "#ef4444",
 												strokeWidth: 2,
-												stroke: "#ef4444",
-											},
-										}}
-										defaultViewport={{
-											x: 0,
-											y: 0,
-											zoom: 0.5,
-										}}
-										fitView
-									>
-										<Controls />
-										<MiniMap />
-										<Background
-											variant={BackgroundVariant.Dots}
-											gap={12}
-											size={1}
-										/>
-									</ReactFlow>
-								</div>
+											}}
+											defaultEdgeOptions={{
+												type: "custom",
+												markerEnd: {
+													type: MarkerType.ArrowClosed,
+													color: "#ef4444",
+												},
+												style: {
+													strokeWidth: 2,
+													stroke: "#ef4444",
+												},
+											}}
+											defaultViewport={{
+												x: 0,
+												y: 0,
+												zoom: 0.5,
+											}}
+											fitView
+										>
+											<Controls />
+											<MiniMap />
+											<Background
+												variant={BackgroundVariant.Dots}
+												gap={12}
+												size={1}
+											/>
+										</ReactFlow>
+									</div>
 
-								<Dialog
-									open={isConnectionDialogOpen}
-									onOpenChange={(open) => {
-										setIsConnectionDialogOpen(open);
-										if (!open) {
-											setPendingConnection(null);
-											setConnectionLabel("");
-											setEditingEdgeId(null);
-										}
-									}}
-								>
-									<DialogContent className="sm:max-w-md">
-										<form onSubmit={handleConnectionSubmit}>
-											<DialogHeader className="px-1 pb-1">
-												<DialogTitle>
-													{editingEdgeId
-														? "Edit"
-														: "Add"}{" "}
-													Connection
-												</DialogTitle>
-												<DialogDescription>
-													{editingEdgeId
-														? "Update the"
-														: "Create a"}{" "}
-													connection between profiles
-												</DialogDescription>
-											</DialogHeader>
-											<div className="space-y-4 py-4">
-												{pendingConnection && (
-													<div className="bg-muted p-3 rounded-md text-sm">
-														<div className="flex items-center justify-between gap-2">
-															<div className="flex min-w-0 items-center gap-2">
-																<span
-																	className="font-medium truncate max-w-45"
-																	title={
-																		(nodes.find(
-																			(
-																				n,
-																			) =>
-																				n.id ===
-																				pendingConnection.source,
-																		)?.data
-																			.label as string) ||
-																		""
-																	}
-																>
-																	{
-																		nodes.find(
-																			(
-																				n,
-																			) =>
-																				n.id ===
-																				pendingConnection.source,
-																		)?.data
-																			.label as string
-																	}
-																</span>
-																<span className="text-muted-foreground shrink-0">
-																	→
-																</span>
-																<span
-																	className="font-medium truncate max-w-45"
-																	title={
-																		(nodes.find(
-																			(
-																				n,
-																			) =>
-																				n.id ===
-																				pendingConnection.target,
-																		)?.data
-																			.label as string) ||
-																		""
-																	}
-																>
-																	{
-																		nodes.find(
-																			(
-																				n,
-																			) =>
-																				n.id ===
-																				pendingConnection.target,
-																		)?.data
-																			.label as string
-																	}
-																</span>
-															</div>
-															{editingEdgeId && (
-																<Trash2
-																	className="h-4 w-4 shrink-0 text-destructive cursor-pointer hover:text-destructive/80"
-																	onClick={
-																		handleConnectionDelete
-																	}
-																/>
-															)}
-														</div>
-													</div>
-												)}
-												<Field>
-													<Label htmlFor="connection-type">
-														Connection Type
-													</Label>
-													<Input
-														id="connection-type"
-														name="connectionType"
-														placeholder="e.g., Supplier, Associate, Family, Known Contact"
-														value={connectionLabel}
-														onChange={(e) =>
-															setConnectionLabel(
-																e.target.value,
-															)
-														}
-														required
-														autoFocus
-													/>
-												</Field>
-											</div>
-											<DialogFooter className="px-1 pt-1">
-												<div className="flex w-full justify-between">
-													<DialogClose asChild>
-														<Button
-															variant="outline"
-															type="button"
-															className="cursor-pointer"
-														>
-															Cancel
-														</Button>
-													</DialogClose>
-													<Button
-														type="submit"
-														className="cursor-pointer"
-													>
+									<Dialog
+										open={isConnectionDialogOpen}
+										onOpenChange={(open) => {
+											setIsConnectionDialogOpen(open);
+											if (!open) {
+												setPendingConnection(null);
+												setConnectionLabel("");
+												setEditingEdgeId(null);
+											}
+										}}
+									>
+										<DialogContent className="sm:max-w-md">
+											<form
+												onSubmit={
+													handleConnectionSubmit
+												}
+											>
+												<DialogHeader className="px-1 pb-1">
+													<DialogTitle>
 														{editingEdgeId
-															? "Update"
+															? "Edit"
 															: "Add"}{" "}
 														Connection
-													</Button>
+													</DialogTitle>
+													<DialogDescription>
+														{editingEdgeId
+															? "Update the"
+															: "Create a"}{" "}
+														connection between
+														profiles
+													</DialogDescription>
+												</DialogHeader>
+												<div className="space-y-4 py-4">
+													{pendingConnection && (
+														<div className="bg-muted p-3 rounded-md text-sm">
+															<div className="flex items-center justify-between gap-2">
+																<div className="flex min-w-0 items-center gap-2">
+																	<span
+																		className="font-medium truncate max-w-45"
+																		title={
+																			(nodes.find(
+																				(
+																					n,
+																				) =>
+																					n.id ===
+																					pendingConnection.source,
+																			)
+																				?.data
+																				.label as string) ||
+																			""
+																		}
+																	>
+																		{
+																			nodes.find(
+																				(
+																					n,
+																				) =>
+																					n.id ===
+																					pendingConnection.source,
+																			)
+																				?.data
+																				.label as string
+																		}
+																	</span>
+																	<span className="text-muted-foreground shrink-0">
+																		→
+																	</span>
+																	<span
+																		className="font-medium truncate max-w-45"
+																		title={
+																			(nodes.find(
+																				(
+																					n,
+																				) =>
+																					n.id ===
+																					pendingConnection.target,
+																			)
+																				?.data
+																				.label as string) ||
+																			""
+																		}
+																	>
+																		{
+																			nodes.find(
+																				(
+																					n,
+																				) =>
+																					n.id ===
+																					pendingConnection.target,
+																			)
+																				?.data
+																				.label as string
+																		}
+																	</span>
+																</div>
+																{editingEdgeId && (
+																	<Trash2
+																		className="h-4 w-4 shrink-0 text-destructive cursor-pointer hover:text-destructive/80"
+																		onClick={
+																			handleConnectionDelete
+																		}
+																	/>
+																)}
+															</div>
+														</div>
+													)}
+													<Field>
+														<Label htmlFor="connection-type">
+															Connection Type
+														</Label>
+														<Input
+															id="connection-type"
+															name="connectionType"
+															placeholder="e.g., Supplier, Associate, Family, Known Contact"
+															value={
+																connectionLabel
+															}
+															onChange={(e) =>
+																setConnectionLabel(
+																	e.target
+																		.value,
+																)
+															}
+															required
+															autoFocus
+														/>
+													</Field>
 												</div>
-											</DialogFooter>
-										</form>
-									</DialogContent>
-								</Dialog>
-
-								<Dialog
-									open={isNewProfileDialogOpen}
-									onOpenChange={(open) => {
-										setIsNewProfileDialogOpen(open);
-										if (!open) {
-											resetNewProfileForm();
-										}
-									}}
-								>
-									<DialogContent className="sm:max-w-2xl px-6">
-										<form onSubmit={handleCreateNewProfile}>
-											<DialogHeader>
-												<DialogTitle>
-													Create New Profile
-												</DialogTitle>
-												<DialogDescription>
-													Create a profile and add it
-													to this case network
-												</DialogDescription>
-											</DialogHeader>
-											<div className="grid gap-4 my-2 py-4 px-1 max-h-[65vh] overflow-y-auto pr-1">
-												<div className="grid gap-2">
-													<Label htmlFor="new-profile-full-name">
-														Full Name
-													</Label>
-													<Input
-														id="new-profile-full-name"
-														placeholder="John Doe"
-														value={
-															newProfileFullName
-														}
-														onChange={(e) =>
-															setNewProfileFullName(
-																e.target.value,
-															)
-														}
-														required
-														autoFocus
-													/>
-												</div>
-												<div className="grid gap-2">
-													<Label htmlFor="new-profile-nic">
-														NIC
-													</Label>
-													<Input
-														id="new-profile-nic"
-														placeholder="Optional (must be unique)"
-														value={newProfileNic}
-														onChange={(e) =>
-															setNewProfileNic(
-																e.target.value,
-															)
-														}
-													/>
-												</div>
-												<div className="grid gap-2">
-													<Label htmlFor="new-profile-alias">
-														Alias
-													</Label>
-													<Input
-														id="new-profile-alias"
-														placeholder="Optional"
-														value={newProfileAlias}
-														onChange={(e) =>
-															setNewProfileAlias(
-																e.target.value,
-															)
-														}
-													/>
-												</div>
-
-												<div className="grid gap-2">
-													<Label htmlFor="new-profile-address-line1">
-														Address Line 1
-													</Label>
-													<Input
-														id="new-profile-address-line1"
-														placeholder="Optional"
-														value={
-															newProfileAddressLine1
-														}
-														onChange={(e) =>
-															setNewProfileAddressLine1(
-																e.target.value,
-															)
-														}
-													/>
-												</div>
-												<div className="grid gap-2">
-													<Label htmlFor="new-profile-address-line2">
-														Address Line 2
-													</Label>
-													<Input
-														id="new-profile-address-line2"
-														placeholder="Optional"
-														value={
-															newProfileAddressLine2
-														}
-														onChange={(e) =>
-															setNewProfileAddressLine2(
-																e.target.value,
-															)
-														}
-													/>
-												</div>
-												<div className="grid gap-2">
-													<Label htmlFor="new-profile-city">
-														City
-													</Label>
-													<Input
-														id="new-profile-city"
-														placeholder="Optional"
-														value={newProfileCity}
-														onChange={(e) =>
-															setNewProfileCity(
-																e.target.value,
-															)
-														}
-													/>
-												</div>
-
-												<div className="grid gap-2">
-													<Label htmlFor="new-profile-notes">
-														Notes
-													</Label>
-													<Textarea
-														ref={newProfileNotesRef}
-														id="new-profile-notes"
-														maxLength={500}
-														placeholder="Include notes"
-														value={newProfileNotes}
-														onChange={(e) =>
-															setNewProfileNotes(
-																e.target.value,
-															)
-														}
-														className="resize-none overflow-hidden"
-													/>
-													<div className="text-sm text-gray-500">
-														{newProfileNotes.length}
-														/500
-													</div>
-												</div>
-												<div className="flex w-full justify-between gap-2 pt-2">
-													<Button
-														type="button"
-														variant="outline"
-														onClick={
-															resetNewProfileForm
-														}
-														className="cursor-pointer"
-													>
-														Clear
-													</Button>
-													<div className="flex gap-2">
+												<DialogFooter className="px-1 pt-1">
+													<div className="flex w-full justify-between">
 														<DialogClose asChild>
 															<Button
-																type="button"
 																variant="outline"
+																type="button"
 																className="cursor-pointer"
 															>
 																Cancel
@@ -1959,611 +2025,856 @@ export default function NewCasePage() {
 														<Button
 															type="submit"
 															className="cursor-pointer"
-															disabled={
-																isCreatingProfile
-															}
 														>
-															{isCreatingProfile
-																? "Creating..."
-																: "Save Profile"}
+															{editingEdgeId
+																? "Update"
+																: "Add"}{" "}
+															Connection
 														</Button>
 													</div>
+												</DialogFooter>
+											</form>
+										</DialogContent>
+									</Dialog>
+
+									<Dialog
+										open={isNewProfileDialogOpen}
+										onOpenChange={(open) => {
+											setIsNewProfileDialogOpen(open);
+											if (!open) {
+												resetNewProfileForm();
+											}
+										}}
+									>
+										<DialogContent className="sm:max-w-2xl px-6">
+											<form
+												onSubmit={
+													handleCreateNewProfile
+												}
+											>
+												<DialogHeader>
+													<DialogTitle>
+														Create New Profile
+													</DialogTitle>
+													<DialogDescription>
+														Create a profile and add
+														it to this case network
+													</DialogDescription>
+												</DialogHeader>
+												<div className="grid gap-4 my-2 py-4 px-1 max-h-[65vh] overflow-y-auto pr-1">
+													<div className="grid gap-2">
+														<Label htmlFor="new-profile-full-name">
+															Full Name
+														</Label>
+														<Input
+															id="new-profile-full-name"
+															placeholder="John Doe"
+															value={
+																newProfileFullName
+															}
+															onChange={(e) =>
+																setNewProfileFullName(
+																	e.target
+																		.value,
+																)
+															}
+															required
+															autoFocus
+														/>
+													</div>
+													<div className="grid gap-2">
+														<Label htmlFor="new-profile-nic">
+															NIC
+														</Label>
+														<Input
+															id="new-profile-nic"
+															placeholder="Optional (must be unique)"
+															value={
+																newProfileNic
+															}
+															onChange={(e) =>
+																setNewProfileNic(
+																	e.target
+																		.value,
+																)
+															}
+														/>
+													</div>
+													<div className="grid gap-2">
+														<Label htmlFor="new-profile-alias">
+															Alias
+														</Label>
+														<Input
+															id="new-profile-alias"
+															placeholder="Optional"
+															value={
+																newProfileAlias
+															}
+															onChange={(e) =>
+																setNewProfileAlias(
+																	e.target
+																		.value,
+																)
+															}
+														/>
+													</div>
+
+													<div className="grid gap-2">
+														<Label htmlFor="new-profile-address-line1">
+															Address Line 1
+														</Label>
+														<Input
+															id="new-profile-address-line1"
+															placeholder="Optional"
+															value={
+																newProfileAddressLine1
+															}
+															onChange={(e) =>
+																setNewProfileAddressLine1(
+																	e.target
+																		.value,
+																)
+															}
+														/>
+													</div>
+													<div className="grid gap-2">
+														<Label htmlFor="new-profile-address-line2">
+															Address Line 2
+														</Label>
+														<Input
+															id="new-profile-address-line2"
+															placeholder="Optional"
+															value={
+																newProfileAddressLine2
+															}
+															onChange={(e) =>
+																setNewProfileAddressLine2(
+																	e.target
+																		.value,
+																)
+															}
+														/>
+													</div>
+													<div className="grid gap-2">
+														<Label htmlFor="new-profile-city">
+															City
+														</Label>
+														<Input
+															id="new-profile-city"
+															placeholder="Optional"
+															value={
+																newProfileCity
+															}
+															onChange={(e) =>
+																setNewProfileCity(
+																	e.target
+																		.value,
+																)
+															}
+														/>
+													</div>
+
+													<div className="grid gap-2">
+														<Label htmlFor="new-profile-notes">
+															Notes
+														</Label>
+														<Textarea
+															ref={
+																newProfileNotesRef
+															}
+															id="new-profile-notes"
+															maxLength={500}
+															placeholder="Include notes"
+															value={
+																newProfileNotes
+															}
+															onChange={(e) =>
+																setNewProfileNotes(
+																	e.target
+																		.value,
+																)
+															}
+															className="resize-none overflow-hidden"
+														/>
+														<div className="text-sm text-gray-500">
+															{
+																newProfileNotes.length
+															}
+															/500
+														</div>
+													</div>
+													<div className="flex w-full justify-between gap-2 pt-2">
+														<Button
+															type="button"
+															variant="outline"
+															onClick={
+																resetNewProfileForm
+															}
+															className="cursor-pointer"
+														>
+															Clear
+														</Button>
+														<div className="flex gap-2">
+															<DialogClose
+																asChild
+															>
+																<Button
+																	type="button"
+																	variant="outline"
+																	className="cursor-pointer"
+																>
+																	Cancel
+																</Button>
+															</DialogClose>
+															<Button
+																type="submit"
+																className="cursor-pointer"
+																disabled={
+																	isCreatingProfile
+																}
+															>
+																{isCreatingProfile
+																	? "Creating..."
+																	: "Save Profile"}
+															</Button>
+														</div>
+													</div>
+												</div>
+											</form>
+										</DialogContent>
+									</Dialog>
+
+									{/* Profile Selection Dialog */}
+									<Dialog
+										open={isAddProfileDialogOpen}
+										onOpenChange={(open) => {
+											setIsAddProfileDialogOpen(open);
+											if (!open) {
+												setProfileSearch("");
+											}
+										}}
+									>
+										<DialogContent className="sm:max-w-2xl">
+											<DialogHeader>
+												<DialogTitle>
+													Add Profile to Case
+												</DialogTitle>
+												<DialogDescription>
+													Search and select a profile
+													from the database
+												</DialogDescription>
+											</DialogHeader>
+											<div className="space-y-4 py-4">
+												<Input
+													placeholder="Search by name or alias..."
+													value={profileSearch}
+													onChange={(e) =>
+														setProfileSearch(
+															e.target.value,
+														)
+													}
+													autoFocus
+												/>
+												<div className="max-h-80 overflow-y-auto rounded-md border">
+													{(() => {
+														const filteredProfiles =
+															availableProfiles
+																.map(
+																	(
+																		profile,
+																	) => ({
+																		profile,
+																		...fuzzyMatch(
+																			profileSearch,
+																			`${profile.full_name} ${profile.alias || ""}`,
+																		),
+																	}),
+																)
+																.filter(
+																	({
+																		match,
+																	}) => match,
+																)
+																.sort(
+																	(a, b) =>
+																		b.score -
+																		a.score,
+																)
+																.slice(0, 50);
+
+														if (
+															availableProfiles.length ===
+															0
+														) {
+															return (
+																<div className="p-4 text-center text-sm text-muted-foreground">
+																	No profiles
+																	found in
+																	database
+																</div>
+															);
+														}
+
+														if (
+															filteredProfiles.length ===
+															0
+														) {
+															return (
+																<div className="p-4 text-center text-sm text-muted-foreground">
+																	No matching
+																	profiles
+																	found
+																</div>
+															);
+														}
+
+														return filteredProfiles.map(
+															({ profile }) => {
+																const isProfileAdded =
+																	nodes.some(
+																		(
+																			node,
+																		) =>
+																			node
+																				.data
+																				?.profileId ===
+																			profile.id,
+																	);
+
+																return (
+																	<button
+																		key={
+																			profile.id
+																		}
+																		type="button"
+																		disabled={
+																			isProfileAdded
+																		}
+																		onClick={() => {
+																			addNode(
+																				profile,
+																			);
+																			setIsAddProfileDialogOpen(
+																				false,
+																			);
+																			setProfileSearch(
+																				"",
+																			);
+																		}}
+																		className={`w-full border-b px-3 py-2 text-left last:border-b-0 ${
+																			isProfileAdded
+																				? "opacity-50 cursor-not-allowed bg-muted/30 hover:bg-muted/30"
+																				: "hover:bg-muted/50 cursor-pointer"
+																		}`}
+																	>
+																		<div className="flex flex-col">
+																			<span className="font-medium">
+																				{
+																					profile.full_name
+																				}
+																			</span>
+																			{profile.alias && (
+																				<span className="text-sm text-muted-foreground">
+																					Alias:{" "}
+																					{
+																						profile.alias
+																					}
+																				</span>
+																			)}
+																			{profile.city && (
+																				<span className="text-xs text-muted-foreground">
+																					{
+																						profile.city
+																					}
+																				</span>
+																			)}
+																		</div>
+																	</button>
+																);
+															},
+														);
+													})()}
 												</div>
 											</div>
-										</form>
-									</DialogContent>
-								</Dialog>
+											<DialogFooter>
+												<DialogClose asChild>
+													<Button
+														variant="outline"
+														type="button"
+														className="cursor-pointer"
+													>
+														Cancel
+													</Button>
+												</DialogClose>
+											</DialogFooter>
+										</DialogContent>
+									</Dialog>
 
-								{/* Profile Selection Dialog */}
-								<Dialog
-									open={isAddProfileDialogOpen}
-									onOpenChange={(open) => {
-										setIsAddProfileDialogOpen(open);
-										if (!open) {
-											setProfileSearch("");
-										}
-									}}
-								>
-									<DialogContent className="sm:max-w-2xl">
-										<DialogHeader>
-											<DialogTitle>
-												Add Profile to Case
-											</DialogTitle>
-											<DialogDescription>
-												Search and select a profile from
-												the database
-											</DialogDescription>
-										</DialogHeader>
-										<div className="space-y-4 py-4">
-											<Input
-												placeholder="Search by name or alias..."
-												value={profileSearch}
+									<p className="text-sm text-gray-500">
+										Click "Add Profile" to select profiles
+										from the database. Drag profiles to
+										reposition them, and drag from one
+										profile's edge to another to create
+										connections.
+									</p>
+								</div>
+							</AccordionContent>
+						</AccordionItem>
+
+						<AccordionItem
+							value="drugs"
+							className={
+								activeAccordion === "drugs"
+									? "border-l-4 border-blue-500 bg-blue-50/50"
+									: ""
+							}
+						>
+							<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors px-2">
+								<div className="flex justify-between items-center w-full mr-2">
+									<div className="flex items-center gap-2">
+										{completedSections.includes(
+											"drugs",
+										) && (
+											<Check className="h-4 w-4 text-green-600" />
+										)}
+										<span>[3] Drugs</span>
+										<span className="text-xs text-gray-400 ml-2">
+											{Object.keys(selectedDrugs).length}{" "}
+											selected
+										</span>
+									</div>
+									<span className="text-gray-500 text-sm text-right">
+										Specify types and quantities of drugs
+									</span>
+								</div>
+							</AccordionTrigger>
+							<AccordionContent>
+								<div className="space-y-4 pt-2 px-2">
+									<div className="space-y-2 max-w-180 ml-4">
+										<Label>Select Drug</Label>
+										<Combobox>
+											<ComboboxInput
+												placeholder="Search and select a drug..."
+												showTrigger
+												value={drugSearch}
 												onChange={(e) =>
-													setProfileSearch(
+													setDrugSearch(
 														e.target.value,
 													)
 												}
-												autoFocus
+												onKeyDown={(e) => {
+													if (e.key === "Enter") {
+														e.preventDefault();
+													}
+												}}
 											/>
-											<div className="max-h-80 overflow-y-auto rounded-md border">
-												{(() => {
-													const filteredProfiles =
-														availableProfiles
-															.map((profile) => ({
-																profile,
-																...fuzzyMatch(
-																	profileSearch,
-																	`${profile.full_name} ${profile.alias || ""}`,
-																),
-															}))
-															.filter(
-																({ match }) =>
-																	match,
-															)
-															.sort(
-																(a, b) =>
-																	b.score -
-																	a.score,
-															)
-															.slice(0, 50);
-
-													if (
-														availableProfiles.length ===
-														0
-													) {
-														return (
-															<div className="p-4 text-center text-sm text-muted-foreground">
-																No profiles
-																found in
-																database
-															</div>
-														);
-													}
-
-													if (
-														filteredProfiles.length ===
-														0
-													) {
-														return (
-															<div className="p-4 text-center text-sm text-muted-foreground">
-																No matching
-																profiles found
-															</div>
-														);
-													}
-
-													return filteredProfiles.map(
-														({ profile }) => {
-															const isProfileAdded =
-																nodes.some(
-																	(node) =>
-																		node
-																			.data
-																			?.profileId ===
-																		profile.id,
+											<ComboboxContent>
+												<ComboboxList>
+													{availableDrugs
+														.filter((drug) => {
+															const displayName =
+																getDrugDisplayName(
+																	drug,
 																);
-
+															return displayName
+																.toLowerCase()
+																.includes(
+																	drugSearch.toLowerCase(),
+																);
+														})
+														.map((drug) => {
+															const displayName =
+																getDrugDisplayName(
+																	drug,
+																);
+															const isDrugSelected =
+																drug.id in
+																selectedDrugs;
 															return (
-																<button
+																<ComboboxItem
 																	key={
-																		profile.id
+																		drug.id
 																	}
-																	type="button"
+																	value={
+																		displayName
+																	}
 																	disabled={
-																		isProfileAdded
+																		isDrugSelected
 																	}
 																	onClick={() => {
-																		addNode(
-																			profile,
-																		);
-																		setIsAddProfileDialogOpen(
-																			false,
-																		);
-																		setProfileSearch(
-																			"",
-																		);
+																		if (
+																			!isDrugSelected
+																		) {
+																			handleDrugSelect(
+																				drug.id,
+																			);
+																			setDrugSearch(
+																				"",
+																			);
+																		}
 																	}}
-																	className={`w-full border-b px-3 py-2 text-left last:border-b-0 ${
-																		isProfileAdded
-																			? "opacity-50 cursor-not-allowed bg-muted/30 hover:bg-muted/30"
-																			: "hover:bg-muted/50 cursor-pointer"
-																	}`}
+																	className={
+																		isDrugSelected
+																			? "opacity-50"
+																			: "cursor-pointer"
+																	}
 																>
-																	<div className="flex flex-col">
-																		<span className="font-medium">
-																			{
-																				profile.full_name
-																			}
-																		</span>
-																		{profile.alias && (
-																			<span className="text-sm text-muted-foreground">
-																				Alias:{" "}
-																				{
-																					profile.alias
-																				}
-																			</span>
-																		)}
-																		{profile.city && (
-																			<span className="text-xs text-muted-foreground">
-																				{
-																					profile.city
-																				}
-																			</span>
-																		)}
-																	</div>
-																</button>
-															);
-														},
-													);
-												})()}
-											</div>
-										</div>
-										<DialogFooter>
-											<DialogClose asChild>
-												<Button
-													variant="outline"
-													type="button"
-													className="cursor-pointer"
-												>
-													Cancel
-												</Button>
-											</DialogClose>
-										</DialogFooter>
-									</DialogContent>
-								</Dialog>
-
-								<p className="text-sm text-gray-500">
-									Click "Add Profile" to select profiles from
-									the database. Drag profiles to reposition
-									them, and drag from one profile's edge to
-									another to create connections.
-								</p>
-							</div>
-						</AccordionContent>
-					</AccordionItem>
-
-					<AccordionItem
-						value="drugs"
-						className={
-							activeAccordion === "drugs"
-								? "border-l-4 border-blue-500 bg-blue-50/50"
-								: ""
-						}
-					>
-						<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors px-2">
-							<div className="flex justify-between items-center w-full mr-2">
-								<div className="flex items-center gap-2">
-									{completedSections.includes("drugs") && (
-										<Check className="h-4 w-4 text-green-600" />
-									)}
-									<span>[3] Drugs</span>
-									<span className="text-xs text-gray-400 ml-2">
-										{Object.keys(selectedDrugs).length}{" "}
-										selected
-									</span>
-								</div>
-								<span className="text-gray-500 text-sm text-right">
-									Specify types and quantities of drugs
-								</span>
-							</div>
-						</AccordionTrigger>
-						<AccordionContent>
-							<div className="space-y-4 pt-2 px-2">
-								<div className="space-y-2 max-w-180 ml-4">
-									<Label>Select Drug</Label>
-									<Combobox>
-										<ComboboxInput
-											placeholder="Search and select a drug..."
-											showTrigger
-											value={drugSearch}
-											onChange={(e) =>
-												setDrugSearch(e.target.value)
-											}
-											onKeyDown={(e) => {
-												if (e.key === "Enter") {
-													e.preventDefault();
-												}
-											}}
-										/>
-										<ComboboxContent>
-											<ComboboxList>
-												{availableDrugs
-													.filter((drug) => {
-														const displayName =
-															getDrugDisplayName(
-																drug,
-															);
-														return displayName
-															.toLowerCase()
-															.includes(
-																drugSearch.toLowerCase(),
-															);
-													})
-													.map((drug) => {
-														const displayName =
-															getDrugDisplayName(
-																drug,
-															);
-														const isDrugSelected =
-															drug.id in
-															selectedDrugs;
-														return (
-															<ComboboxItem
-																key={drug.id}
-																value={
-																	displayName
-																}
-																disabled={
-																	isDrugSelected
-																}
-																onClick={() => {
-																	if (
-																		!isDrugSelected
-																	) {
-																		handleDrugSelect(
-																			drug.id,
-																		);
-																		setDrugSearch(
-																			"",
-																		);
+																	{
+																		displayName
 																	}
-																}}
-																className={
-																	isDrugSelected
-																		? "opacity-50"
-																		: "cursor-pointer"
-																}
-															>
-																{displayName}
-																{isDrugSelected
-																	? " (selected)"
-																	: ""}
-															</ComboboxItem>
-														);
-													})}
-											</ComboboxList>
-										</ComboboxContent>
-									</Combobox>
-								</div>
-
-								{Object.keys(selectedDrugs).length > 0 && (
-									<div className="space-y-3 mt-4 max-w-180 ml-4">
-										<Label className="text-base">
-											Selected Drugs
-										</Label>
-										{Object.entries(selectedDrugs).map(
-											([drugIdStr, quantity]) => {
-												const drugId =
-													Number(drugIdStr);
-												const drug =
-													availableDrugs.find(
-														(d) => d.id === drugId,
-													);
-												if (!drug) return null;
-												const displayName =
-													getDrugDisplayName(drug);
-												const hasQuantityError =
-													quantity.trim() !== "" &&
-													!isValidDrugQuantity(
-														quantity.trim(),
-													);
-												return (
-													<div
-														key={drugId}
-														className="flex items-center gap-3"
-													>
-														<div className="flex-1 flex items-center gap-3">
-															<Label
-																htmlFor={`quantity-${drugId}`}
-																className="text-sm font-medium min-w-fit whitespace-nowrap"
-															>
-																{displayName}:
-															</Label>
-															<div className="flex-1 flex items-center gap-2">
-																<Input
-																	id={`quantity-${drugId}`}
-																	type="text"
-																	inputMode="decimal"
-																	placeholder="Enter quantity"
-																	value={
-																		quantity
-																	}
-																	onChange={(
-																		e,
-																	) =>
-																		handleDrugQuantityChange(
-																			drugId,
-																			e
-																				.target
-																				.value,
-																		)
-																	}
-																/>
-															</div>
-														</div>
-														<Button
-															type="button"
-															variant="ghost"
-															size="icon"
-															onClick={() =>
-																handleRemoveDrug(
-																	drugId,
-																)
-															}
-															className="cursor-pointer"
-														>
-															<X className="h-4 w-4" />
-														</Button>
-														{hasQuantityError && (
-															<p className="text-xs text-red-500/70 whitespace-nowrap">
-																Quantity must be
-																a number
-															</p>
-														)}
-													</div>
-												);
-											},
-										)}
+																	{isDrugSelected
+																		? " (selected)"
+																		: ""}
+																</ComboboxItem>
+															);
+														})}
+												</ComboboxList>
+											</ComboboxContent>
+										</Combobox>
 									</div>
-								)}
-							</div>
-						</AccordionContent>
-					</AccordionItem>
 
-					<AccordionItem
-						value="areas"
-						className={
-							activeAccordion === "areas"
-								? "border-l-4 border-blue-500 bg-blue-50/50"
-								: ""
-						}
-					>
-						<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors px-2">
-							<div className="flex justify-between items-center w-full mr-2">
-								<div className="flex items-center gap-2">
-									{completedSections.includes("areas") && (
-										<Check className="h-4 w-4 text-green-600" />
+									{Object.keys(selectedDrugs).length > 0 && (
+										<div className="space-y-3 mt-4 max-w-180 ml-4">
+											<Label className="text-base">
+												Selected Drugs
+											</Label>
+											{Object.entries(selectedDrugs).map(
+												([drugIdStr, quantity]) => {
+													const drugId =
+														Number(drugIdStr);
+													const drug =
+														availableDrugs.find(
+															(d) =>
+																d.id === drugId,
+														);
+													if (!drug) return null;
+													const displayName =
+														getDrugDisplayName(
+															drug,
+														);
+													const hasQuantityError =
+														quantity.trim() !==
+															"" &&
+														!isValidDrugQuantity(
+															quantity.trim(),
+														);
+													return (
+														<div
+															key={drugId}
+															className="flex items-center gap-3"
+														>
+															<div className="flex-1 flex items-center gap-3">
+																<Label
+																	htmlFor={`quantity-${drugId}`}
+																	className="text-sm font-medium min-w-fit whitespace-nowrap"
+																>
+																	{
+																		displayName
+																	}
+																	:
+																</Label>
+																<div className="flex-1 flex items-center gap-2">
+																	<Input
+																		id={`quantity-${drugId}`}
+																		type="text"
+																		inputMode="decimal"
+																		placeholder="Enter quantity"
+																		value={
+																			quantity
+																		}
+																		onChange={(
+																			e,
+																		) =>
+																			handleDrugQuantityChange(
+																				drugId,
+																				e
+																					.target
+																					.value,
+																			)
+																		}
+																	/>
+																</div>
+															</div>
+															<Button
+																type="button"
+																variant="ghost"
+																size="icon"
+																onClick={() =>
+																	handleRemoveDrug(
+																		drugId,
+																	)
+																}
+																className="cursor-pointer"
+															>
+																<X className="h-4 w-4" />
+															</Button>
+															{hasQuantityError && (
+																<p className="text-xs text-red-500/70 whitespace-nowrap">
+																	Quantity
+																	must be a
+																	number
+																</p>
+															)}
+														</div>
+													);
+												},
+											)}
+										</div>
 									)}
-									<span>[4] Areas</span>
-									<span className="text-xs text-gray-400 ml-2">
-										{areas.length} added
+								</div>
+							</AccordionContent>
+						</AccordionItem>
+
+						<AccordionItem
+							value="areas"
+							className={
+								activeAccordion === "areas"
+									? "border-l-4 border-blue-500 bg-blue-50/50"
+									: ""
+							}
+						>
+							<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors px-2">
+								<div className="flex justify-between items-center w-full mr-2">
+									<div className="flex items-center gap-2">
+										{completedSections.includes(
+											"areas",
+										) && (
+											<Check className="h-4 w-4 text-green-600" />
+										)}
+										<span>[4] Areas</span>
+										<span className="text-xs text-gray-400 ml-2">
+											{areas.length} added
+										</span>
+									</div>
+									<span className="text-gray-500 text-sm text-right">
+										Locations related to the case
 									</span>
 								</div>
-								<span className="text-gray-500 text-sm text-right">
-									Locations related to the case
-								</span>
-							</div>
-						</AccordionTrigger>
-						<AccordionContent>
-							<div className="space-y-4 pt-2 px-2">
-								<div className="space-y-2 max-w-180 ml-4">
-									<Label>Add Area</Label>
-									<Combobox>
-										<ComboboxInput
-											placeholder="Enter or select area name..."
-											showTrigger
-											value={pendingArea}
-											onChange={(e) =>
-												setPendingArea(e.target.value)
-											}
-											onKeyDown={(e) => {
-												if (
-													e.key === "Enter" ||
-													e.key === "," ||
-													e.key === " "
-												) {
-													e.preventDefault();
-													if (pendingArea.trim()) {
-														const newAreas =
-															new Set([
-																...areas,
-																pendingArea.trim(),
-															]);
-														setAreas(
-															Array.from(
-																newAreas,
-															),
-														);
-														setPendingArea("");
-													}
+							</AccordionTrigger>
+							<AccordionContent>
+								<div className="space-y-4 pt-2 px-2">
+									<div className="space-y-2 max-w-180 ml-4">
+										<Label>Add Area</Label>
+										<Combobox>
+											<ComboboxInput
+												placeholder="Enter or select area name..."
+												showTrigger
+												value={pendingArea}
+												onChange={(e) =>
+													setPendingArea(
+														e.target.value,
+													)
 												}
-											}}
-										/>
-										<ComboboxContent>
-											<ComboboxList>
-												{availableAreas
-													.map((area) => ({
-														area,
-														...fuzzyMatch(
-															pendingArea,
-															area.name,
-														),
-													}))
-													.filter(
-														({ area, match }) =>
-															!areas.includes(
-																area.name,
-															) && match,
-													)
-													.sort(
-														(a, b) =>
-															b.score - a.score,
-													)
-													.map(({ area }) => (
-														<ComboboxItem
-															key={area.id}
-															value={area.name}
-															onClick={() => {
-																const newAreas =
-																	new Set([
-																		...areas,
-																		area.name,
-																	]);
-																setAreas(
-																	Array.from(
-																		newAreas,
-																	),
-																);
-																setPendingArea(
-																	"",
-																);
-															}}
-															className="cursor-pointer"
-														>
-															{area.name}
-														</ComboboxItem>
-													))}
-												{pendingArea.trim() &&
-													!availableAreas.some(
-														(area) =>
-															area.name.toLowerCase() ===
-															pendingArea
-																.trim()
-																.toLowerCase(),
-													) && (
-														<ComboboxItem
-															value={pendingArea.trim()}
-															onClick={() => {
-																const newAreas =
-																	new Set([
-																		...areas,
-																		pendingArea.trim(),
-																	]);
-																setAreas(
-																	Array.from(
-																		newAreas,
-																	),
-																);
-																setPendingArea(
-																	"",
-																);
-															}}
-															className="cursor-pointer"
-														>
-															Add "
-															{pendingArea.trim()}
-															"
-														</ComboboxItem>
-													)}
-											</ComboboxList>
-										</ComboboxContent>
-									</Combobox>
-									{areas.length > 0 && (
-										<div className="border rounded-md min-h-10 overflow-y-auto p-2 flex gap-2 flex-wrap items-center">
-											{areas.map((area, idx) => (
-												<div
-													key={idx}
-													className="inline-flex items-center rounded-md bg-secondary px-2.5 py-0.5 text-sm font-medium text-secondary-foreground"
-												>
-													{area}
-													<button
-														type="button"
-														aria-label={`Remove ${area}`}
-														className="ml-2 inline-flex items-center justify-center hover:text-destructive cursor-pointer"
-														onClick={() => {
+												onKeyDown={(e) => {
+													if (
+														e.key === "Enter" ||
+														e.key === "," ||
+														e.key === " "
+													) {
+														e.preventDefault();
+														if (
+															pendingArea.trim()
+														) {
+															const newAreas =
+																new Set([
+																	...areas,
+																	pendingArea.trim(),
+																]);
 															setAreas(
-																areas.filter(
-																	(i) =>
-																		i !==
-																		area,
+																Array.from(
+																	newAreas,
 																),
 															);
-														}}
+															setPendingArea("");
+														}
+													}
+												}}
+											/>
+											<ComboboxContent>
+												<ComboboxList>
+													{availableAreas
+														.map((area) => ({
+															area,
+															...fuzzyMatch(
+																pendingArea,
+																area.name,
+															),
+														}))
+														.filter(
+															({ area, match }) =>
+																!areas.includes(
+																	area.name,
+																) && match,
+														)
+														.sort(
+															(a, b) =>
+																b.score -
+																a.score,
+														)
+														.map(({ area }) => (
+															<ComboboxItem
+																key={area.id}
+																value={
+																	area.name
+																}
+																onClick={() => {
+																	const newAreas =
+																		new Set(
+																			[
+																				...areas,
+																				area.name,
+																			],
+																		);
+																	setAreas(
+																		Array.from(
+																			newAreas,
+																		),
+																	);
+																	setPendingArea(
+																		"",
+																	);
+																}}
+																className="cursor-pointer"
+															>
+																{area.name}
+															</ComboboxItem>
+														))}
+													{pendingArea.trim() &&
+														!availableAreas.some(
+															(area) =>
+																area.name.toLowerCase() ===
+																pendingArea
+																	.trim()
+																	.toLowerCase(),
+														) && (
+															<ComboboxItem
+																value={pendingArea.trim()}
+																onClick={() => {
+																	const newAreas =
+																		new Set(
+																			[
+																				...areas,
+																				pendingArea.trim(),
+																			],
+																		);
+																	setAreas(
+																		Array.from(
+																			newAreas,
+																		),
+																	);
+																	setPendingArea(
+																		"",
+																	);
+																}}
+																className="cursor-pointer"
+															>
+																Add "
+																{pendingArea.trim()}
+																"
+															</ComboboxItem>
+														)}
+												</ComboboxList>
+											</ComboboxContent>
+										</Combobox>
+										{areas.length > 0 && (
+											<div className="border rounded-md min-h-10 overflow-y-auto p-2 flex gap-2 flex-wrap items-center">
+												{areas.map((area, idx) => (
+													<div
+														key={idx}
+														className="inline-flex items-center rounded-md bg-secondary px-2.5 py-0.5 text-sm font-medium text-secondary-foreground"
 													>
-														<X className="h-3 w-3" />
-													</button>
-												</div>
-											))}
-										</div>
-									)}
+														{area}
+														<button
+															type="button"
+															aria-label={`Remove ${area}`}
+															className="ml-2 inline-flex items-center justify-center hover:text-destructive cursor-pointer"
+															onClick={() => {
+																setAreas(
+																	areas.filter(
+																		(i) =>
+																			i !==
+																			area,
+																	),
+																);
+															}}
+														>
+															<X className="h-3 w-3" />
+														</button>
+													</div>
+												))}
+											</div>
+										)}
+									</div>
 								</div>
-							</div>
-						</AccordionContent>
-					</AccordionItem>
+							</AccordionContent>
+						</AccordionItem>
 
-					<AccordionItem
-						value="notes"
-						className={
-							activeAccordion === "notes"
-								? "border-l-4 border-blue-500 bg-blue-50/50"
-								: ""
-						}
-					>
-						<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors px-2">
-							<div className="flex justify-between items-center w-full mr-2">
-								<div className="flex items-center gap-2">
-									{completedSections.includes("notes") && (
-										<Check className="h-4 w-4 text-green-600" />
-									)}
-									<span>[5] Notes</span>
-									<span className="text-xs text-gray-400 ml-2">
-										{caseNotes.trim().length > 0
-											? "Note added"
-											: "Empty"}
+						<AccordionItem
+							value="notes"
+							className={
+								activeAccordion === "notes"
+									? "border-l-4 border-blue-500 bg-blue-50/50"
+									: ""
+							}
+						>
+							<AccordionTrigger className="cursor-pointer hover:bg-gray-50 transition-colors px-2">
+								<div className="flex justify-between items-center w-full mr-2">
+									<div className="flex items-center gap-2">
+										{completedSections.includes(
+											"notes",
+										) && (
+											<Check className="h-4 w-4 text-green-600" />
+										)}
+										<span>[5] Notes</span>
+										<span className="text-xs text-gray-400 ml-2">
+											{caseNotes.trim().length > 0
+												? "Note added"
+												: "Empty"}
+										</span>
+									</div>
+									<span className="text-gray-500 text-sm text-right">
+										Additional observations and remarks
 									</span>
 								</div>
-								<span className="text-gray-500 text-sm text-right">
-									Additional observations and remarks
-								</span>
-							</div>
-						</AccordionTrigger>
-						<AccordionContent>
-							<div className="space-y-2 pt-2 px-2 ml-4">
-								<Label htmlFor="case-notes">Remarks</Label>
-								<Textarea
-									ref={textareaRef}
-									maxLength={1000}
-									id="case-notes"
-									placeholder="Add additional notes here"
-									value={caseNotes}
-									onChange={(e) => {
-										setCaseNotes(e.target.value);
-										handleTextareaResize(textareaRef);
-									}}
-									className="resize-none overflow-hidden"
-								/>
-								<div className="text-sm text-gray-500">
-									{caseNotes.length}/1000
+							</AccordionTrigger>
+							<AccordionContent>
+								<div className="space-y-2 pt-2 px-2 ml-4">
+									<Label htmlFor="case-notes">Remarks</Label>
+									<Textarea
+										ref={textareaRef}
+										maxLength={1000}
+										id="case-notes"
+										placeholder="Add additional notes here"
+										value={caseNotes}
+										onChange={(e) => {
+											setCaseNotes(e.target.value);
+											handleTextareaResize(textareaRef);
+										}}
+										className="resize-none overflow-hidden"
+									/>
+									<div className="text-sm text-gray-500">
+										{caseNotes.length}/1000
+									</div>
 								</div>
-							</div>
-						</AccordionContent>
-					</AccordionItem>
-				</Accordion>
+							</AccordionContent>
+						</AccordionItem>
+					</Accordion>
 
-				<div className="flex justify-between pt-4">
-					<Button
-						type="button"
-						variant="outline"
-						className="cursor-pointer"
-						onClick={clearAll}
-					>
-						Clear All
-					</Button>
-					<Button type="submit" className="cursor-pointer">
-						Save Case
-					</Button>
-				</div>
-			</form>
+					<div className="flex justify-between pt-4">
+						<Button
+							type="button"
+							variant="outline"
+							className="cursor-pointer"
+							onClick={clearAll}
+						>
+							Clear All
+						</Button>
+						<Button type="submit" className="cursor-pointer">
+							{isEditMode ? "Update Case" : "Save Case"}
+						</Button>
+					</div>
+				</form>
+			)}
 		</div>
 	);
 }
