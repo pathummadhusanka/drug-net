@@ -13,7 +13,6 @@ import {
 	ComboboxList,
 } from "@/components/ui/combobox";
 import { invoke } from "@tauri-apps/api/core";
-import { getAllAreas } from "@/lib/areas";
 
 type ProfileFromDb = {
 	id: number;
@@ -33,17 +32,14 @@ type ProfileRow = DrugDealer & {
 
 export default function Profiles() {
 	const [data, setData] = useState<ProfileRow[]>([]);
-	const [allAreas, setAllAreas] = useState<string[]>([]);
 	const [searchText, setSearchText] = useState("");
 	const [filterRisk, setFilterRisk] = useState("All Risks");
 	const [filterStatus, setFilterStatus] = useState("All Statuses");
-	const [filterArea, setFilterArea] = useState("All Areas");
 	const [sortBy, setSortBy] = useState("name-asc");
 	const navigate = useNavigate();
 
 	const ALL_RISKS_FILTER_VALUE = "All Risks";
 	const ALL_STATUSES_FILTER_VALUE = "All Statuses";
-	const ALL_AREAS_FILTER_VALUE = "All Areas";
 	const ALL_RISK_LEVELS = [
 		{ value: "low", label: "Low" },
 		{ value: "medium", label: "Medium" },
@@ -55,24 +51,11 @@ export default function Profiles() {
 		{ value: "suspended", label: "Suspended" },
 	];
 
-	const formatLabel = (value: string) => {
-		return value
-			.split(/[\s_-]+/)
-			.filter(Boolean)
-			.map(
-				(part) =>
-					part.charAt(0).toUpperCase() + part.slice(1).toLowerCase(),
-			)
-			.join(" ");
-	};
-
 	useEffect(() => {
 		const fetchProfiles = async () => {
 			try {
-				const [profiles, areas] = await Promise.all([
-					invoke<ProfileFromDb[]>("get_all_profiles"),
-					getAllAreas(),
-				]);
+				const profiles =
+					await invoke<ProfileFromDb[]>("get_all_profiles");
 				setData(
 					profiles.map((profile) => ({
 						id: profile.id,
@@ -86,15 +69,9 @@ export default function Profiles() {
 						updatedAt: profile.updated_at ?? null,
 					})),
 				);
-				setAllAreas(
-					areas
-						.map((area) => area.name)
-						.filter((name) => name && name.trim().length > 0),
-				);
 			} catch (err) {
 				console.error("Failed to fetch profiles:", err);
 				setData([]);
-				setAllAreas([]);
 			}
 		};
 
@@ -129,37 +106,6 @@ export default function Profiles() {
 		}));
 	}, [data]);
 
-	const areaOptions = useMemo(() => {
-		const areaCounts = data.reduce<Record<string, number>>((acc, row) => {
-			const key = (row.primaryArea || "").trim().toLowerCase();
-			if (!key) return acc;
-			acc[key] = (acc[key] || 0) + 1;
-			return acc;
-		}, {});
-
-		const combinedAreaNames = Array.from(
-			new Set([
-				...allAreas,
-				...data
-					.map((row) => row.primaryArea)
-					.filter((area): area is string =>
-						Boolean(area && area.trim().length > 0),
-					),
-			]),
-		);
-
-		return combinedAreaNames
-			.map((name) => {
-				const value = name.trim().toLowerCase();
-				return {
-					value,
-					label: formatLabel(name),
-					count: areaCounts[value] || 0,
-				};
-			})
-			.sort((a, b) => a.label.localeCompare(b.label));
-	}, [data, allAreas]);
-
 	const selectedRiskValue = useMemo(() => {
 		return riskOptions.find((option) => option.label === filterRisk)?.value;
 	}, [riskOptions, filterRisk]);
@@ -169,25 +115,18 @@ export default function Profiles() {
 			?.value;
 	}, [statusOptions, filterStatus]);
 
-	const selectedAreaValue = useMemo(() => {
-		return areaOptions.find((option) => option.label === filterArea)?.value;
-	}, [areaOptions, filterArea]);
-
 	const hasActiveFilters =
 		searchText.trim() !== "" ||
 		filterRisk !== ALL_RISKS_FILTER_VALUE ||
-		filterStatus !== ALL_STATUSES_FILTER_VALUE ||
-		filterArea !== ALL_AREAS_FILTER_VALUE;
+		filterStatus !== ALL_STATUSES_FILTER_VALUE;
 
 	const isRiskFilterActive = filterRisk !== ALL_RISKS_FILTER_VALUE;
 	const isStatusFilterActive = filterStatus !== ALL_STATUSES_FILTER_VALUE;
-	const isAreaFilterActive = filterArea !== ALL_AREAS_FILTER_VALUE;
 
 	const resetFilters = () => {
 		setSearchText("");
 		setFilterRisk(ALL_RISKS_FILTER_VALUE);
 		setFilterStatus(ALL_STATUSES_FILTER_VALUE);
-		setFilterArea(ALL_AREAS_FILTER_VALUE);
 		setSortBy("name-asc");
 	};
 
@@ -212,14 +151,6 @@ export default function Profiles() {
 			if (
 				filterStatus !== ALL_STATUSES_FILTER_VALUE &&
 				(row.status || "").trim().toLowerCase() !== selectedStatusValue
-			) {
-				return false;
-			}
-
-			if (
-				filterArea !== ALL_AREAS_FILTER_VALUE &&
-				(row.primaryArea || "").trim().toLowerCase() !==
-					selectedAreaValue
 			) {
 				return false;
 			}
@@ -257,14 +188,11 @@ export default function Profiles() {
 		searchText,
 		filterRisk,
 		filterStatus,
-		filterArea,
 		selectedRiskValue,
 		selectedStatusValue,
-		selectedAreaValue,
 		sortBy,
 		ALL_RISKS_FILTER_VALUE,
 		ALL_STATUSES_FILTER_VALUE,
-		ALL_AREAS_FILTER_VALUE,
 	]);
 
 	return (
@@ -310,7 +238,7 @@ export default function Profiles() {
 					</div>
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 					<Combobox
 						value={filterRisk}
 						onValueChange={(value) =>
@@ -379,48 +307,6 @@ export default function Profiles() {
 									</div>
 								</ComboboxItem>
 								{statusOptions.map((option) => (
-									<ComboboxItem
-										key={option.value}
-										value={option.label}
-									>
-										<div className="flex items-center justify-between w-full">
-											<span>{option.label}</span>
-											<span className="text-xs text-muted-foreground">
-												{option.count}
-											</span>
-										</div>
-									</ComboboxItem>
-								))}
-							</ComboboxList>
-						</ComboboxContent>
-					</Combobox>
-
-					<Combobox
-						value={filterArea}
-						onValueChange={(value) =>
-							setFilterArea(value || ALL_AREAS_FILTER_VALUE)
-						}
-					>
-						<ComboboxInput
-							placeholder="All Areas"
-							aria-label="Filter by area"
-							className={
-								isAreaFilterActive
-									? "border-blue-500 ring-1 ring-blue-500/20"
-									: ""
-							}
-						/>
-						<ComboboxContent>
-							<ComboboxList>
-								<ComboboxItem value={ALL_AREAS_FILTER_VALUE}>
-									<div className="flex items-center justify-between w-full">
-										<span>All Areas</span>
-										<span className="text-xs text-muted-foreground">
-											{data.length}
-										</span>
-									</div>
-								</ComboboxItem>
-								{areaOptions.map((option) => (
 									<ComboboxItem
 										key={option.value}
 										value={option.label}
