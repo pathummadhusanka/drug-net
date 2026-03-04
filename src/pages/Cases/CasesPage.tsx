@@ -844,15 +844,7 @@ export default function CasesPage() {
 														) !==
 															caseItem.profiles!
 																.length -
-																1 && (
-															<span
-																className={
-																	dividerClass
-																}
-															>
-																{dividerText}
-															</span>
-														)}
+																1 && ", "}
 													</span>
 												))}
 											</div>
@@ -880,17 +872,7 @@ export default function CasesPage() {
 															{index !==
 																caseItem.drugs!
 																	.length -
-																	1 && (
-																<span
-																	className={
-																		dividerClass
-																	}
-																>
-																	{
-																		dividerText
-																	}
-																</span>
-															)}
+																	1 && ", "}
 														</span>
 													),
 												)}
@@ -919,17 +901,7 @@ export default function CasesPage() {
 															{index !==
 																caseItem.areas!
 																	.length -
-																	1 && (
-																<span
-																	className={
-																		dividerClass
-																	}
-																>
-																	{
-																		dividerText
-																	}
-																</span>
-															)}
+																	1 && ", "}
 														</span>
 													),
 												)}
