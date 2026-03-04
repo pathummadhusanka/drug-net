@@ -13,6 +13,9 @@ import {
 	ComboboxList,
 } from "@/components/ui/combobox";
 import { invoke } from "@tauri-apps/api/core";
+import { getProfileCases, getCaseAreas } from "@/lib/cases";
+import { getCaseDrugs } from "@/lib/drugs";
+import { getProfileRelationships } from "@/lib/profiles";
 
 type ProfileFromDb = {
 	id: number;
@@ -28,6 +31,11 @@ type ProfileFromDb = {
 type ProfileRow = DrugDealer & {
 	createdAt: string | null;
 	updatedAt: string | null;
+	caseAreas: string[];
+	recentCaseArea: string | null;
+	caseDrugs: string[];
+	recentCaseDrug: string | null;
+	connections: number;
 };
 
 export default function Profiles() {
@@ -56,19 +64,74 @@ export default function Profiles() {
 			try {
 				const profiles =
 					await invoke<ProfileFromDb[]>("get_all_profiles");
-				setData(
-					profiles.map((profile) => ({
-						id: profile.id,
-						name: profile.full_name,
-						alias: profile.alias,
-						primaryArea: profile.city,
-						risk: profile.risk_level,
-						cases: 0,
-						status: profile.status,
-						createdAt: profile.created_at ?? null,
-						updatedAt: profile.updated_at ?? null,
-					})),
+				const profilesWithCaseAreas = await Promise.all(
+					profiles.map(async (profile) => {
+						const [cases, relationships] = await Promise.all([
+							getProfileCases(profile.id),
+							getProfileRelationships(profile.id),
+						]);
+						let allCaseAreas: string[] = [];
+						let recentCaseArea: string | null = null;
+						let allCaseDrugs: string[] = [];
+						let recentCaseDrug: string | null = null;
+
+						if (cases.length > 0) {
+							// Get areas for the most recent case (first in the list)
+							const recentCase = cases[0];
+							const recentCaseAreasArray = await getCaseAreas(
+								recentCase.id,
+							);
+							if (recentCaseAreasArray.length > 0) {
+								recentCaseArea = recentCaseAreasArray[0];
+							}
+
+							// Get drugs for the most recent case
+							const recentCaseDrugsArray = await getCaseDrugs(
+								recentCase.id,
+							);
+							if (recentCaseDrugsArray.length > 0) {
+								recentCaseDrug =
+									recentCaseDrugsArray[0].drug_name;
+							}
+
+							// Collect all areas from all cases
+							for (const caseItem of cases) {
+								const areas = await getCaseAreas(caseItem.id);
+								allCaseAreas.push(...areas);
+							}
+							// Remove duplicates
+							allCaseAreas = Array.from(new Set(allCaseAreas));
+
+							// Collect all drugs from all cases
+							for (const caseItem of cases) {
+								const drugs = await getCaseDrugs(caseItem.id);
+								allCaseDrugs.push(
+									...drugs.map((d) => d.drug_name),
+								);
+							}
+							// Remove duplicates
+							allCaseDrugs = Array.from(new Set(allCaseDrugs));
+						}
+
+						return {
+							id: profile.id,
+							name: profile.full_name,
+							alias: profile.alias,
+							primaryArea: profile.city,
+							risk: profile.risk_level,
+							cases: cases.length,
+							status: profile.status,
+							createdAt: profile.created_at ?? null,
+							updatedAt: profile.updated_at ?? null,
+							caseAreas: allCaseAreas,
+							recentCaseArea: recentCaseArea,
+							caseDrugs: allCaseDrugs,
+							recentCaseDrug: recentCaseDrug,
+							connections: relationships.length,
+						};
+					}),
 				);
+				setData(profilesWithCaseAreas);
 			} catch (err) {
 				console.error("Failed to fetch profiles:", err);
 				setData([]);
