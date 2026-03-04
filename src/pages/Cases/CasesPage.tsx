@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -62,6 +63,11 @@ export default function CasesPage() {
 	const [selectedProfile, setSelectedProfile] =
 		useState<ProfileWithId | null>(null);
 	const [loadingProfile, setLoadingProfile] = useState(false);
+	const [searchText, setSearchText] = useState("");
+	const [filterType, setFilterType] = useState("all");
+	const [filterSeverity, setFilterSeverity] = useState("all");
+	const [filterStatus, setFilterStatus] = useState("all");
+	const [sortBy, setSortBy] = useState("updated-desc");
 	const dividerClass = "text-muted-foreground";
 	const dividerText = "\u00A0\u00A0|\u00A0\u00A0";
 
@@ -206,6 +212,108 @@ export default function CasesPage() {
 		}
 	};
 
+	const caseTypeOptions = useMemo(() => {
+		return Array.from(
+			new Set(
+				cases
+					.map((c) => c.case_type?.trim())
+					.filter((value): value is string => Boolean(value)),
+			),
+		).sort((a, b) => a.localeCompare(b));
+	}, [cases]);
+
+	const severityOptions = useMemo(() => {
+		return Array.from(
+			new Set(
+				cases
+					.map((c) => c.severity_level?.trim())
+					.filter((value): value is string => Boolean(value)),
+			),
+		).sort((a, b) => a.localeCompare(b));
+	}, [cases]);
+
+	const statusOptions = useMemo(() => {
+		return Array.from(
+			new Set(
+				cases
+					.map((c) => c.status?.trim())
+					.filter((value): value is string => Boolean(value)),
+			),
+		).sort((a, b) => a.localeCompare(b));
+	}, [cases]);
+
+	const visibleCases = useMemo(() => {
+		const query = searchText.trim().toLowerCase();
+
+		const filtered = cases.filter((caseItem) => {
+			if (
+				filterType !== "all" &&
+				(caseItem.case_type || "").toLowerCase() !==
+					filterType.toLowerCase()
+			) {
+				return false;
+			}
+			if (
+				filterSeverity !== "all" &&
+				(caseItem.severity_level || "").toLowerCase() !==
+					filterSeverity.toLowerCase()
+			) {
+				return false;
+			}
+			if (
+				filterStatus !== "all" &&
+				(caseItem.status || "").toLowerCase() !==
+					filterStatus.toLowerCase()
+			) {
+				return false;
+			}
+
+			if (!query) return true;
+
+			const searchableText = [
+				caseItem.case_id,
+				caseItem.case_name,
+				caseItem.case_type,
+				caseItem.severity_level,
+				caseItem.status,
+				caseItem.description,
+			]
+				.filter(Boolean)
+				.join(" ")
+				.toLowerCase();
+
+			return searchableText.includes(query);
+		});
+
+		const sorted = [...filtered].sort((a, b) => {
+			switch (sortBy) {
+				case "title-asc":
+					return (a.case_name || "").localeCompare(b.case_name || "");
+				case "title-desc":
+					return (b.case_name || "").localeCompare(a.case_name || "");
+				case "created-asc":
+					return (a.created_at || "").localeCompare(
+						b.created_at || "",
+					);
+				case "created-desc":
+					return (b.created_at || "").localeCompare(
+						a.created_at || "",
+					);
+				case "updated-asc":
+					return (a.updated_at || "").localeCompare(
+						b.updated_at || "",
+					);
+				case "updated-desc":
+				default:
+					return (b.updated_at || "").localeCompare(
+						a.updated_at || "",
+					);
+			}
+		});
+
+		return sorted;
+	}, [cases, searchText, filterType, filterSeverity, filterStatus, sortBy]);
+
 	if (loading) {
 		return (
 			<div className="container mx-auto flex items-center justify-center py-12">
@@ -234,44 +342,72 @@ export default function CasesPage() {
 				</Button>
 			</div>
 
-			{/* Summary stats */}
-			<div className="grid gap-4 grid-cols-1 md:grid-cols-4">
-				<Card>
-					<CardContent className="pt-6">
-						<p className="text-2xl font-bold">{cases.length}</p>
-						<p className="text-sm text-gray-500">Total Cases</p>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardContent className="pt-6">
-						<p className="text-2xl font-bold">
-							{
-								cases.filter(
-									(c) =>
-										c.status &&
-										c.status.toLowerCase() === "open",
-								).length
-							}
-						</p>
-						<p className="text-sm text-gray-500">Open</p>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardContent className="pt-6">
-						<p className="text-2xl font-bold">
-							{cases.filter((c) => c.hasDrugs).length}
-						</p>
-						<p className="text-sm text-gray-500">Drug Cases</p>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardContent className="pt-6">
-						<p className="text-2xl font-bold">
-							{cases.filter((c) => c.hasNetwork).length}
-						</p>
-						<p className="text-sm text-gray-500">Network Cases</p>
-					</CardContent>
-				</Card>
+			{/* Filters & Sort */}
+			<div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+				<Input
+					value={searchText}
+					onChange={(e) => setSearchText(e.target.value)}
+					placeholder="Search by ID, title, type, status..."
+					className="md:col-span-2"
+				/>
+				<select
+					aria-label="Filter by case type"
+					value={filterType}
+					onChange={(e) => setFilterType(e.target.value)}
+					className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+				>
+					<option value="all">All Types</option>
+					{caseTypeOptions.map((option) => (
+						<option key={option} value={option}>
+							{option}
+						</option>
+					))}
+				</select>
+				<select
+					aria-label="Filter by severity level"
+					value={filterSeverity}
+					onChange={(e) => setFilterSeverity(e.target.value)}
+					className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+				>
+					<option value="all">All Severities</option>
+					{severityOptions.map((option) => (
+						<option key={option} value={option}>
+							{option}
+						</option>
+					))}
+				</select>
+				<select
+					aria-label="Filter by case status"
+					value={filterStatus}
+					onChange={(e) => setFilterStatus(e.target.value)}
+					className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+				>
+					<option value="all">All Statuses</option>
+					{statusOptions.map((option) => (
+						<option key={option} value={option}>
+							{option}
+						</option>
+					))}
+				</select>
+			</div>
+
+			<div className="flex justify-between items-center">
+				<p className="text-sm text-gray-500">
+					Showing {visibleCases.length} of {cases.length} cases
+				</p>
+				<select
+					aria-label="Sort cases"
+					value={sortBy}
+					onChange={(e) => setSortBy(e.target.value)}
+					className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+				>
+					<option value="updated-desc">Sort: Recently updated</option>
+					<option value="updated-asc">Sort: Oldest updated</option>
+					<option value="created-desc">Sort: Recent created</option>
+					<option value="created-asc">Sort: Oldest created</option>
+					<option value="title-asc">Sort: Title A-Z</option>
+					<option value="title-desc">Sort: Title Z-A</option>
+				</select>
 			</div>
 
 			{/* Cases grid */}
@@ -290,8 +426,29 @@ export default function CasesPage() {
 							</Button>
 						</CardContent>
 					</Card>
+				) : visibleCases.length === 0 ? (
+					<Card>
+						<CardContent className="pt-12 pb-12 text-center">
+							<p className="text-gray-500">
+								No cases match current filters
+							</p>
+							<Button
+								variant="outline"
+								className="mt-4 cursor-pointer"
+								onClick={() => {
+									setSearchText("");
+									setFilterType("all");
+									setFilterSeverity("all");
+									setFilterStatus("all");
+									setSortBy("updated-desc");
+								}}
+							>
+								Reset filters
+							</Button>
+						</CardContent>
+					</Card>
 				) : (
-					cases.map((caseItem) => (
+					visibleCases.map((caseItem) => (
 						<Card
 							key={caseItem.id}
 							className="cursor-pointer gap-2 hover:bg-blue-50/50 transition-colors"
