@@ -268,8 +268,16 @@ export default function Profiles() {
 	]);
 
 	return (
-		<div className="container mx-auto">
-			<div className="flex justify-end mb-4">
+		<div className="container mx-auto space-y-6 pb-6">
+			{/* Header with stats */}
+			<div className="flex justify-between items-center">
+				<div>
+					<h1 className="text-2xl font-bold">Profiles</h1>
+					<p className="text-sm text-gray-500 mt-1">
+						{data.length} profile{data.length !== 1 ? "s" : ""} in
+						system
+					</p>
+				</div>
 				<Button
 					onClick={() => navigate(`new-profile/`)}
 					variant="secondary"
@@ -280,7 +288,7 @@ export default function Profiles() {
 				</Button>
 			</div>
 
-			<div className="flex flex-col gap-3 mb-4">
+			<div className="flex flex-col gap-3">
 				<div className="flex gap-3">
 					<Input
 						value={searchText}
