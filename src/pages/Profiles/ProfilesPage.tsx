@@ -236,9 +236,7 @@ export default function Profiles() {
 							</button>
 						)}
 					</div>
-				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 					<Combobox
 						value={filterRisk}
 						onValueChange={(value) =>
@@ -248,11 +246,11 @@ export default function Profiles() {
 						<ComboboxInput
 							placeholder="All Risks"
 							aria-label="Filter by risk"
-							className={
+							className={`w-40 ${
 								isRiskFilterActive
 									? "border-blue-500 ring-1 ring-blue-500/20"
 									: ""
-							}
+							}`}
 						/>
 						<ComboboxContent>
 							<ComboboxList>
@@ -290,11 +288,11 @@ export default function Profiles() {
 						<ComboboxInput
 							placeholder="All Statuses"
 							aria-label="Filter by status"
-							className={
+							className={`w-44 ${
 								isStatusFilterActive
 									? "border-blue-500 ring-1 ring-blue-500/20"
 									: ""
-							}
+							}`}
 						/>
 						<ComboboxContent>
 							<ComboboxList>
