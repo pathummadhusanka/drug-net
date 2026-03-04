@@ -138,6 +138,8 @@ interface ProfileRelationship {
 	id: number;
 	target_profile_id: number;
 	target_full_name: string;
+	target_alias: string | null;
+	linked_case_id: number | null;
 	relationship_type: string | null;
 }
 
@@ -717,6 +719,21 @@ export default function ProfileView() {
 			});
 		});
 	}, [profileCases]);
+
+	const sortedConnections = useMemo(() => {
+		if (!profileRelationships || profileRelationships.length === 0) {
+			return [];
+		}
+		return [...profileRelationships].sort((a, b) => {
+			return a.target_full_name.localeCompare(
+				b.target_full_name,
+				undefined,
+				{
+					sensitivity: "base",
+				},
+			);
+		});
+	}, [profileRelationships]);
 
 	useEffect(() => {
 		setCasesCurrentPage(1);
@@ -1390,12 +1407,12 @@ export default function ProfileView() {
 				const [areasResult, relationshipsResult, casesResult] =
 					await Promise.allSettled([
 						invoke<ProfileArea[]>("get_profile_areas", {
-							profileId: profileId,
+							id: profileId,
 						}),
 						invoke<ProfileRelationship[]>(
 							"get_profile_relationships",
 							{
-								profileId: profileId,
+								id: profileId,
 							},
 						),
 						invoke<CaseWithDetails[]>("get_profile_cases", {
@@ -1512,7 +1529,7 @@ export default function ProfileView() {
 											value="settings"
 											className="cursor-pointer"
 										>
-											Connections
+											Network
 										</TabsTrigger>
 										<TabsTrigger
 											value="areas"
@@ -4361,32 +4378,59 @@ export default function ProfileView() {
 											</div>
 										</TabsContent>
 										<TabsContent value="settings">
-											<div className="space-y-2">
-												{profileRelationships.length ===
+											<div className="space-y-4">
+												{sortedConnections.length ===
 												0 ? (
 													<p className="text-sm text-gray-500">
 														No relationships linked
 														in database.
 													</p>
 												) : (
-													<div className="space-y-2">
-														{profileRelationships.map(
+													<div className="space-y-4">
+														{sortedConnections.map(
 															(connection) => (
 																<div
 																	key={
 																		connection.id
 																	}
-																	className="flex items-center justify-between border rounded-md px-3 py-2"
+																	className="border rounded-md px-4 py-3 bg-white"
 																>
-																	<p className="text-sm font-medium">
-																		{
-																			connection.target_full_name
-																		}
-																	</p>
-																	<p className="text-xs text-gray-500">
-																		{connection.relationship_type ||
-																			"Unspecified"}
-																	</p>
+																	<div className="flex items-start justify-between gap-4">
+																		<div className="min-w-0 flex-1 space-y-1">
+																			<p className="text-sm font-semibold text-gray-900 leading-5 break-words">
+																				{
+																					connection.target_full_name
+																				}
+																			</p>
+																			{connection.target_alias && (
+																				<p className="text-sm text-gray-500 leading-5 break-words">
+																					{
+																						connection.target_alias
+																					}
+																				</p>
+																			)}
+																		</div>
+																		<div className="shrink-0 flex flex-col items-end gap-2 text-right">
+																			<p className="text-xs font-medium text-gray-600 bg-gray-100 rounded-full px-2 py-0.5">
+																				{connection.relationship_type ||
+																					"Unspecified"}
+																			</p>
+																			{connection.linked_case_id && (
+																				<button
+																					type="button"
+																					onClick={() =>
+																						navigate(
+																							`/case/${connection.linked_case_id}`,
+																						)
+																					}
+																					className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
+																				>
+																					View
+																					Case
+																				</button>
+																			)}
+																		</div>
+																	</div>
 																</div>
 															),
 														)}

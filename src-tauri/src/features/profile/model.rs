@@ -47,6 +47,8 @@ pub struct ProfileRelationship {
     pub id: i64,
     pub target_profile_id: i64,
     pub target_full_name: String,
+    pub target_alias: Option<String>,
+    pub linked_case_id: Option<i64>,
     pub relationship_type: Option<String>,
 }
 

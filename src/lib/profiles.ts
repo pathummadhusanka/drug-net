@@ -43,6 +43,8 @@ export interface ProfileRelationship {
 	id: number;
 	target_profile_id: number;
 	target_full_name: string;
+	target_alias: string | null;
+	linked_case_id: number | null;
 	relationship_type: string | null;
 }
 

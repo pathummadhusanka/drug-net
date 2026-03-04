@@ -138,6 +138,15 @@ pub fn get_profile_relationships(
                 ELSE r.source_profile_id
             END AS target_profile_id,
             p.full_name,
+            p.alias,
+            (
+                SELECT cr.case_id
+                FROM case_relationships cr
+                JOIN cases c ON c.id = cr.case_id
+                WHERE cr.relationship_id = r.id
+                ORDER BY c.created_at DESC
+                LIMIT 1
+            ) AS linked_case_id,
             r.relationship_type
          FROM relationships r
          JOIN profiles p
@@ -156,7 +165,9 @@ pub fn get_profile_relationships(
                 id: row.get(0)?,
                 target_profile_id: row.get(1)?,
                 target_full_name: row.get(2)?,
-                relationship_type: row.get(3)?,
+                target_alias: row.get(3)?,
+                linked_case_id: row.get(4)?,
+                relationship_type: row.get(5)?,
             })
         })
         .map_err(|e| format!("Database error: {}", e))?;
