@@ -139,6 +139,17 @@ export default function CasesPage() {
 			: name;
 	};
 
+	const formatBadgeValue = (value: string) => {
+		return value
+			.split(/[\s_-]+/)
+			.filter(Boolean)
+			.map(
+				(part) =>
+					part.charAt(0).toUpperCase() + part.slice(1).toLowerCase(),
+			)
+			.join(" ");
+	};
+
 	useEffect(() => {
 		fetchCases();
 	}, []);
@@ -318,6 +329,28 @@ export default function CasesPage() {
 		});
 	}, [cases]);
 
+	const selectedCaseTypeValue = useMemo(() => {
+		return (
+			ALL_CASE_TYPES.find((option) => option.label === filterType)
+				?.value || filterType
+		);
+	}, [filterType]);
+
+	const selectedSeverityValue = useMemo(() => {
+		return (
+			ALL_SEVERITY_LEVELS.find(
+				(option) => option.label === filterSeverity,
+			)?.value || filterSeverity
+		);
+	}, [filterSeverity]);
+
+	const selectedStatusValue = useMemo(() => {
+		return (
+			ALL_STATUSES.find((option) => option.label === filterStatus)
+				?.value || filterStatus
+		);
+	}, [filterStatus]);
+
 	// Fuzzy search helper - matches if query chars appear in order
 	const fuzzyMatch = (str: string, query: string): boolean => {
 		let queryIdx = 0;
@@ -336,21 +369,21 @@ export default function CasesPage() {
 			if (
 				filterType !== ALL_TYPES_FILTER_VALUE &&
 				(caseItem.case_type || "").toLowerCase() !==
-					filterType.toLowerCase()
+					selectedCaseTypeValue.toLowerCase()
 			) {
 				return false;
 			}
 			if (
 				filterSeverity !== ALL_SEVERITIES_FILTER_VALUE &&
 				(caseItem.severity_level || "").toLowerCase() !==
-					filterSeverity.toLowerCase()
+					selectedSeverityValue.toLowerCase()
 			) {
 				return false;
 			}
 			if (
 				filterStatus !== ALL_STATUSES_FILTER_VALUE &&
 				(caseItem.status || "").toLowerCase() !==
-					filterStatus.toLowerCase()
+					selectedStatusValue.toLowerCase()
 			) {
 				return false;
 			}
@@ -430,6 +463,9 @@ export default function CasesPage() {
 		filterType,
 		filterSeverity,
 		filterStatus,
+		selectedCaseTypeValue,
+		selectedSeverityValue,
+		selectedStatusValue,
 		dateRange,
 		sortBy,
 	]);
@@ -592,7 +628,7 @@ export default function CasesPage() {
 								{caseTypeOptions.map((option) => (
 									<ComboboxItem
 										key={option.value}
-										value={option.value}
+										value={option.label}
 									>
 										<div className="flex items-center justify-between w-full">
 											<span>{option.label}</span>
@@ -637,7 +673,7 @@ export default function CasesPage() {
 								{severityOptions.map((option) => (
 									<ComboboxItem
 										key={option.value}
-										value={option.value}
+										value={option.label}
 									>
 										<div className="flex items-center justify-between w-full">
 											<span>{option.label}</span>
@@ -678,7 +714,7 @@ export default function CasesPage() {
 								{statusOptions.map((option) => (
 									<ComboboxItem
 										key={option.value}
-										value={option.value}
+										value={option.label}
 									>
 										<div className="flex items-center justify-between w-full">
 											<span>{option.label}</span>
@@ -824,31 +860,27 @@ export default function CasesPage() {
 											<div className="shrink-0 flex items-center gap-2 flex-wrap justify-end">
 												{caseItem.case_type && (
 													<span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-														{caseItem.case_type
-															.charAt(0)
-															.toUpperCase() +
-															caseItem.case_type.slice(
-																1,
-															)}
+														{formatBadgeValue(
+															caseItem.case_type,
+														)}
 													</span>
 												)}
 												{caseItem.severity_level && (
 													<span
 														className={`px-2 py-0.5 rounded-full text-xs font-medium ${getSeverityColor(caseItem.severity_level)}`}
 													>
-														{caseItem.severity_level
-															.charAt(0)
-															.toUpperCase() +
-															caseItem.severity_level.slice(
-																1,
-															)}
+														{formatBadgeValue(
+															caseItem.severity_level,
+														)}
 													</span>
 												)}
 												{caseItem.status && (
 													<span
 														className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(caseItem.status)}`}
 													>
-														{caseItem.status}
+														{formatBadgeValue(
+															caseItem.status,
+														)}
 													</span>
 												)}
 											</div>
