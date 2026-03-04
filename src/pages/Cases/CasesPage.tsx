@@ -10,6 +10,14 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import {
+	Combobox,
+	ComboboxInput,
+	ComboboxContent,
+	ComboboxList,
+	ComboboxItem,
+	ComboboxEmpty,
+} from "@/components/ui/combobox";
 import { format } from "date-fns";
 import { type DateRange } from "react-day-picker";
 import {
@@ -525,45 +533,80 @@ export default function CasesPage() {
 					</Popover>
 				</div>
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-					<select
-						aria-label="Filter by case type"
+					<Combobox
 						value={filterType}
-						onChange={(e) => setFilterType(e.target.value)}
-						className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+						onValueChange={(value) => setFilterType(value || "all")}
 					>
-						<option value="all">All Types</option>
-						{caseTypeOptions.map((option) => (
-							<option key={option} value={option}>
-								{option}
-							</option>
-						))}
-					</select>
-					<select
-						aria-label="Filter by severity level"
+						<ComboboxInput
+							placeholder="All Types"
+							aria-label="Filter by case type"
+						/>
+						<ComboboxContent>
+							<ComboboxList>
+								<ComboboxItem value="all">
+									All Types
+								</ComboboxItem>
+								{caseTypeOptions.map((option) => (
+									<ComboboxItem key={option} value={option}>
+										{option}
+									</ComboboxItem>
+								))}
+								<ComboboxEmpty>No types found.</ComboboxEmpty>
+							</ComboboxList>
+						</ComboboxContent>
+					</Combobox>
+					<Combobox
 						value={filterSeverity}
-						onChange={(e) => setFilterSeverity(e.target.value)}
-						className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+						onValueChange={(value) =>
+							setFilterSeverity(value || "all")
+						}
 					>
-						<option value="all">All Severities</option>
-						{severityOptions.map((option) => (
-							<option key={option} value={option}>
-								{option}
-							</option>
-						))}
-					</select>
-					<select
-						aria-label="Filter by case status"
+						<ComboboxInput
+							placeholder="All Severities"
+							aria-label="Filter by severity level"
+						/>
+						<ComboboxContent>
+							<ComboboxList>
+								<ComboboxItem value="all">
+									All Severities
+								</ComboboxItem>
+								{severityOptions.map((option) => (
+									<ComboboxItem key={option} value={option}>
+										{option}
+									</ComboboxItem>
+								))}
+								<ComboboxEmpty>
+									No severities found.
+								</ComboboxEmpty>
+							</ComboboxList>
+						</ComboboxContent>
+					</Combobox>
+					<Combobox
 						value={filterStatus}
-						onChange={(e) => setFilterStatus(e.target.value)}
-						className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+						onValueChange={(value) =>
+							setFilterStatus(value || "all")
+						}
 					>
-						<option value="all">All Statuses</option>
-						{statusOptions.map((option) => (
-							<option key={option} value={option}>
-								{option}
-							</option>
-						))}
-					</select>
+						<ComboboxInput
+							placeholder="All Statuses"
+							aria-label="Filter by case status"
+						/>
+						<ComboboxContent>
+							<ComboboxList>
+								<ComboboxItem value="all">
+									All Statuses
+								</ComboboxItem>
+								{statusOptions.map((option) => (
+									<ComboboxItem key={option} value={option}>
+										{option}
+									</ComboboxItem>
+								))}
+								<ComboboxEmpty>
+									No statuses found.
+								</ComboboxEmpty>
+							</ComboboxList>
+						</ComboboxContent>
+					</Combobox>
 				</div>
 			</div>
 
@@ -582,27 +625,39 @@ export default function CasesPage() {
 							Reset Filters
 						</Button>
 					)}
-					<select
-						aria-label="Sort cases"
+					<Combobox
 						value={sortBy}
-						onChange={(e) => setSortBy(e.target.value)}
-						className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+						onValueChange={(value) =>
+							setSortBy(value || "updated-desc")
+						}
 					>
-						<option value="updated-desc">
-							Sort: Recently updated
-						</option>
-						<option value="updated-asc">
-							Sort: Oldest updated
-						</option>
-						<option value="created-desc">
-							Sort: Recent created
-						</option>
-						<option value="created-asc">
-							Sort: Oldest created
-						</option>
-						<option value="title-asc">Sort: Title A-Z</option>
-						<option value="title-desc">Sort: Title Z-A</option>
-					</select>
+						<ComboboxInput
+							placeholder="Sort cases"
+							aria-label="Sort cases"
+						/>
+						<ComboboxContent>
+							<ComboboxList>
+								<ComboboxItem value="updated-desc">
+									Sort: Recently updated
+								</ComboboxItem>
+								<ComboboxItem value="updated-asc">
+									Sort: Oldest updated
+								</ComboboxItem>
+								<ComboboxItem value="created-desc">
+									Sort: Recent created
+								</ComboboxItem>
+								<ComboboxItem value="created-asc">
+									Sort: Oldest created
+								</ComboboxItem>
+								<ComboboxItem value="title-asc">
+									Sort: Title A-Z
+								</ComboboxItem>
+								<ComboboxItem value="title-desc">
+									Sort: Title Z-A
+								</ComboboxItem>
+							</ComboboxList>
+						</ComboboxContent>
+					</Combobox>
 				</div>
 			</div>
 
