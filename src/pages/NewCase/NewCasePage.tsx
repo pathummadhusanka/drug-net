@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +25,7 @@ import {
 	createProfile,
 	getAllProfiles,
 	getProfile,
+	getProfileRelationships,
 	type ProfileWithId,
 } from "@/lib/profiles";
 import { Label } from "@/components/ui/label";
@@ -334,6 +335,7 @@ const CustomEdge = ({
 }: EdgeProps) => {
 	const { getNode } = useReactFlow();
 	const label = (data?.label as string) || "";
+	const readonly = data?.readonly || false;
 
 	const sourceNode = getNode(source);
 	const targetNode = getNode(target);
@@ -473,14 +475,16 @@ const CustomEdge = ({
 						}}
 					>
 						<div className="cursor-default">{displayLabel}</div>
-						<button
-							type="button"
-							onClick={handleEdgeEditClick}
-							className="w-4 h-4 rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center cursor-pointer"
-							title="Edit connection"
-						>
-							<Pencil className="h-2.5 w-2.5" />
-						</button>
+						{!readonly && (
+							<button
+								type="button"
+								onClick={handleEdgeEditClick}
+								className="w-4 h-4 rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center cursor-pointer"
+								title="Edit connection"
+							>
+								<Pencil className="h-2.5 w-2.5" />
+							</button>
+						)}
 					</div>
 				</div>
 			</EdgeLabelRenderer>
@@ -1059,7 +1063,126 @@ export default function NewCasePage() {
 				},
 			})),
 		);
-	}, [edges, setNodes]);
+	}, [edges]);
+
+	// Create stable dependency that only changes when node IDs/profileIds change, not when node data changes
+	const nodeProfileKey = useMemo(
+		() =>
+			nodes
+				.map((n) => `${n.id}-${n.data?.profileId}`)
+				.sort()
+				.join(","),
+		[nodes],
+	);
+
+	// Load existing relationships between profiles when nodes change
+	useEffect(() => {
+		const loadExistingRelationships = async () => {
+			if (nodes.length < 2) {
+				// Remove any readonly edges if we have less than 2 nodes
+				setEdges((eds) => eds.filter((edge) => !edge.data?.readonly));
+				return;
+			}
+
+			const profileIds = nodes
+				.map((node) => node.data?.profileId)
+				.filter((id): id is number => typeof id === "number");
+
+			if (profileIds.length < 2) return;
+
+			try {
+				// Get all relationships for all profiles
+				const relationshipsData = await Promise.all(
+					profileIds.map(async (profileId) => {
+						const relationships =
+							await getProfileRelationships(profileId);
+						return { profileId, relationships };
+					}),
+				);
+
+				// Use functional form of setEdges to get current edges
+				setEdges((currentEdges) => {
+					// Create a map of existing edges (non-readonly) to avoid duplicates
+					const existingEdgePairs = new Set(
+						currentEdges
+							.filter((edge) => !edge.data?.readonly)
+							.map((edge) => `${edge.source}-${edge.target}`),
+					);
+
+					const readonlyEdges: Edge[] = [];
+
+					// Check each pair of profiles
+					for (let i = 0; i < profileIds.length; i++) {
+						const sourceProfileId = profileIds[i];
+						const sourceNode = nodes.find(
+							(n) => n.data?.profileId === sourceProfileId,
+						);
+						if (!sourceNode) continue;
+
+						const profileRelationships = relationshipsData.find(
+							(r) => r.profileId === sourceProfileId,
+						);
+						if (!profileRelationships) continue;
+
+						for (const relationship of profileRelationships.relationships) {
+							const targetNode = nodes.find(
+								(n) =>
+									n.data?.profileId ===
+									relationship.target_profile_id,
+							);
+							if (!targetNode) continue;
+
+							const edgeKey = `${sourceNode.id}-${targetNode.id}`;
+							const reverseEdgeKey = `${targetNode.id}-${sourceNode.id}`;
+
+							// Only add if this edge pair doesn't already exist as a user-created edge
+							if (
+								!existingEdgePairs.has(edgeKey) &&
+								!existingEdgePairs.has(reverseEdgeKey)
+							) {
+								readonlyEdges.push({
+									id: `readonly-${sourceProfileId}-${relationship.target_profile_id}`,
+									source: sourceNode.id,
+									target: targetNode.id,
+									type: "custom",
+									label:
+										relationship.relationship_type ||
+										"Connected",
+									data: {
+										readonly: true,
+										relationshipType:
+											relationship.relationship_type,
+									},
+									style: {
+										stroke: "#9ca3af",
+										strokeWidth: 2,
+										strokeDasharray: "5,5",
+									},
+									markerEnd: {
+										type: MarkerType.ArrowClosed,
+										color: "#9ca3af",
+									},
+								});
+								// Mark this pair as used
+								existingEdgePairs.add(edgeKey);
+								existingEdgePairs.add(reverseEdgeKey);
+							}
+						}
+					}
+
+					// Return new edges array: remove old readonly edges and add new ones
+					return [
+						...currentEdges.filter((edge) => !edge.data?.readonly),
+						...readonlyEdges,
+					];
+				});
+			} catch (error) {
+				console.error("Failed to load existing relationships:", error);
+			}
+		};
+
+		loadExistingRelationships();
+	}, [nodeProfileKey]);
 
 	const handleTextareaResize = (
 		ref: React.RefObject<HTMLTextAreaElement | null>,
