@@ -5,6 +5,23 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { type DateRange } from "react-day-picker";
+import {
+	Pagination,
+	PaginationContent,
+	PaginationEllipsis,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
 	AlertDialog,
 	AlertDialogAction,
 	AlertDialogCancel,
@@ -32,6 +49,8 @@ import {
 	AlertCircle,
 	FileText,
 	MessageSquare,
+	CalendarIcon,
+	X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -67,9 +86,12 @@ export default function CasesPage() {
 	const [filterType, setFilterType] = useState("all");
 	const [filterSeverity, setFilterSeverity] = useState("all");
 	const [filterStatus, setFilterStatus] = useState("all");
+	const [dateRange, setDateRange] = useState<DateRange | undefined>();
 	const [sortBy, setSortBy] = useState("updated-desc");
+	const [currentPage, setCurrentPage] = useState(1);
 	const dividerClass = "text-muted-foreground";
 	const dividerText = "\u00A0\u00A0|\u00A0\u00A0";
+	const ITEMS_PER_PAGE = 10;
 
 	// Replace one or more consecutive newlines with a single backslash
 	const formatTextWithNewlineIndicator = (text: string) => {
@@ -174,6 +196,21 @@ export default function CasesPage() {
 		}
 	};
 
+	const resetFilters = () => {
+		setSearchText("");
+		setFilterType("all");
+		setFilterSeverity("all");
+		setFilterStatus("all");
+		setDateRange(undefined);
+	};
+
+	const hasActiveFilters =
+		searchText !== "" ||
+		filterType !== "all" ||
+		filterSeverity !== "all" ||
+		filterStatus !== "all" ||
+		dateRange !== undefined;
+
 	const handleProfileClick = async (profileId: number) => {
 		try {
 			setLoadingProfile(true);
@@ -267,6 +304,21 @@ export default function CasesPage() {
 			) {
 				return false;
 			}
+			// Date range filter
+			if (dateRange?.from || dateRange?.to) {
+				if (!caseItem.case_date) return false;
+				const caseDate = new Date(caseItem.case_date);
+				if (dateRange.from) {
+					const from = new Date(dateRange.from);
+					from.setHours(0, 0, 0, 0);
+					if (caseDate < from) return false;
+				}
+				if (dateRange.to) {
+					const to = new Date(dateRange.to);
+					to.setHours(23, 59, 59, 999);
+					if (caseDate > to) return false;
+				}
+			}
 
 			if (!query) return true;
 
@@ -312,7 +364,52 @@ export default function CasesPage() {
 		});
 
 		return sorted;
-	}, [cases, searchText, filterType, filterSeverity, filterStatus, sortBy]);
+	}, [
+		cases,
+		searchText,
+		filterType,
+		filterSeverity,
+		filterStatus,
+		dateRange,
+		sortBy,
+	]);
+
+	const totalPages = Math.max(
+		1,
+		Math.ceil(visibleCases.length / ITEMS_PER_PAGE),
+	);
+
+	useEffect(() => {
+		setCurrentPage(1);
+	}, [
+		searchText,
+		filterType,
+		filterSeverity,
+		filterStatus,
+		dateRange,
+		sortBy,
+	]);
+
+	useEffect(() => {
+		if (currentPage > totalPages) {
+			setCurrentPage(totalPages);
+		}
+	}, [currentPage, totalPages]);
+
+	const paginatedCases = useMemo(() => {
+		const start = (currentPage - 1) * ITEMS_PER_PAGE;
+		return visibleCases.slice(start, start + ITEMS_PER_PAGE);
+	}, [visibleCases, currentPage]);
+
+	const pageWindow = useMemo(() => {
+		const pages: number[] = [];
+		const start = Math.max(1, currentPage - 2);
+		const end = Math.min(totalPages, currentPage + 2);
+		for (let page = start; page <= end; page++) {
+			pages.push(page);
+		}
+		return pages;
+	}, [currentPage, totalPages]);
 
 	if (loading) {
 		return (
@@ -343,71 +440,149 @@ export default function CasesPage() {
 			</div>
 
 			{/* Filters & Sort */}
-			<div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-				<Input
-					value={searchText}
-					onChange={(e) => setSearchText(e.target.value)}
-					placeholder="Search by ID, title, type, status..."
-					className="md:col-span-2"
-				/>
-				<select
-					aria-label="Filter by case type"
-					value={filterType}
-					onChange={(e) => setFilterType(e.target.value)}
-					className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-				>
-					<option value="all">All Types</option>
-					{caseTypeOptions.map((option) => (
-						<option key={option} value={option}>
-							{option}
-						</option>
-					))}
-				</select>
-				<select
-					aria-label="Filter by severity level"
-					value={filterSeverity}
-					onChange={(e) => setFilterSeverity(e.target.value)}
-					className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-				>
-					<option value="all">All Severities</option>
-					{severityOptions.map((option) => (
-						<option key={option} value={option}>
-							{option}
-						</option>
-					))}
-				</select>
-				<select
-					aria-label="Filter by case status"
-					value={filterStatus}
-					onChange={(e) => setFilterStatus(e.target.value)}
-					className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-				>
-					<option value="all">All Statuses</option>
-					{statusOptions.map((option) => (
-						<option key={option} value={option}>
-							{option}
-						</option>
-					))}
-				</select>
+			<div className="flex flex-col gap-3">
+				<div className="flex gap-3">
+					<Input
+						value={searchText}
+						onChange={(e) => setSearchText(e.target.value)}
+						placeholder="Search by ID, title, type, status..."
+						className="flex-1"
+					/>
+					<Popover>
+						<PopoverTrigger asChild>
+							<Button
+								variant="outline"
+								className={`justify-start text-left font-normal ${!dateRange ? "text-muted-foreground" : ""}`}
+								onClick={(e) => {
+									if (dateRange) e.stopPropagation();
+								}}
+							>
+								<CalendarIcon className="mr-2 h-4 w-4" />
+								{dateRange?.from ? (
+									dateRange.to ? (
+										<>
+											{format(
+												dateRange.from,
+												"MMM dd, yyyy",
+											)}{" "}
+											-{" "}
+											{format(
+												dateRange.to,
+												"MMM dd, yyyy",
+											)}
+										</>
+									) : (
+										format(dateRange.from, "MMM dd, yyyy")
+									)
+								) : (
+									<span>Filter by date</span>
+								)}
+								{dateRange && (
+									<div
+										className="ml-auto cursor-pointer"
+										onClick={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											setDateRange(undefined);
+										}}
+									>
+										<X className="h-4 w-4 hover:text-destructive" />
+									</div>
+								)}
+							</Button>
+						</PopoverTrigger>
+						<PopoverContent className="w-auto p-0" align="start">
+							<Calendar
+								mode="range"
+								defaultMonth={dateRange?.from}
+								selected={dateRange}
+								onSelect={setDateRange}
+								numberOfMonths={1}
+								captionLayout="dropdown"
+							/>
+						</PopoverContent>
+					</Popover>
+				</div>
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+					<select
+						aria-label="Filter by case type"
+						value={filterType}
+						onChange={(e) => setFilterType(e.target.value)}
+						className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+					>
+						<option value="all">All Types</option>
+						{caseTypeOptions.map((option) => (
+							<option key={option} value={option}>
+								{option}
+							</option>
+						))}
+					</select>
+					<select
+						aria-label="Filter by severity level"
+						value={filterSeverity}
+						onChange={(e) => setFilterSeverity(e.target.value)}
+						className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+					>
+						<option value="all">All Severities</option>
+						{severityOptions.map((option) => (
+							<option key={option} value={option}>
+								{option}
+							</option>
+						))}
+					</select>
+					<select
+						aria-label="Filter by case status"
+						value={filterStatus}
+						onChange={(e) => setFilterStatus(e.target.value)}
+						className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+					>
+						<option value="all">All Statuses</option>
+						{statusOptions.map((option) => (
+							<option key={option} value={option}>
+								{option}
+							</option>
+						))}
+					</select>
+				</div>
 			</div>
 
 			<div className="flex justify-between items-center">
 				<p className="text-sm text-gray-500">
 					Showing {visibleCases.length} of {cases.length} cases
 				</p>
-				<select
-					aria-label="Sort cases"
-					value={sortBy}
-					onChange={(e) => setSortBy(e.target.value)}
-					className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-				>
-					<option value="updated-desc">Sort: Recently updated</option>
-					<option value="updated-asc">Sort: Oldest updated</option>
-					<option value="created-desc">Sort: Recent created</option>
-					<option value="created-asc">Sort: Oldest created</option>
-					<option value="title-asc">Sort: Title A-Z</option>
-					<option value="title-desc">Sort: Title Z-A</option>
-				</select>
+				<div className="flex items-center gap-2">
+					{hasActiveFilters && (
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={resetFilters}
+							className="cursor-pointer"
+						>
+							Reset Filters
+						</Button>
+					)}
+					<select
+						aria-label="Sort cases"
+						value={sortBy}
+						onChange={(e) => setSortBy(e.target.value)}
+						className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+					>
+						<option value="updated-desc">
+							Sort: Recently updated
+						</option>
+						<option value="updated-asc">
+							Sort: Oldest updated
+						</option>
+						<option value="created-desc">
+							Sort: Recent created
+						</option>
+						<option value="created-asc">
+							Sort: Oldest created
+						</option>
+						<option value="title-asc">Sort: Title A-Z</option>
+						<option value="title-desc">Sort: Title Z-A</option>
+					</select>
+				</div>
 			</div>
 
 			{/* Cases grid */}
@@ -435,20 +610,14 @@ export default function CasesPage() {
 							<Button
 								variant="outline"
 								className="mt-4 cursor-pointer"
-								onClick={() => {
-									setSearchText("");
-									setFilterType("all");
-									setFilterSeverity("all");
-									setFilterStatus("all");
-									setSortBy("updated-desc");
-								}}
+								onClick={resetFilters}
 							>
 								Reset filters
 							</Button>
 						</CardContent>
 					</Card>
 				) : (
-					visibleCases.map((caseItem) => (
+					paginatedCases.map((caseItem) => (
 						<Card
 							key={caseItem.id}
 							className="cursor-pointer gap-2 hover:bg-blue-50/50 transition-colors"
@@ -749,6 +918,124 @@ export default function CasesPage() {
 					))
 				)}
 			</div>
+
+			{visibleCases.length > 0 && totalPages > 1 && (
+				<div className="space-y-2">
+					<p className="text-sm text-gray-500 text-center">
+						Page {currentPage} of {totalPages} • Showing{" "}
+						{(currentPage - 1) * ITEMS_PER_PAGE + 1}-
+						{Math.min(
+							currentPage * ITEMS_PER_PAGE,
+							visibleCases.length,
+						)}
+					</p>
+					<Pagination>
+						<PaginationContent>
+							<PaginationItem>
+								<PaginationPrevious
+									href="#"
+									onClick={(e) => {
+										e.preventDefault();
+										if (currentPage > 1) {
+											setCurrentPage((prev) =>
+												Math.max(1, prev - 1),
+											);
+										}
+									}}
+									aria-disabled={currentPage === 1}
+									className={
+										currentPage === 1
+											? "pointer-events-none opacity-50"
+											: undefined
+									}
+								/>
+							</PaginationItem>
+
+							{pageWindow[0] > 1 && (
+								<>
+									<PaginationItem>
+										<PaginationLink
+											href="#"
+											onClick={(e) => {
+												e.preventDefault();
+												setCurrentPage(1);
+											}}
+											isActive={currentPage === 1}
+										>
+											1
+										</PaginationLink>
+									</PaginationItem>
+									{pageWindow[0] > 2 && (
+										<PaginationItem>
+											<PaginationEllipsis />
+										</PaginationItem>
+									)}
+								</>
+							)}
+
+							{pageWindow.map((page) => (
+								<PaginationItem key={page}>
+									<PaginationLink
+										href="#"
+										onClick={(e) => {
+											e.preventDefault();
+											setCurrentPage(page);
+										}}
+										isActive={currentPage === page}
+									>
+										{page}
+									</PaginationLink>
+								</PaginationItem>
+							))}
+
+							{pageWindow[pageWindow.length - 1] < totalPages && (
+								<>
+									{pageWindow[pageWindow.length - 1] <
+										totalPages - 1 && (
+										<PaginationItem>
+											<PaginationEllipsis />
+										</PaginationItem>
+									)}
+									<PaginationItem>
+										<PaginationLink
+											href="#"
+											onClick={(e) => {
+												e.preventDefault();
+												setCurrentPage(totalPages);
+											}}
+											isActive={
+												currentPage === totalPages
+											}
+										>
+											{totalPages}
+										</PaginationLink>
+									</PaginationItem>
+								</>
+							)}
+
+							<PaginationItem>
+								<PaginationNext
+									href="#"
+									onClick={(e) => {
+										e.preventDefault();
+										if (currentPage < totalPages) {
+											setCurrentPage((prev) =>
+												Math.min(totalPages, prev + 1),
+											);
+										}
+									}}
+									aria-disabled={currentPage === totalPages}
+									className={
+										currentPage === totalPages
+											? "pointer-events-none opacity-50"
+											: undefined
+									}
+								/>
+							</PaginationItem>
+						</PaginationContent>
+					</Pagination>
+				</div>
+			)}
 
 			{/* Delete Confirmation Dialog */}
 			<AlertDialog
