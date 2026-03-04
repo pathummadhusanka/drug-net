@@ -527,6 +527,7 @@ export default function CasesPage() {
 					</p>
 				</div>
 				<Button
+					variant="secondary"
 					className="cursor-pointer"
 					onClick={() => navigate("/new-case")}
 				>
