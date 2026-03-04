@@ -748,17 +748,25 @@ export default function CasesPage() {
 																						minutes,
 																					),
 																				);
-																				return dateObj.toLocaleString(
-																					"en-US",
-																					{
-																						month: "short",
-																						day: "numeric",
-																						year: "numeric",
-																						hour: "2-digit",
-																						minute: "2-digit",
-																						hour12: false,
-																					},
-																				);
+																				const dateStr =
+																					dateObj.toLocaleDateString(
+																						"en-US",
+																						{
+																							month: "short",
+																							day: "numeric",
+																							year: "numeric",
+																						},
+																					);
+																				const timeStr =
+																					dateObj.toLocaleTimeString(
+																						"en-US",
+																						{
+																							hour: "2-digit",
+																							minute: "2-digit",
+																							hour12: true,
+																						},
+																					);
+																				return `${dateStr} @ ${timeStr}`;
 																			} catch {
 																				return new Date(
 																					caseItem.case_date,
@@ -932,14 +940,19 @@ export default function CasesPage() {
 										Created At:{" "}
 										{new Date(
 											caseItem.created_at,
-										).toLocaleString("en-US", {
+										).toLocaleDateString("en-US", {
 											month: "short",
 											day: "numeric",
 											year: "numeric",
-											hour: "2-digit",
-											minute: "2-digit",
-											hour12: false,
-										})}
+										}) +
+											" @ " +
+											new Date(
+												caseItem.created_at,
+											).toLocaleTimeString("en-US", {
+												hour: "2-digit",
+												minute: "2-digit",
+												hour12: true,
+											})}
 										{caseItem.updated_at && (
 											<>
 												<span className={dividerClass}>
@@ -948,14 +961,22 @@ export default function CasesPage() {
 												Updated At:{" "}
 												{new Date(
 													caseItem.updated_at,
-												).toLocaleString("en-US", {
+												).toLocaleDateString("en-US", {
 													month: "short",
 													day: "numeric",
 													year: "numeric",
-													hour: "2-digit",
-													minute: "2-digit",
-													hour12: false,
-												})}
+												}) +
+													" @ " +
+													new Date(
+														caseItem.updated_at,
+													).toLocaleTimeString(
+														"en-US",
+														{
+															hour: "2-digit",
+															minute: "2-digit",
+															hour12: true,
+														},
+													)}
 											</>
 										)}
 									</p>
