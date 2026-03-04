@@ -641,22 +641,6 @@ export default function CaseViewPage() {
 		}
 	};
 
-	const getSeverityColor = (severity: string | null) => {
-		if (!severity) return "text-gray-500";
-		switch (severity.toLowerCase()) {
-			case "low":
-				return "text-green-600";
-			case "medium":
-				return "text-yellow-600";
-			case "high":
-				return "text-orange-600";
-			case "critical":
-				return "text-red-600";
-			default:
-				return "text-gray-500";
-		}
-	};
-
 	if (loading) {
 		return (
 			<div className="container mx-auto flex items-center justify-center py-12">
@@ -734,13 +718,11 @@ export default function CaseViewPage() {
 				</div>
 
 				<div className="space-y-6 mt-6">
-					{/* [1] Info Section - Two Column Layout */}
 					<div className="space-y-6">
 						<h3 className="text-sm font-semibold text-gray-700">
 							Info
 						</h3>
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-							{/* Case ID */}
 							<div className="space-y-1">
 								<Label className="text-xs text-gray-500">
 									Case ID
@@ -749,8 +731,6 @@ export default function CaseViewPage() {
 									{caseData.case_id || "_"}
 								</p>
 							</div>
-
-							{/* Case Type */}
 							<div className="space-y-1">
 								<Label className="text-xs text-gray-500">
 									Case Type
@@ -759,8 +739,6 @@ export default function CaseViewPage() {
 									{caseData.case_type || "_"}
 								</p>
 							</div>
-
-							{/* Title - Full Width */}
 							<div className="space-y-1 md:col-span-2">
 								<Label className="text-xs text-gray-500">
 									Title
@@ -769,8 +747,6 @@ export default function CaseViewPage() {
 									{caseData.case_name || "_"}
 								</p>
 							</div>
-
-							{/* Description - Full Width */}
 							<div className="space-y-1 md:col-span-2">
 								<Label className="text-xs text-gray-500">
 									Description
@@ -779,8 +755,6 @@ export default function CaseViewPage() {
 									{caseData.description || "_"}
 								</p>
 							</div>
-
-							{/* Date */}
 							<div className="space-y-1">
 								<Label className="text-xs text-gray-500">
 									Date
@@ -793,8 +767,6 @@ export default function CaseViewPage() {
 										: "_"}
 								</p>
 							</div>
-
-							{/* Time */}
 							<div className="space-y-1">
 								<Label className="text-xs text-gray-500">
 									Time
@@ -803,15 +775,11 @@ export default function CaseViewPage() {
 									{caseData.case_time || "_"}
 								</p>
 							</div>
-
-							{/* Severity Level */}
 							<div className="space-y-1">
 								<Label className="text-xs text-gray-500">
 									Severity Level
 								</Label>
-								<p
-									className={`text-base font-medium ${getSeverityColor(caseData.severity_level)}`}
-								>
+								<p className="text-base font-medium text-gray-900">
 									{caseData.severity_level
 										? caseData.severity_level
 												.charAt(0)
@@ -820,8 +788,6 @@ export default function CaseViewPage() {
 										: "_"}
 								</p>
 							</div>
-
-							{/* Case Status */}
 							<div className="space-y-1">
 								<Label className="text-xs text-gray-500">
 									Case Status
@@ -835,71 +801,74 @@ export default function CaseViewPage() {
 
 					<Separator />
 
-					{/* [2] Network Section */}
 					<div className="space-y-4">
 						<h3 className="text-sm font-semibold text-gray-700">
 							Network
 						</h3>
-						{caseData.profiles && caseData.profiles.length > 0 ? (
-							<div
-								className="w-full bg-gray-50 rounded border border-gray-200"
-								style={{ height: "500px" }}
-							>
-								<ReactFlow
-									nodes={nodes}
-									edges={edges}
-									onNodesChange={onNodesChange}
-									nodeTypes={{ custom: ReadOnlyCustomNode }}
-									edgeTypes={{ custom: ReadOnlyCustomEdge }}
-								>
-									<Background
-										color="#aaa"
-										gap={16}
-										variant={BackgroundVariant.Dots}
-									/>
-									<Controls />
-									<MiniMap />
-								</ReactFlow>
-							</div>
-						) : (
-							<div className="bg-gray-50 p-4 rounded border border-gray-200">
-								<p className="text-sm text-gray-600">
-									No profiles associated with this case
-								</p>
-							</div>
-						)}
-					</div>
-
-					<Separator />
-					<div className="space-y-4">
-						<h3 className="text-sm font-semibold text-gray-700">
-							Drugs
-						</h3>
 						<div>
-							<div className="space-y-2">
-								{caseData.drugs && caseData.drugs.length > 0 ? (
-									caseData.drugs.map((drug, idx) => (
-										<div
-											key={idx}
-											className="text-base font-medium text-gray-900 p-2 bg-gray-50 rounded"
-										>
-											{drug.drug_name}(
-											{drug.quantified_by}):{" "}
-											{drug.quantity}
-										</div>
-									))
-								) : (
-									<p className="text-base font-medium text-gray-900">
-										_
+							{caseData.profiles &&
+							caseData.profiles.length > 0 ? (
+								<div
+									className="border border-gray-300 rounded-lg bg-white"
+									style={{ height: "500px" }}
+								>
+									<ReactFlow
+										nodes={nodes}
+										edges={edges}
+										onNodesChange={onNodesChange}
+										nodeTypes={{
+											custom: ReadOnlyCustomNode,
+										}}
+										edgeTypes={{
+											custom: ReadOnlyCustomEdge,
+										}}
+									>
+										<Background
+											color="#aaa"
+											gap={16}
+											variant={BackgroundVariant.Dots}
+										/>
+										<Controls />
+										<MiniMap />
+									</ReactFlow>
+								</div>
+							) : (
+								<div className="bg-gray-50 p-4 rounded border border-gray-200">
+									<p className="text-sm text-gray-600">
+										No profiles associated with this case
 									</p>
-								)}
-							</div>
+								</div>
+							)}
 						</div>
 					</div>
 
 					<Separator />
 
-					{/* [4] Areas Section */}
+					<div className="space-y-4">
+						<h3 className="text-sm font-semibold text-gray-700">
+							Drugs
+						</h3>
+						<div className="space-y-2">
+							{caseData.drugs && caseData.drugs.length > 0 ? (
+								caseData.drugs.map((drug, idx) => (
+									<div
+										key={idx}
+										className="text-base font-medium text-gray-900 p-2 bg-gray-50 rounded"
+									>
+										{drug.drug_name}({drug.quantified_by}):{" "}
+										{drug.quantity}
+									</div>
+								))
+							) : (
+								<p className="text-base font-medium text-gray-900">
+									_
+								</p>
+							)}
+						</div>
+					</div>
+
+					<Separator />
+
 					<div className="space-y-4">
 						<h3 className="text-sm font-semibold text-gray-700">
 							Areas
@@ -926,7 +895,6 @@ export default function CaseViewPage() {
 
 					<Separator />
 
-					{/* [5] Notes Section */}
 					<div className="space-y-4">
 						<h3 className="text-sm font-semibold text-gray-700">
 							Notes
@@ -946,7 +914,6 @@ export default function CaseViewPage() {
 
 					<Separator />
 
-					{/* Metadata */}
 					<div className="flex flex-col gap-2">
 						{caseData.created_at && (
 							<div className="flex flex-row items-center gap-3">

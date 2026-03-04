@@ -309,33 +309,68 @@ export default function CasesPage() {
 										Info
 									</Badge>
 									<div className="flex-1 space-y-1">
-										{/* Line 1: Case ID | Case Title */}
-										<p className="text-sm text-gray-700">
-											{caseItem.case_id && (
-												<span>{caseItem.case_id}</span>
-											)}
-											{caseItem.case_id &&
-												caseItem.case_name && (
-													<span
-														className={dividerClass}
-													>
-														{dividerText}
+										{/* Line 1: Case ID | Case Title + Type/Severity/Status badges */}
+										<div className="flex items-start justify-between gap-3 text-sm text-gray-700">
+											<div className="min-w-0 flex items-center gap-2 flex-wrap">
+												{caseItem.case_id && (
+													<span>
+														{caseItem.case_id}
 													</span>
 												)}
-											{caseItem.case_name && (
-												<span>
-													{truncateName(
-														caseItem.case_name,
+												{caseItem.case_id &&
+													caseItem.case_name && (
+														<span
+															className={
+																dividerClass
+															}
+														>
+															{dividerText}
+														</span>
 													)}
-												</span>
-											)}
-										</p>
+												{caseItem.case_name && (
+													<span>
+														{truncateName(
+															caseItem.case_name,
+														)}
+													</span>
+												)}
+											</div>
+											<div className="shrink-0 flex items-center gap-2 flex-wrap justify-end">
+												{caseItem.case_type && (
+													<span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+														{caseItem.case_type
+															.charAt(0)
+															.toUpperCase() +
+															caseItem.case_type.slice(
+																1,
+															)}
+													</span>
+												)}
+												{caseItem.severity_level && (
+													<span
+														className={`px-2 py-0.5 rounded-full text-xs font-medium ${getSeverityColor(caseItem.severity_level)}`}
+													>
+														{caseItem.severity_level
+															.charAt(0)
+															.toUpperCase() +
+															caseItem.severity_level.slice(
+																1,
+															)}
+													</span>
+												)}
+												{caseItem.status && (
+													<span
+														className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(caseItem.status)}`}
+													>
+														{caseItem.status}
+													</span>
+												)}
+											</div>
+										</div>
 
-										{/* Line 2: Date, Time, Severity, Status, Description */}
+										{/* Line 2: Date, Time, Description */}
 										{(caseItem.case_date ||
 											caseItem.case_time ||
-											caseItem.severity_level ||
-											caseItem.status ||
 											caseItem.description) && (
 											<div className="flex items-center gap-2 flex-wrap text-sm text-gray-700">
 												{(caseItem.case_date ||
@@ -367,50 +402,6 @@ export default function CasesPage() {
 																}
 															</span>
 														)}
-														{(caseItem.severity_level ||
-															caseItem.status ||
-															caseItem.description) && (
-															<span
-																className={
-																	dividerClass
-																}
-															>
-																{dividerText}
-															</span>
-														)}
-													</>
-												)}
-												{caseItem.severity_level && (
-													<>
-														<span
-															className={`px-2 py-0.5 rounded-full text-xs font-medium ${getSeverityColor(caseItem.severity_level)}`}
-														>
-															{caseItem.severity_level
-																.charAt(0)
-																.toUpperCase() +
-																caseItem.severity_level.slice(
-																	1,
-																)}
-														</span>
-														{(caseItem.status ||
-															caseItem.description) && (
-															<span
-																className={
-																	dividerClass
-																}
-															>
-																{dividerText}
-															</span>
-														)}
-													</>
-												)}
-												{caseItem.status && (
-													<>
-														<span
-															className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(caseItem.status)}`}
-														>
-															{caseItem.status}
-														</span>
 														{caseItem.description && (
 															<span
 																className={
