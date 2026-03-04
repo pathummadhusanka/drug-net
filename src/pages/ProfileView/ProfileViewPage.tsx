@@ -735,6 +735,67 @@ export default function ProfileView() {
 		});
 	}, [profileRelationships]);
 
+	const aggregatedAreas = useMemo(() => {
+		const areaMap: {
+			[key: string]: {
+				id: number;
+				name: string;
+				case_count: number;
+			};
+		} = {};
+
+		let nextSyntheticId = -1;
+
+		profileCases.forEach((caseItem) => {
+			if (!caseItem.areas || caseItem.areas.length === 0) {
+				return;
+			}
+
+			const uniqueAreasInCase = new Set(
+				caseItem.areas
+					.map((areaName) => areaName.trim())
+					.filter((areaName) => areaName.length > 0),
+			);
+
+			uniqueAreasInCase.forEach((areaName) => {
+				const key = areaName.toLowerCase();
+				if (!areaMap[key]) {
+					areaMap[key] = {
+						id: nextSyntheticId,
+						name: areaName,
+						case_count: 0,
+					};
+					nextSyntheticId -= 1;
+				}
+				areaMap[key].case_count += 1;
+			});
+		});
+
+		profileAreas.forEach((area) => {
+			const areaName = area.name?.trim() || "";
+			if (!areaName) {
+				return;
+			}
+
+			const key = areaName.toLowerCase();
+			if (!areaMap[key]) {
+				areaMap[key] = {
+					id: area.id,
+					name: areaName,
+					case_count: 0,
+				};
+			} else if (areaMap[key].id < 0) {
+				areaMap[key].id = area.id;
+			}
+		});
+
+		return Object.values(areaMap).sort((a, b) =>
+			a.name.localeCompare(b.name, undefined, {
+				sensitivity: "base",
+			}),
+		);
+	}, [profileAreas, profileCases]);
+
 	useEffect(() => {
 		setCasesCurrentPage(1);
 	}, [id, sortedProfileCases.length]);
@@ -4439,33 +4500,40 @@ export default function ProfileView() {
 											</div>
 										</TabsContent>
 										<TabsContent value="areas">
-											<div className="space-y-2">
-												{profileAreas.length === 0 ? (
+											<div className="space-y-4">
+												{aggregatedAreas.length ===
+												0 ? (
 													<p className="text-sm text-gray-500">
 														No areas linked in
 														database.
 													</p>
 												) : (
-													<div className="space-y-2">
-														{profileAreas.map(
+													<div className="space-y-4">
+														{aggregatedAreas.map(
 															(area) => (
 																<div
 																	key={
 																		area.id
 																	}
-																	className="flex items-center justify-between border rounded-md px-3 py-2"
+																	className="border rounded-md px-4 py-3 bg-white"
 																>
-																	<p className="text-sm font-medium">
-																		{
-																			area.name
-																		}
-																	</p>
-																	{area.is_primary ===
-																		1 && (
-																		<p className="text-xs text-gray-500">
-																			Primary
+																	<div className="flex items-start justify-between gap-4">
+																		<p className="text-sm font-semibold text-gray-900 leading-5">
+																			{
+																				area.name
+																			}
 																		</p>
-																	)}
+																		<p className="text-sm text-gray-500 text-right whitespace-nowrap">
+																			From{" "}
+																			{
+																				area.case_count
+																			}{" "}
+																			{area.case_count ===
+																			1
+																				? "case"
+																				: "cases"}
+																		</p>
+																	</div>
 																</div>
 															),
 														)}
