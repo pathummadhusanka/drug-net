@@ -1,7 +1,14 @@
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { getAllProfiles, type ProfileWithId } from "@/lib/profiles";
+import {
+	getCaseAreas,
+	getCaseProfiles,
+	getCaseRelationships,
+} from "@/lib/cases";
+import { getCaseDrugs, type CaseDrugWithDetails } from "@/lib/drugs";
 import {
 	FolderPlus,
 	Plus,
@@ -13,9 +20,14 @@ import {
 	Trash2,
 	ChevronLeft,
 	Edit2,
+	FileText,
+	Pill,
+	MapPin,
+	Network,
+	MessageSquare,
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import { Field } from "@/components/ui/field";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -91,6 +103,15 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+	Pagination,
+	PaginationContent,
+	PaginationEllipsis,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from "@/components/ui/pagination";
 
 interface Profile {
 	id: number;
@@ -130,7 +151,23 @@ interface CaseWithDetails {
 	cno: string;
 	case_id: string | null;
 	case_name: string;
+	description?: string | null;
+	case_type?: string | null;
+	status?: string | null;
+	severity_level?: string | null;
+	notes?: string | null;
+	case_date?: string | null;
+	case_time?: string | null;
 	created_at: string | null;
+	updated_at: string | null;
+	drugs?: CaseDrugWithDetails[];
+	areas?: string[];
+	profiles?: [number, string][];
+	relationships?: {
+		source_profile_id: number;
+		target_profile_id: number;
+		relationship_type: string | null;
+	}[];
 }
 
 // Custom node component with 4 connection handles
@@ -497,6 +534,7 @@ export default function ProfileView() {
 	const [caseStatus, setCaseStatus] = useState("");
 	const [caseDate, setCaseDate] = useState("");
 	const [caseTime, setCaseTime] = useState("");
+	const [casesCurrentPage, setCasesCurrentPage] = useState(1);
 	const [activeAccordion, setActiveAccordion] = useState("");
 	const [completedSections] = useState<string[]>([]);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -507,6 +545,141 @@ export default function ProfileView() {
 	const [drugSearch, setDrugSearch] = useState("");
 	const [areas, setAreas] = useState<string[]>([]);
 	const [pendingArea, setPendingArea] = useState("");
+	const PROFILE_CASES_PER_PAGE = 5;
+	const dividerClass = "text-muted-foreground";
+	const dividerText = "\u00A0\u00A0|\u00A0\u00A0";
+
+	const formatTextWithNewlineIndicator = (text: string) => {
+		return text.replace(/[\r\n]+/g, " \\ ");
+	};
+
+	const truncateName = (name: string, maxLength: number = 20) => {
+		return name.length > maxLength
+			? `${name.substring(0, maxLength)}...`
+			: name;
+	};
+
+	const formatBadgeValue = (value: string) => {
+		return value
+			.split(/[\s_-]+/)
+			.filter(Boolean)
+			.map(
+				(part) =>
+					part.charAt(0).toUpperCase() + part.slice(1).toLowerCase(),
+			)
+			.join(" ");
+	};
+
+	const getStatusColor = (status: string | null | undefined) => {
+		if (!status) return "bg-gray-100 text-gray-800";
+		switch (status.toLowerCase()) {
+			case "open":
+				return "bg-blue-100 text-blue-800";
+			case "closed":
+				return "bg-green-100 text-green-800";
+			case "under review":
+				return "bg-yellow-100 text-yellow-800";
+			default:
+				return "bg-gray-100 text-gray-800";
+		}
+	};
+
+	const getSeverityColor = (severity: string | null | undefined) => {
+		if (!severity) return "bg-gray-100 text-gray-800";
+		switch (severity.toLowerCase()) {
+			case "low":
+				return "bg-green-100 text-green-800";
+			case "medium":
+				return "bg-yellow-100 text-yellow-800";
+			case "high":
+				return "bg-orange-100 text-orange-800";
+			case "critical":
+				return "bg-red-100 text-red-800";
+			default:
+				return "bg-gray-100 text-gray-800";
+		}
+	};
+
+	const enrichCasesWithMetadata = useCallback(
+		async (cases: CaseWithDetails[]): Promise<CaseWithDetails[]> => {
+			return await Promise.all(
+				cases.map(async (caseItem) => {
+					try {
+						const [
+							drugs,
+							areasForCase,
+							relationships,
+							profilesForCase,
+						] = await Promise.all([
+							getCaseDrugs(caseItem.id),
+							getCaseAreas(caseItem.id),
+							getCaseRelationships(caseItem.id),
+							getCaseProfiles(caseItem.id),
+						]);
+
+						return {
+							...caseItem,
+							drugs,
+							areas: areasForCase,
+							profiles: profilesForCase,
+							relationships,
+						};
+					} catch (metadataError) {
+						console.error(
+							`Failed to fetch metadata for case ${caseItem.id}:`,
+							metadataError,
+						);
+						return {
+							...caseItem,
+							drugs: [],
+							areas: [],
+							profiles: [],
+							relationships: [],
+						};
+					}
+				}),
+			);
+		},
+		[],
+	);
+
+	const sortedProfileCases = useMemo(() => {
+		return [...profileCases].sort((a, b) => {
+			const bTimestamp = b.updated_at || b.created_at || "";
+			const aTimestamp = a.updated_at || a.created_at || "";
+			return bTimestamp.localeCompare(aTimestamp);
+		});
+	}, [profileCases]);
+
+	const totalCasePages = Math.max(
+		1,
+		Math.ceil(sortedProfileCases.length / PROFILE_CASES_PER_PAGE),
+	);
+
+	const paginatedProfileCases = useMemo(() => {
+		const start = (casesCurrentPage - 1) * PROFILE_CASES_PER_PAGE;
+		return sortedProfileCases.slice(start, start + PROFILE_CASES_PER_PAGE);
+	}, [sortedProfileCases, casesCurrentPage]);
+
+	const casePageWindow = useMemo(() => {
+		const pages: number[] = [];
+		const start = Math.max(1, casesCurrentPage - 2);
+		const end = Math.min(totalCasePages, casesCurrentPage + 2);
+		for (let page = start; page <= end; page++) {
+			pages.push(page);
+		}
+		return pages;
+	}, [casesCurrentPage, totalCasePages]);
+
+	useEffect(() => {
+		setCasesCurrentPage(1);
+	}, [id, sortedProfileCases.length]);
+
+	useEffect(() => {
+		if (casesCurrentPage > totalCasePages) {
+			setCasesCurrentPage(totalCasePages);
+		}
+	}, [casesCurrentPage, totalCasePages]);
 
 	// Connection dialog state
 	const [isConnectionDialogOpen, setIsConnectionDialogOpen] = useState(false);
@@ -928,17 +1101,18 @@ export default function ProfileView() {
 			});
 
 			await invoke("assign_case_to_profile", {
-				case_id: newCaseId,
-				profile_id: profileId,
+				caseId: newCaseId,
+				profileId: profileId,
 			});
 
 			const updatedCases = await invoke<CaseWithDetails[]>(
 				"get_profile_cases",
 				{
-					profile_id: profileId,
+					profileId: profileId,
 				},
 			);
-			setProfileCases(updatedCases);
+			const enrichedCases = await enrichCasesWithMetadata(updatedCases);
+			setProfileCases(enrichedCases);
 
 			toast.success("Case has been filed successfully!", {
 				position: "top-center",
@@ -1183,7 +1357,7 @@ export default function ProfileView() {
 						id: profileId,
 					}),
 					invoke<CaseWithDetails[]>("get_profile_cases", {
-						profile_id: profileId,
+						profileId: profileId,
 					}),
 				]);
 
@@ -1199,9 +1373,14 @@ export default function ProfileView() {
 						? relationshipsResult.value
 						: [],
 				);
-				setProfileCases(
-					casesResult.status === "fulfilled" ? casesResult.value : [],
-				);
+				if (casesResult.status === "fulfilled") {
+					const enrichedCases = await enrichCasesWithMetadata(
+						casesResult.value,
+					);
+					setProfileCases(enrichedCases);
+				} else {
+					setProfileCases([]);
+				}
 				setError(null);
 			} catch (err) {
 				console.error("Failed to fetch profile:", err);
@@ -1217,7 +1396,7 @@ export default function ProfileView() {
 		};
 
 		fetchProfile();
-	}, [id]);
+	}, [id, enrichCasesWithMetadata]);
 
 	return (
 		<>
@@ -3421,41 +3600,615 @@ export default function ProfileView() {
 										</TabsContent>
 										<TabsContent value="analytics">
 											<div className="space-y-2">
-												{profileCases.length === 0 ? (
+												{sortedProfileCases.length ===
+												0 ? (
 													<p className="text-sm text-gray-500">
 														No cases linked to this
 														profile.
 													</p>
 												) : (
-													<div className="space-y-2">
-														{profileCases.map(
+													<div className="space-y-3">
+														{paginatedProfileCases.map(
 															(item) => (
-																<div
+																<Card
 																	key={
 																		item.id
 																	}
-																	className="flex items-center justify-between border rounded-md px-3 py-2"
+																	className="cursor-pointer gap-2 hover:bg-blue-50/50 transition-colors"
+																	onClick={() =>
+																		navigate(
+																			`/case/${item.id}`,
+																		)
+																	}
 																>
-																	<div className="space-y-0.5">
-																		<p className="text-sm font-medium">
-																			{
-																				item.case_name
-																			}
-																		</p>
-																		<p className="text-xs text-gray-500">
-																			{item.case_id ||
-																				item.cno}
-																		</p>
-																	</div>
-																	<p className="text-xs text-gray-500">
-																		{item.created_at
-																			? new Date(
+																	<CardContent className="pt-2 space-y-2 pb-2">
+																		<div className="flex items-start gap-2">
+																			<Badge
+																				variant="secondary"
+																				className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+																			>
+																				<FileText className="h-3 w-3" />
+																				Info
+																			</Badge>
+																			<div className="flex-1 space-y-1 font-semibold">
+																				<div className="flex items-start justify-between gap-3 text-sm text-gray-700">
+																					<div className="min-w-0 flex items-center gap-2 flex-wrap">
+																						{item.case_id && (
+																							<span>
+																								{
+																									item.case_id
+																								}
+																							</span>
+																						)}
+																						{item.case_id &&
+																							item.case_name && (
+																								<span
+																									className={
+																										dividerClass
+																									}
+																								>
+																									{
+																										dividerText
+																									}
+																								</span>
+																							)}
+																						{item.case_name && (
+																							<span>
+																								{truncateName(
+																									item.case_name,
+																								)}
+																							</span>
+																						)}
+																					</div>
+																					<div className="shrink-0 flex items-center gap-2 flex-wrap justify-end">
+																						{item.case_type && (
+																							<span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+																								{formatBadgeValue(
+																									item.case_type,
+																								)}
+																							</span>
+																						)}
+																						{item.severity_level && (
+																							<span
+																								className={`px-2 py-0.5 rounded-full text-xs font-medium ${getSeverityColor(item.severity_level)}`}
+																							>
+																								{formatBadgeValue(
+																									item.severity_level,
+																								)}
+																							</span>
+																						)}
+																						{item.status && (
+																							<span
+																								className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}
+																							>
+																								{formatBadgeValue(
+																									item.status,
+																								)}
+																							</span>
+																						)}
+																					</div>
+																				</div>
+
+																				{(item.case_date ||
+																					item.case_time ||
+																					item.description) && (
+																					<div className="flex items-center gap-2 flex-wrap text-sm text-gray-700">
+																						{(item.case_date ||
+																							item.case_time) && (
+																							<>
+																								{item.case_date && (
+																									<span>
+																										{item.case_time
+																											? (() => {
+																													try {
+																														const dateObj =
+																															new Date(
+																																item.case_date,
+																															);
+																														const [
+																															hours,
+																															minutes,
+																														] =
+																															item.case_time.split(
+																																":",
+																															);
+																														dateObj.setHours(
+																															parseInt(
+																																hours,
+																															),
+																															parseInt(
+																																minutes,
+																															),
+																														);
+																														const dateStr =
+																															dateObj.toLocaleDateString(
+																																"en-US",
+																																{
+																																	month: "short",
+																																	day: "numeric",
+																																	year: "numeric",
+																																},
+																															);
+																														const timeStr =
+																															dateObj.toLocaleTimeString(
+																																"en-US",
+																																{
+																																	hour: "2-digit",
+																																	minute: "2-digit",
+																																	hour12: true,
+																																},
+																															);
+																														return `${dateStr} @ ${timeStr}`;
+																													} catch {
+																														return new Date(
+																															item.case_date,
+																														).toLocaleDateString();
+																													}
+																												})()
+																											: new Date(
+																													item.case_date,
+																												).toLocaleString(
+																													"en-US",
+																													{
+																														month: "short",
+																														day: "numeric",
+																														year: "numeric",
+																													},
+																												)}
+																									</span>
+																								)}
+																								{!item.case_date &&
+																									item.case_time && (
+																										<span>
+																											{
+																												item.case_time
+																											}
+																										</span>
+																									)}
+																								{item.description && (
+																									<span
+																										className={
+																											dividerClass
+																										}
+																									>
+																										{
+																											dividerText
+																										}
+																									</span>
+																								)}
+																							</>
+																						)}
+																						{item.description && (
+																							<span>
+																								{(() => {
+																									const formatted =
+																										formatTextWithNewlineIndicator(
+																											item.description ||
+																												"",
+																										);
+																									return formatted.length >
+																										100
+																										? `${formatted.substring(0, 100)}...`
+																										: formatted;
+																								})()}
+																							</span>
+																						)}
+																					</div>
+																				)}
+																			</div>
+																		</div>
+
+																		{item.profiles &&
+																			item
+																				.profiles
+																				.length >
+																				0 && (
+																				<div className="flex items-start gap-2">
+																					<Badge
+																						variant="secondary"
+																						className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+																					>
+																						<Network className="h-3 w-3" />
+																						Network
+																					</Badge>
+																					<div className="text-sm text-gray-700 truncate font-semibold">
+																						{item.profiles.map(
+																							(
+																								p,
+																							) => (
+																								<span
+																									key={
+																										p[0]
+																									}
+																									onClick={(
+																										e,
+																									) => {
+																										e.stopPropagation();
+																										navigate(
+																											`/profile/${p[0]}`,
+																										);
+																									}}
+																									className="cursor-pointer hover:underline text-blue-600 hover:text-blue-800"
+																								>
+																									{truncateName(
+																										p[1],
+																									)}
+																									{item.profiles!.indexOf(
+																										p,
+																									) !==
+																										item
+																											.profiles!
+																											.length -
+																											1 &&
+																										", "}
+																								</span>
+																							),
+																						)}
+																					</div>
+																				</div>
+																			)}
+
+																		{item.drugs &&
+																			item
+																				.drugs
+																				.length >
+																				0 && (
+																				<div className="flex items-start gap-2">
+																					<Badge
+																						variant="secondary"
+																						className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+																					>
+																						<Pill className="h-3 w-3" />
+																						Drugs
+																					</Badge>
+																					<p className="text-sm text-gray-700 font-semibold">
+																						{item.drugs.map(
+																							(
+																								d,
+																								index,
+																							) => (
+																								<span
+																									key={`${d.drug_name}-${index}`}
+																								>
+																									{`${truncateName(d.drug_name)}(${d.quantified_by}): ${d.quantity}`}
+																									{index !==
+																										item
+																											.drugs!
+																											.length -
+																											1 &&
+																										", "}
+																								</span>
+																							),
+																						)}
+																					</p>
+																				</div>
+																			)}
+
+																		{item.areas &&
+																			item
+																				.areas
+																				.length >
+																				0 && (
+																				<div className="flex items-start gap-2">
+																					<Badge
+																						variant="secondary"
+																						className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+																					>
+																						<MapPin className="h-3 w-3" />
+																						Areas
+																					</Badge>
+																					<p className="text-sm text-gray-700 font-semibold">
+																						{item.areas.map(
+																							(
+																								area,
+																								index,
+																							) => (
+																								<span
+																									key={`${area}-${index}`}
+																								>
+																									{
+																										area
+																									}
+																									{index !==
+																										item
+																											.areas!
+																											.length -
+																											1 &&
+																										", "}
+																								</span>
+																							),
+																						)}
+																					</p>
+																				</div>
+																			)}
+
+																		{item.notes && (
+																			<div className="flex items-start gap-2">
+																				<Badge
+																					variant="secondary"
+																					className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+																				>
+																					<MessageSquare className="h-3 w-3" />
+																					Notes
+																				</Badge>
+																				<p className="text-sm text-gray-700 truncate font-semibold">
+																					{formatTextWithNewlineIndicator(
+																						item.notes,
+																					)}
+																				</p>
+																			</div>
+																		)}
+
+																		{item.created_at && (
+																			<p className="text-xs text-gray-500 mt-3">
+																				Created
+																				At:{" "}
+																				{new Date(
 																					item.created_at,
-																				).toLocaleDateString()
-																			: ""}
-																	</p>
-																</div>
+																				).toLocaleDateString(
+																					"en-US",
+																					{
+																						month: "short",
+																						day: "numeric",
+																						year: "numeric",
+																					},
+																				) +
+																					" @ " +
+																					new Date(
+																						item.created_at,
+																					).toLocaleTimeString(
+																						"en-US",
+																						{
+																							hour: "2-digit",
+																							minute: "2-digit",
+																							hour12: true,
+																						},
+																					)}
+																				{item.updated_at && (
+																					<>
+																						<span
+																							className={
+																								dividerClass
+																							}
+																						>
+																							{
+																								dividerText
+																							}
+																						</span>
+																						Updated
+																						At:{" "}
+																						{new Date(
+																							item.updated_at,
+																						).toLocaleDateString(
+																							"en-US",
+																							{
+																								month: "short",
+																								day: "numeric",
+																								year: "numeric",
+																							},
+																						) +
+																							" @ " +
+																							new Date(
+																								item.updated_at,
+																							).toLocaleTimeString(
+																								"en-US",
+																								{
+																									hour: "2-digit",
+																									minute: "2-digit",
+																									hour12: true,
+																								},
+																							)}
+																					</>
+																				)}
+																			</p>
+																		)}
+																	</CardContent>
+																</Card>
 															),
+														)}
+
+														{totalCasePages > 1 && (
+															<div className="space-y-2 pt-1">
+																<p className="text-xs text-gray-500 text-center">
+																	Page{" "}
+																	{
+																		casesCurrentPage
+																	}{" "}
+																	of{" "}
+																	{
+																		totalCasePages
+																	}{" "}
+																	• Showing{" "}
+																	{(casesCurrentPage -
+																		1) *
+																		PROFILE_CASES_PER_PAGE +
+																		1}
+																	-
+																	{Math.min(
+																		casesCurrentPage *
+																			PROFILE_CASES_PER_PAGE,
+																		sortedProfileCases.length,
+																	)}
+																</p>
+																<Pagination>
+																	<PaginationContent>
+																		<PaginationItem>
+																			<PaginationPrevious
+																				href="#"
+																				onClick={(
+																					e,
+																				) => {
+																					e.preventDefault();
+																					if (
+																						casesCurrentPage >
+																						1
+																					) {
+																						setCasesCurrentPage(
+																							(
+																								prev,
+																							) =>
+																								Math.max(
+																									1,
+																									prev -
+																										1,
+																								),
+																						);
+																					}
+																				}}
+																				aria-disabled={
+																					casesCurrentPage ===
+																					1
+																				}
+																				className={
+																					casesCurrentPage ===
+																					1
+																						? "pointer-events-none opacity-50"
+																						: undefined
+																				}
+																			/>
+																		</PaginationItem>
+
+																		{casePageWindow[0] >
+																			1 && (
+																			<>
+																				<PaginationItem>
+																					<PaginationLink
+																						href="#"
+																						onClick={(
+																							e,
+																						) => {
+																							e.preventDefault();
+																							setCasesCurrentPage(
+																								1,
+																							);
+																						}}
+																						isActive={
+																							casesCurrentPage ===
+																							1
+																						}
+																					>
+																						1
+																					</PaginationLink>
+																				</PaginationItem>
+																				{casePageWindow[0] >
+																					2 && (
+																					<PaginationItem>
+																						<PaginationEllipsis />
+																					</PaginationItem>
+																				)}
+																			</>
+																		)}
+
+																		{casePageWindow.map(
+																			(
+																				page,
+																			) => (
+																				<PaginationItem
+																					key={
+																						page
+																					}
+																				>
+																					<PaginationLink
+																						href="#"
+																						onClick={(
+																							e,
+																						) => {
+																							e.preventDefault();
+																							setCasesCurrentPage(
+																								page,
+																							);
+																						}}
+																						isActive={
+																							casesCurrentPage ===
+																							page
+																						}
+																					>
+																						{
+																							page
+																						}
+																					</PaginationLink>
+																				</PaginationItem>
+																			),
+																		)}
+
+																		{casePageWindow[
+																			casePageWindow.length -
+																				1
+																		] <
+																			totalCasePages && (
+																			<>
+																				{casePageWindow[
+																					casePageWindow.length -
+																						1
+																				] <
+																					totalCasePages -
+																						1 && (
+																					<PaginationItem>
+																						<PaginationEllipsis />
+																					</PaginationItem>
+																				)}
+																				<PaginationItem>
+																					<PaginationLink
+																						href="#"
+																						onClick={(
+																							e,
+																						) => {
+																							e.preventDefault();
+																							setCasesCurrentPage(
+																								totalCasePages,
+																							);
+																						}}
+																						isActive={
+																							casesCurrentPage ===
+																							totalCasePages
+																						}
+																					>
+																						{
+																							totalCasePages
+																						}
+																					</PaginationLink>
+																				</PaginationItem>
+																			</>
+																		)}
+
+																		<PaginationItem>
+																			<PaginationNext
+																				href="#"
+																				onClick={(
+																					e,
+																				) => {
+																					e.preventDefault();
+																					if (
+																						casesCurrentPage <
+																						totalCasePages
+																					) {
+																						setCasesCurrentPage(
+																							(
+																								prev,
+																							) =>
+																								Math.min(
+																									totalCasePages,
+																									prev +
+																										1,
+																								),
+																						);
+																					}
+																				}}
+																				aria-disabled={
+																					casesCurrentPage ===
+																					totalCasePages
+																				}
+																				className={
+																					casesCurrentPage ===
+																					totalCasePages
+																						? "pointer-events-none opacity-50"
+																						: undefined
+																				}
+																			/>
+																		</PaginationItem>
+																	</PaginationContent>
+																</Pagination>
+															</div>
 														)}
 													</div>
 												)}

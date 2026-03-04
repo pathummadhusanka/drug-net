@@ -169,7 +169,9 @@ export async function deleteCase(caseId: number): Promise<void> {
 export async function getCaseProfiles(
 	caseId: number,
 ): Promise<[number, string][]> {
-	return await invoke<[number, string][]>("get_case_profiles", { caseId });
+	return await invoke<[number, string][]>("get_case_profiles", {
+		caseId,
+	});
 }
 
 /**
