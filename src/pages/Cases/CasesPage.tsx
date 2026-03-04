@@ -496,7 +496,7 @@ export default function CasesPage() {
 										format(dateRange.from, "MMM dd, yyyy")
 									)
 								) : (
-									<span>Filter by date</span>
+									<span>Filter by Case Date</span>
 								)}
 								{dateRange && (
 									<div
@@ -924,14 +924,30 @@ export default function CasesPage() {
 										Created At:{" "}
 										{new Date(
 											caseItem.created_at,
-										).toLocaleDateString()}
-										<span className={dividerClass}>
-											{dividerText}
-										</span>
-										Updated At:{" "}
-										{new Date(
-											caseItem.created_at,
-										).toLocaleDateString()}
+										).toLocaleString("en-US", {
+											month: "short",
+											day: "numeric",
+											year: "numeric",
+											hour: "2-digit",
+											minute: "2-digit",
+										})}
+										{caseItem.updated_at && (
+											<>
+												<span className={dividerClass}>
+													{dividerText}
+												</span>
+												Updated At:{" "}
+												{new Date(
+													caseItem.updated_at,
+												).toLocaleString("en-US", {
+													month: "short",
+													day: "numeric",
+													year: "numeric",
+													hour: "2-digit",
+													minute: "2-digit",
+												})}
+											</>
+										)}
 									</p>
 								)}
 							</CardContent>
