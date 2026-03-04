@@ -245,6 +245,12 @@ export default function CasesPage() {
 		filterStatus !== ALL_STATUSES_FILTER_VALUE ||
 		dateRange !== undefined;
 
+	const isTypeFilterActive = filterType !== ALL_TYPES_FILTER_VALUE;
+	const isSeverityFilterActive =
+		filterSeverity !== ALL_SEVERITIES_FILTER_VALUE;
+	const isStatusFilterActive = filterStatus !== ALL_STATUSES_FILTER_VALUE;
+	const isDateFilterActive = dateRange !== undefined;
+
 	const handleProfileClick = async (profileId: number) => {
 		try {
 			setLoadingProfile(true);
@@ -506,7 +512,7 @@ export default function CasesPage() {
 						<PopoverTrigger asChild>
 							<Button
 								variant="outline"
-								className={`justify-start text-left font-normal ${!dateRange ? "text-muted-foreground" : ""}`}
+								className={`justify-start text-left font-normal ${!dateRange ? "text-muted-foreground" : ""} ${isDateFilterActive ? "border-blue-500 ring-1 ring-blue-500/20" : ""}`}
 								onClick={(e) => {
 									if (dateRange) e.stopPropagation();
 								}}
@@ -567,6 +573,11 @@ export default function CasesPage() {
 						<ComboboxInput
 							placeholder="All Types"
 							aria-label="Filter by case type"
+							className={
+								isTypeFilterActive
+									? "border-blue-500 ring-1 ring-blue-500/20"
+									: ""
+							}
 						/>
 						<ComboboxContent>
 							<ComboboxList>
@@ -605,6 +616,11 @@ export default function CasesPage() {
 						<ComboboxInput
 							placeholder="All Severities"
 							aria-label="Filter by severity level"
+							className={
+								isSeverityFilterActive
+									? "border-blue-500 ring-1 ring-blue-500/20"
+									: ""
+							}
 						/>
 						<ComboboxContent>
 							<ComboboxList>
@@ -643,6 +659,11 @@ export default function CasesPage() {
 						<ComboboxInput
 							placeholder="All Statuses"
 							aria-label="Filter by case status"
+							className={
+								isStatusFilterActive
+									? "border-blue-500 ring-1 ring-blue-500/20"
+									: ""
+							}
 						/>
 						<ComboboxContent>
 							<ComboboxList>
@@ -683,7 +704,7 @@ export default function CasesPage() {
 							variant="outline"
 							size="sm"
 							onClick={resetFilters}
-							className="cursor-pointer"
+							className="cursor-pointer border-blue-500 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
 						>
 							Reset Filters
 						</Button>
