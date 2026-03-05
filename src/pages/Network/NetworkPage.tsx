@@ -89,52 +89,13 @@ const ReadOnlyNetworkNode = ({ data }: { data: NetworkNodeData }) => {
 			<Handle
 				type="target"
 				position={Position.Top}
-				id="top"
-				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
-			/>
-			<Handle
-				type="target"
-				position={Position.Right}
-				id="right"
-				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
-			/>
-			<Handle
-				type="target"
-				position={Position.Bottom}
-				id="bottom"
-				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
-			/>
-			<Handle
-				type="target"
-				position={Position.Left}
-				id="left"
-				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
+				style={{ opacity: 0, pointerEvents: "none" }}
 			/>
 			<Handle
 				type="source"
 				position={Position.Top}
-				id="top"
-				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
+				style={{ opacity: 0, pointerEvents: "none" }}
 			/>
-			<Handle
-				type="source"
-				position={Position.Right}
-				id="right"
-				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
-			/>
-			<Handle
-				type="source"
-				position={Position.Bottom}
-				id="bottom"
-				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
-			/>
-			<Handle
-				type="source"
-				position={Position.Left}
-				id="left"
-				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
-			/>
-
 			<div className="h-12 w-12 rounded-full border border-gray-500 bg-white shadow-sm">
 				<User className="mx-auto mt-3 h-6 w-6 text-gray-500" />
 			</div>
