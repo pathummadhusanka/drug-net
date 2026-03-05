@@ -5,6 +5,7 @@ import {
 	useState,
 	type MouseEvent,
 } from "react";
+import { useNavigate } from "react-router-dom";
 import {
 	Background,
 	BackgroundVariant,
@@ -48,6 +49,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
 	getAllCases,
 	getCase,
@@ -333,6 +335,7 @@ const ReadOnlyNetworkEdge = ({
 };
 
 export default function NetworkPage() {
+	const navigate = useNavigate();
 	const [loading, setLoading] = useState(true);
 	const [nodes, setNodes, onNodesChange] = useNodesState<NetworkNodeData>([]);
 	const [edges, setEdges] = useEdgesState<NetworkEdgeData>([]);
@@ -1206,6 +1209,19 @@ export default function NetworkPage() {
 						<AlertDialogCancel className="cursor-pointer">
 							Close
 						</AlertDialogCancel>
+						{relationshipCaseData?.id && (
+							<Button
+								variant="default"
+								onClick={() => {
+									setIsRelationshipInfoDialogOpen(false);
+									navigate(
+										`/case/${relationshipCaseData.id}`,
+									);
+								}}
+							>
+								Go to Case
+							</Button>
+						)}
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
