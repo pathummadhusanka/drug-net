@@ -1478,6 +1478,14 @@ export default function NewCasePage() {
 					onSubmit={async (e) => {
 						e.preventDefault();
 
+						const normalizedCaseTitle = caseTitle.trim();
+						if (!normalizedCaseTitle) {
+							toast.error("Case title is required", {
+								position: "top-center",
+							});
+							return;
+						}
+
 						// Validate at least one profile exists
 						if (nodes.length === 0) {
 							toast.error(
@@ -1516,7 +1524,7 @@ export default function NewCasePage() {
 
 								const caseData = {
 									case_id: caseId || null,
-									case_name: caseTitle || "Untitled Case",
+									case_name: normalizedCaseTitle,
 									description: caseDescription || null,
 									case_type: caseType || null,
 									status: caseStatus || null,
@@ -1555,7 +1563,7 @@ export default function NewCasePage() {
 								targetCaseId = await createCaseWithAreas(
 									{
 										case_id: caseId || null,
-										case_name: caseTitle || "Untitled Case",
+										case_name: normalizedCaseTitle,
 										description: caseDescription || null,
 										case_type: caseType || null,
 										status: caseStatus || null,
@@ -1805,7 +1813,10 @@ export default function NewCasePage() {
 									</div>
 									<div className="space-y-2 md:col-span-2">
 										<Label htmlFor="case-title">
-											Title
+											Title{" "}
+											<span className="text-red-500">
+												*
+											</span>
 										</Label>
 										<Input
 											id="case-title"
@@ -1816,6 +1827,7 @@ export default function NewCasePage() {
 											onChange={(e) =>
 												setCaseTitle(e.target.value)
 											}
+											required
 										/>
 										<div className="text-sm text-gray-500">
 											{caseTitle.length}/100
