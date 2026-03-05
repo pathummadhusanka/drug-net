@@ -1578,25 +1578,25 @@ export default function ProfileView() {
 											value="analytics"
 											className="cursor-pointer"
 										>
-											Cases
+											Cases ({sortedProfileCases.length})
 										</TabsTrigger>
 										<TabsTrigger
 											value="reports"
 											className="cursor-pointer"
 										>
-											Drugs
+											Drugs ({aggregatedDrugs.length})
 										</TabsTrigger>
 										<TabsTrigger
 											value="settings"
 											className="cursor-pointer"
 										>
-											Network
+											Network ({sortedConnections.length})
 										</TabsTrigger>
 										<TabsTrigger
 											value="areas"
 											className="cursor-pointer"
 										>
-											Areas
+											Areas ({aggregatedAreas.length})
 										</TabsTrigger>
 									</TabsList>
 									<div className="flex gap-4">
