@@ -34,6 +34,8 @@ import {
 	DialogTitle,
 	DialogFooter,
 } from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
 	getCase,
 	getCaseAreas,
@@ -69,7 +71,7 @@ import {
 	Pencil,
 	Trash2,
 	AlertCircle,
-	Info,
+	Eye,
 	User,
 	CircleHelp,
 } from "lucide-react";
@@ -128,50 +130,12 @@ const ReadOnlyCustomNode = ({
 			<Handle
 				type="target"
 				position={Position.Top}
-				id="top"
-				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
-			/>
-			<Handle
-				type="target"
-				position={Position.Right}
-				id="right"
-				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
-			/>
-			<Handle
-				type="target"
-				position={Position.Bottom}
-				id="bottom"
-				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
-			/>
-			<Handle
-				type="target"
-				position={Position.Left}
-				id="left"
-				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
+				style={{ opacity: 0, pointerEvents: "none" }}
 			/>
 			<Handle
 				type="source"
 				position={Position.Top}
-				id="top"
-				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
-			/>
-			<Handle
-				type="source"
-				position={Position.Right}
-				id="right"
-				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
-			/>
-			<Handle
-				type="source"
-				position={Position.Bottom}
-				id="bottom"
-				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
-			/>
-			<Handle
-				type="source"
-				position={Position.Left}
-				id="left"
-				className="h-1.5 w-3 !rounded-none !border !border-gray-300 !bg-gray-600/80 shadow-sm"
+				style={{ opacity: 0, pointerEvents: "none" }}
 			/>
 
 			<div className="h-12 w-12 rounded-full border border-gray-500 bg-white shadow-sm">
@@ -299,12 +263,12 @@ const ReadOnlyCustomEdge = ({
 		event.stopPropagation();
 
 		window.dispatchEvent(
-			new CustomEvent("open-connection-info-dialog", {
+			new CustomEvent("open-profile-info-dialog", {
 				detail: {
-					edgeId: id,
+					sourceProfileId: parseInt(source),
+					targetProfileId: parseInt(target),
 					label,
-					source,
-					target,
+					caseId: parseInt(id || "0"),
 				},
 			}),
 		);
@@ -377,9 +341,9 @@ const ReadOnlyCustomEdge = ({
 							type="button"
 							onClick={handleEdgeInfoClick}
 							className="w-4 h-4 rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center cursor-pointer"
-							title="View connection details"
+							title="View profile details"
 						>
-							<Info className="h-2.5 w-2.5" />
+							<Eye className="h-2.5 w-2.5" />
 						</button>
 					</div>
 				</div>
@@ -402,6 +366,14 @@ export default function CaseViewPage() {
 		label: string;
 		source: string;
 		target: string;
+	} | null>(null);
+	const [isProfileInfoDialogOpen, setIsProfileInfoDialogOpen] =
+		useState(false);
+	const [profileInfoData, setProfileInfoData] = useState<{
+		source: any;
+		target: any;
+		label: string;
+		caseData?: any;
 	} | null>(null);
 	const [nodes, setNodes, onNodesChange] = useNodesState([]);
 	const [edges, setEdges] = useEdgesState([]);
@@ -438,6 +410,55 @@ export default function CaseViewPage() {
 			window.removeEventListener(
 				"open-connection-info-dialog",
 				handleOpenConnectionInfoDialog,
+			);
+		};
+	}, []);
+
+	// Set up event listener for profile info dialog
+	useEffect(() => {
+		const handleOpenProfileInfoDialog = (event: Event) => {
+			const customEvent = event as CustomEvent<{
+				sourceProfileId: number;
+				targetProfileId: number;
+				label: string;
+				caseId: number;
+			}>;
+
+			setIsProfileInfoDialogOpen(true);
+
+			// Load both profile details and case information
+			Promise.all([
+				getProfile(customEvent.detail.sourceProfileId),
+				getProfile(customEvent.detail.targetProfileId),
+				customEvent.detail.caseId
+					? getCase(customEvent.detail.caseId)
+					: Promise.resolve(null),
+			])
+				.then(([sourceProfile, targetProfile, caseInfo]) => {
+					setProfileInfoData({
+						source: sourceProfile,
+						target: targetProfile,
+						label: customEvent.detail.label,
+						caseData: caseInfo,
+					});
+				})
+				.catch((error) => {
+					console.error("Failed to load profile data:", error);
+					toast.error("Failed to load profile details", {
+						position: "top-center",
+					});
+				});
+		};
+
+		window.addEventListener(
+			"open-profile-info-dialog",
+			handleOpenProfileInfoDialog,
+		);
+
+		return () => {
+			window.removeEventListener(
+				"open-profile-info-dialog",
+				handleOpenProfileInfoDialog,
 			);
 		};
 	}, []);
@@ -1054,6 +1075,243 @@ export default function CaseViewPage() {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			{/* Profile Info Dialog */}
+			<AlertDialog
+				open={isProfileInfoDialogOpen}
+				onOpenChange={(open) => {
+					setIsProfileInfoDialogOpen(open);
+					if (!open) {
+						setProfileInfoData(null);
+					}
+				}}
+			>
+				<AlertDialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+					<AlertDialogHeader>
+						<AlertDialogTitle>Profile Connection</AlertDialogTitle>
+					</AlertDialogHeader>
+					{profileInfoData ? (
+						<div className="space-y-4 py-4">
+							{/* Connection Type */}
+							<Card className="border-blue-200 bg-blue-50">
+								<CardContent className="pt-6">
+									<div className="space-y-3">
+										<div>
+											<Badge className="mb-2 bg-blue-600">
+												Connection Type
+											</Badge>
+											<p className="text-sm font-medium text-gray-900">
+												{profileInfoData.label}
+											</p>
+										</div>
+										{profileInfoData.caseData && (
+											<>
+												<Separator className="my-2" />
+												<div>
+													<Badge
+														variant="secondary"
+														className="mb-2"
+													>
+														Related Case
+													</Badge>
+												</div>
+												<div className="space-y-2 text-sm">
+													<div>
+														<Label className="text-xs text-gray-500">
+															Case Name
+														</Label>
+														<p className="font-medium text-gray-900">
+															{
+																profileInfoData
+																	.caseData
+																	.case_name
+															}
+														</p>
+													</div>
+													{profileInfoData.caseData
+														.case_type && (
+														<div>
+															<Label className="text-xs text-gray-500">
+																Case Type
+															</Label>
+															<div>
+																<Badge variant="outline">
+																	{
+																		profileInfoData
+																			.caseData
+																			.case_type
+																	}
+																</Badge>
+															</div>
+														</div>
+													)}
+												</div>
+											</>
+										)}
+									</div>
+								</CardContent>
+							</Card>
+
+							{/* Source Profile */}
+							{profileInfoData.source && (
+								<Card>
+									<CardContent className="pt-6">
+										<div className="space-y-3">
+											<div>
+												<Badge
+													variant="secondary"
+													className="mb-2"
+												>
+													Source Profile
+												</Badge>
+											</div>
+											<div className="space-y-2 text-sm">
+												<div>
+													<Label className="text-xs text-gray-500">
+														Name
+													</Label>
+													<p className="font-medium text-gray-900">
+														{
+															profileInfoData
+																.source
+																.full_name
+														}
+													</p>
+												</div>
+												{profileInfoData.source.nic && (
+													<div>
+														<Label className="text-xs text-gray-500">
+															NIC
+														</Label>
+														<p className="font-medium text-gray-600">
+															{
+																profileInfoData
+																	.source.nic
+															}
+														</p>
+													</div>
+												)}
+												{profileInfoData.source
+													.alias && (
+													<div>
+														<Label className="text-xs text-gray-500">
+															Alias
+														</Label>
+														<p className="font-medium text-gray-600">
+															{
+																profileInfoData
+																	.source
+																	.alias
+															}
+														</p>
+													</div>
+												)}
+												{profileInfoData.source
+													.city && (
+													<div>
+														<Label className="text-xs text-gray-500">
+															City
+														</Label>
+														<p className="font-medium text-gray-600">
+															{
+																profileInfoData
+																	.source.city
+															}
+														</p>
+													</div>
+												)}
+											</div>
+										</div>
+									</CardContent>
+								</Card>
+							)}
+
+							{/* Target Profile */}
+							{profileInfoData.target && (
+								<Card>
+									<CardContent className="pt-6">
+										<div className="space-y-3">
+											<div>
+												<Badge
+													variant="secondary"
+													className="mb-2"
+												>
+													Target Profile
+												</Badge>
+											</div>
+											<div className="space-y-2 text-sm">
+												<div>
+													<Label className="text-xs text-gray-500">
+														Name
+													</Label>
+													<p className="font-medium text-gray-900">
+														{
+															profileInfoData
+																.target
+																.full_name
+														}
+													</p>
+												</div>
+												{profileInfoData.target.nic && (
+													<div>
+														<Label className="text-xs text-gray-500">
+															NIC
+														</Label>
+														<p className="font-medium text-gray-600">
+															{
+																profileInfoData
+																	.target.nic
+															}
+														</p>
+													</div>
+												)}
+												{profileInfoData.target
+													.alias && (
+													<div>
+														<Label className="text-xs text-gray-500">
+															Alias
+														</Label>
+														<p className="font-medium text-gray-600">
+															{
+																profileInfoData
+																	.target
+																	.alias
+															}
+														</p>
+													</div>
+												)}
+												{profileInfoData.target
+													.city && (
+													<div>
+														<Label className="text-xs text-gray-500">
+															City
+														</Label>
+														<p className="font-medium text-gray-600">
+															{
+																profileInfoData
+																	.target.city
+															}
+														</p>
+													</div>
+												)}
+											</div>
+										</div>
+									</CardContent>
+								</Card>
+							)}
+						</div>
+					) : (
+						<div className="py-8 text-center text-sm text-muted-foreground">
+							Loading profile information...
+						</div>
+					)}
+					<AlertDialogFooter>
+						<AlertDialogCancel className="cursor-pointer">
+							Close
+						</AlertDialogCancel>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</>
 	);
 }
