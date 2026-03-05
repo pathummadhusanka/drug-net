@@ -2983,7 +2983,7 @@ export default function NewCasePage() {
 						</AlertDialogTitle>
 					</AlertDialogHeader>
 					{relationshipCaseData ? (
-						<Card className="cursor-pointer gap-2 hover:bg-blue-50/50 transition-colors">
+						<Card>
 							<CardContent className="pt-2 space-y-2 pb-2">
 								{/* Info Badge - Case ID, Title, Type, Severity, Status */}
 								<div className="flex items-start gap-2">
