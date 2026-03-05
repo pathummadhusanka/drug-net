@@ -532,7 +532,7 @@ export default function CasesPage() {
 					onClick={() => navigate("/new-case")}
 				>
 					<FolderPlus className="h-4 w-4 mr-2" />
-					File New Case
+					File Case
 				</Button>
 			</div>
 
