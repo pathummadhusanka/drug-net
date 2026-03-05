@@ -4220,7 +4220,7 @@ export default function ProfileView() {
 														)}
 
 														{totalCasePages > 1 && (
-															<div className="space-y-2 pt-1">
+															<div className="space-y-2 pt-4 mt-4 border-t">
 																<p className="text-xs text-gray-500 text-center">
 																	Page{" "}
 																	{
@@ -4532,8 +4532,17 @@ export default function ProfileView() {
 																</div>
 																{aggregatedDrugs.length >
 																	DRUGS_PER_PAGE && (
-																	<div className="flex items-center justify-between border-t pt-4 mt-4">
-																		<p className="text-sm text-gray-600">
+																	<div className="space-y-2 pt-4 mt-4 border-t">
+																		<p className="text-xs text-gray-500 text-center">
+																			Page{" "}
+																			{
+																				drugsCurrentPage
+																			}{" "}
+																			of{" "}
+																			{
+																				totalDrugsPages
+																			}{" "}
+																			•
 																			Showing{" "}
 																			{(drugsCurrentPage -
 																				1) *
@@ -4795,9 +4804,17 @@ export default function ProfileView() {
 														</div>
 														{sortedConnections.length >
 															NETWORK_PER_PAGE && (
-															<div className="flex items-center justify-between border-t pt-4 mt-4">
-																<p className="text-sm text-gray-600">
-																	Showing{" "}
+															<div className="space-y-2 pt-4 mt-4 border-t">
+																<p className="text-xs text-gray-500 text-center">
+																	Page{" "}
+																	{
+																		networkCurrentPage
+																	}{" "}
+																	of{" "}
+																	{
+																		totalNetworkPages
+																	}{" "}
+																	• Showing{" "}
 																	{(networkCurrentPage -
 																		1) *
 																		NETWORK_PER_PAGE +
@@ -5035,9 +5052,17 @@ export default function ProfileView() {
 														</div>
 														{aggregatedAreas.length >
 															AREAS_PER_PAGE && (
-															<div className="flex items-center justify-between border-t pt-4 mt-4">
-																<p className="text-sm text-gray-600">
-																	Showing{" "}
+															<div className="space-y-2 pt-4 mt-4 border-t">
+																<p className="text-xs text-gray-500 text-center">
+																	Page{" "}
+																	{
+																		areasCurrentPage
+																	}{" "}
+																	of{" "}
+																	{
+																		totalAreasPages
+																	}{" "}
+																	• Showing{" "}
 																	{(areasCurrentPage -
 																		1) *
 																		AREAS_PER_PAGE +
