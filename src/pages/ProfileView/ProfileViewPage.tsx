@@ -531,6 +531,9 @@ export default function ProfileView() {
 	const [caseDate, setCaseDate] = useState("");
 	const [caseTime, setCaseTime] = useState("");
 	const [casesCurrentPage, setCasesCurrentPage] = useState(1);
+	const [drugsCurrentPage, setDrugsCurrentPage] = useState(1);
+	const [networkCurrentPage, setNetworkCurrentPage] = useState(1);
+	const [areasCurrentPage, setAreasCurrentPage] = useState(1);
 	const [activeAccordion, setActiveAccordion] = useState("");
 	const [completedSections] = useState<string[]>([]);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -542,6 +545,9 @@ export default function ProfileView() {
 	const [areas, setAreas] = useState<string[]>([]);
 	const [pendingArea, setPendingArea] = useState("");
 	const PROFILE_CASES_PER_PAGE = 5;
+	const DRUGS_PER_PAGE = 10;
+	const NETWORK_PER_PAGE = 10;
+	const AREAS_PER_PAGE = 10;
 	const dividerClass = "text-muted-foreground";
 	const dividerText = "\u00A0\u00A0|\u00A0\u00A0";
 
@@ -796,15 +802,105 @@ export default function ProfileView() {
 		);
 	}, [profileAreas, profileCases]);
 
+	// Pagination for Drugs
+	const totalDrugsPages = Math.max(
+		1,
+		Math.ceil(aggregatedDrugs.length / DRUGS_PER_PAGE),
+	);
+
+	const paginatedDrugs = useMemo(() => {
+		const start = (drugsCurrentPage - 1) * DRUGS_PER_PAGE;
+		return aggregatedDrugs.slice(start, start + DRUGS_PER_PAGE);
+	}, [aggregatedDrugs, drugsCurrentPage]);
+
+	const drugsPageWindow = useMemo(() => {
+		const pages: number[] = [];
+		const start = Math.max(1, drugsCurrentPage - 2);
+		const end = Math.min(totalDrugsPages, drugsCurrentPage + 2);
+		for (let page = start; page <= end; page++) {
+			pages.push(page);
+		}
+		return pages;
+	}, [drugsCurrentPage, totalDrugsPages]);
+
+	// Pagination for Network
+	const totalNetworkPages = Math.max(
+		1,
+		Math.ceil(sortedConnections.length / NETWORK_PER_PAGE),
+	);
+
+	const paginatedConnections = useMemo(() => {
+		const start = (networkCurrentPage - 1) * NETWORK_PER_PAGE;
+		return sortedConnections.slice(start, start + NETWORK_PER_PAGE);
+	}, [sortedConnections, networkCurrentPage]);
+
+	const networkPageWindow = useMemo(() => {
+		const pages: number[] = [];
+		const start = Math.max(1, networkCurrentPage - 2);
+		const end = Math.min(totalNetworkPages, networkCurrentPage + 2);
+		for (let page = start; page <= end; page++) {
+			pages.push(page);
+		}
+		return pages;
+	}, [networkCurrentPage, totalNetworkPages]);
+
+	// Pagination for Areas
+	const totalAreasPages = Math.max(
+		1,
+		Math.ceil(aggregatedAreas.length / AREAS_PER_PAGE),
+	);
+
+	const paginatedAreas = useMemo(() => {
+		const start = (areasCurrentPage - 1) * AREAS_PER_PAGE;
+		return aggregatedAreas.slice(start, start + AREAS_PER_PAGE);
+	}, [aggregatedAreas, areasCurrentPage]);
+
+	const areasPageWindow = useMemo(() => {
+		const pages: number[] = [];
+		const start = Math.max(1, areasCurrentPage - 2);
+		const end = Math.min(totalAreasPages, areasCurrentPage + 2);
+		for (let page = start; page <= end; page++) {
+			pages.push(page);
+		}
+		return pages;
+	}, [areasCurrentPage, totalAreasPages]);
+
 	useEffect(() => {
 		setCasesCurrentPage(1);
-	}, [id, sortedProfileCases.length]);
+		setDrugsCurrentPage(1);
+		setNetworkCurrentPage(1);
+		setAreasCurrentPage(1);
+	}, [
+		id,
+		sortedProfileCases.length,
+		aggregatedDrugs.length,
+		sortedConnections.length,
+		aggregatedAreas.length,
+	]);
 
 	useEffect(() => {
 		if (casesCurrentPage > totalCasePages) {
 			setCasesCurrentPage(totalCasePages);
 		}
 	}, [casesCurrentPage, totalCasePages]);
+
+	useEffect(() => {
+		if (drugsCurrentPage > totalDrugsPages) {
+			setDrugsCurrentPage(totalDrugsPages);
+		}
+	}, [drugsCurrentPage, totalDrugsPages]);
+
+	useEffect(() => {
+		if (networkCurrentPage > totalNetworkPages) {
+			setNetworkCurrentPage(totalNetworkPages);
+		}
+	}, [networkCurrentPage, totalNetworkPages]);
+
+	useEffect(() => {
+		if (areasCurrentPage > totalAreasPages) {
+			setAreasCurrentPage(totalAreasPages);
+		}
+	}, [areasCurrentPage, totalAreasPages]);
 
 	// Connection dialog state
 	const [isConnectionDialogOpen, setIsConnectionDialogOpen] = useState(false);
@@ -4349,88 +4445,286 @@ export default function ProfileView() {
 															);
 														return (
 															<div className="space-y-4">
-																{aggregatedDrugs.map(
-																	(
-																		drug,
-																		index,
-																	) => {
-																		const percentage =
-																			totalQuantity >
-																			0
-																				? (drug.total_quantity /
-																						totalQuantity) *
-																					100
-																				: 0;
-																		const percentageLabel =
-																			percentage.toFixed(
-																				2,
-																			);
-																		const barFillClass =
-																			percentage <=
-																			25
-																				? "bg-yellow-400/70"
-																				: percentage <=
-																					  50
-																					? "bg-green-400/70"
+																<div className="space-y-4">
+																	{paginatedDrugs.map(
+																		(
+																			drug,
+																			index,
+																		) => {
+																			const percentage =
+																				totalQuantity >
+																				0
+																					? (drug.total_quantity /
+																							totalQuantity) *
+																						100
+																					: 0;
+																			const percentageLabel =
+																				percentage.toFixed(
+																					2,
+																				);
+																			const barFillClass =
+																				percentage <=
+																				25
+																					? "bg-yellow-400/70"
 																					: percentage <=
-																						  75
-																						? "bg-rose-400/70"
-																						: "bg-violet-400/70";
-																		return (
-																			<div
-																				key={`${drug.drug_name}-${drug.quantified_by}-${index}`}
-																				className="border rounded-md px-3 py-2 space-y-2 bg-white"
-																			>
-																				<div className="flex items-center justify-between">
-																					<span className="text-sm font-semibold text-gray-900">
-																						{
-																							drug.drug_name
-																						}{" "}
-																						(
-																						<span className="text-gray-500 font-medium">
+																						  50
+																						? "bg-green-400/70"
+																						: percentage <=
+																							  75
+																							? "bg-rose-400/70"
+																							: "bg-violet-400/70";
+																			return (
+																				<div
+																					key={`${drug.drug_name}-${drug.quantified_by}-${index}`}
+																					className="border rounded-md px-3 py-2 space-y-2 bg-white"
+																				>
+																					<div className="flex items-center justify-between">
+																						<span className="text-sm font-semibold text-gray-900">
 																							{
-																								drug.quantified_by
+																								drug.drug_name
+																							}{" "}
+																							(
+																							<span className="text-gray-500 font-medium">
+																								{
+																									drug.quantified_by
+																								}
+																							</span>
+
+																							)
+																						</span>
+																						<span className="text-sm font-semibold text-gray-900">
+																							{
+																								drug.total_quantity
 																							}
 																						</span>
+																					</div>
+																					<div className="flex items-center justify-between">
+																						<p className="text-sm text-gray-500">
+																							from{" "}
+																							{
+																								drug.case_count
+																							}{" "}
+																							{drug.case_count ===
+																							1
+																								? "case"
+																								: "cases"}
+																						</p>
+																						<p className="text-sm font-medium text-gray-600">
+																							{
+																								percentageLabel
+																							}
 
-																						)
-																					</span>
-																					<span className="text-sm font-semibold text-gray-900">
-																						{
-																							drug.total_quantity
-																						}
-																					</span>
+																							%
+																						</p>
+																					</div>
+																					<div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+																						<div
+																							className={`h-full rounded-full ${barFillClass}`}
+																							style={{
+																								width: `${Math.max(0, Math.min(100, percentage))}%`,
+																							}}
+																						/>
+																					</div>
 																				</div>
-																				<div className="flex items-center justify-between">
-																					<p className="text-sm text-gray-500">
-																						from{" "}
-																						{
-																							drug.case_count
-																						}{" "}
-																						{drug.case_count ===
-																						1
-																							? "case"
-																							: "cases"}
-																					</p>
-																					<p className="text-sm font-medium text-gray-600">
-																						{
-																							percentageLabel
-																						}
-
-																						%
-																					</p>
-																				</div>
-																				<div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
-																					<div
-																						className={`h-full rounded-full ${barFillClass}`}
-																						style={{
-																							width: `${Math.max(0, Math.min(100, percentage))}%`,
+																			);
+																		},
+																	)}
+																</div>
+																{aggregatedDrugs.length >
+																	DRUGS_PER_PAGE && (
+																	<div className="flex items-center justify-between border-t pt-4 mt-4">
+																		<p className="text-sm text-gray-600">
+																			Showing{" "}
+																			{(drugsCurrentPage -
+																				1) *
+																				DRUGS_PER_PAGE +
+																				1}
+																			-
+																			{Math.min(
+																				drugsCurrentPage *
+																					DRUGS_PER_PAGE,
+																				aggregatedDrugs.length,
+																			)}
+																		</p>
+																		<Pagination>
+																			<PaginationContent>
+																				<PaginationItem>
+																					<PaginationPrevious
+																						href="#"
+																						onClick={(
+																							e,
+																						) => {
+																							e.preventDefault();
+																							if (
+																								drugsCurrentPage >
+																								1
+																							) {
+																								setDrugsCurrentPage(
+																									(
+																										prev,
+																									) =>
+																										Math.max(
+																											1,
+																											prev -
+																												1,
+																										),
+																								);
+																							}
 																						}}
+																						aria-disabled={
+																							drugsCurrentPage ===
+																							1
+																						}
+																						className={
+																							drugsCurrentPage ===
+																							1
+																								? "pointer-events-none opacity-50"
+																								: undefined
+																						}
 																					/>
-																				</div>
-																			</div>
-																		);
-																	},
+																				</PaginationItem>
+
+																				{drugsPageWindow[0] >
+																					1 && (
+																					<>
+																						<PaginationItem>
+																							<PaginationLink
+																								href="#"
+																								onClick={(
+																									e,
+																								) => {
+																									e.preventDefault();
+																									setDrugsCurrentPage(
+																										1,
+																									);
+																								}}
+																								isActive={
+																									drugsCurrentPage ===
+																									1
+																								}
+																							>
+																								1
+																							</PaginationLink>
+																						</PaginationItem>
+																						{drugsPageWindow[0] >
+																							2 && (
+																							<PaginationItem>
+																								<PaginationEllipsis />
+																							</PaginationItem>
+																						)}
+																					</>
+																				)}
+
+																				{drugsPageWindow.map(
+																					(
+																						page,
+																					) => (
+																						<PaginationItem
+																							key={
+																								page
+																							}
+																						>
+																							<PaginationLink
+																								href="#"
+																								onClick={(
+																									e,
+																								) => {
+																									e.preventDefault();
+																									setDrugsCurrentPage(
+																										page,
+																									);
+																								}}
+																								isActive={
+																									drugsCurrentPage ===
+																									page
+																								}
+																							>
+																								{
+																									page
+																								}
+																							</PaginationLink>
+																						</PaginationItem>
+																					),
+																				)}
+
+																				{drugsPageWindow[
+																					drugsPageWindow.length -
+																						1
+																				] <
+																					totalDrugsPages && (
+																					<>
+																						{drugsPageWindow[
+																							drugsPageWindow.length -
+																								1
+																						] <
+																							totalDrugsPages -
+																								1 && (
+																							<PaginationItem>
+																								<PaginationEllipsis />
+																							</PaginationItem>
+																						)}
+																						<PaginationItem>
+																							<PaginationLink
+																								href="#"
+																								onClick={(
+																									e,
+																								) => {
+																									e.preventDefault();
+																									setDrugsCurrentPage(
+																										totalDrugsPages,
+																									);
+																								}}
+																								isActive={
+																									drugsCurrentPage ===
+																									totalDrugsPages
+																								}
+																							>
+																								{
+																									totalDrugsPages
+																								}
+																							</PaginationLink>
+																						</PaginationItem>
+																					</>
+																				)}
+
+																				<PaginationItem>
+																					<PaginationNext
+																						href="#"
+																						onClick={(
+																							e,
+																						) => {
+																							e.preventDefault();
+																							if (
+																								drugsCurrentPage <
+																								totalDrugsPages
+																							) {
+																								setDrugsCurrentPage(
+																									(
+																										prev,
+																									) =>
+																										Math.min(
+																											totalDrugsPages,
+																											prev +
+																												1,
+																										),
+																								);
+																							}
+																						}}
+																						aria-disabled={
+																							drugsCurrentPage ===
+																							totalDrugsPages
+																						}
+																						className={
+																							drugsCurrentPage ===
+																							totalDrugsPages
+																								? "pointer-events-none opacity-50"
+																								: undefined
+																						}
+																					/>
+																				</PaginationItem>
+																			</PaginationContent>
+																		</Pagination>
+																	</div>
 																)}
 															</div>
 														);
@@ -4447,55 +4741,255 @@ export default function ProfileView() {
 														in database.
 													</p>
 												) : (
-													<div className="space-y-4">
-														{sortedConnections.map(
-															(connection) => (
-																<div
-																	key={
-																		connection.id
-																	}
-																	className="border rounded-md px-4 py-3 bg-white"
-																>
-																	<div className="flex items-start justify-between gap-4">
-																		<div className="min-w-0 flex-1 space-y-1">
-																			<p className="text-sm font-semibold text-gray-900 leading-5 break-words">
-																				{
-																					connection.target_full_name
-																				}
-																			</p>
-																			{connection.target_alias && (
-																				<p className="text-sm text-gray-500 leading-5 break-words">
+													<>
+														<div className="space-y-4">
+															{paginatedConnections.map(
+																(
+																	connection,
+																) => (
+																	<div
+																		key={
+																			connection.id
+																		}
+																		className="border rounded-md px-4 py-3 bg-white"
+																	>
+																		<div className="flex items-start justify-between gap-4">
+																			<div className="min-w-0 flex-1 space-y-1">
+																				<p className="text-sm font-semibold text-gray-900 leading-5 break-words">
 																					{
-																						connection.target_alias
+																						connection.target_full_name
 																					}
 																				</p>
-																			)}
-																		</div>
-																		<div className="shrink-0 flex flex-col items-end gap-2 text-right">
-																			<p className="text-xs font-medium text-gray-600 bg-gray-100 rounded-full px-2 py-0.5">
-																				{connection.relationship_type ||
-																					"Unspecified"}
-																			</p>
-																			{connection.linked_case_id && (
-																				<button
-																					type="button"
-																					onClick={() =>
-																						navigate(
-																							`/case/${connection.linked_case_id}`,
-																						)
-																					}
-																					className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
-																				>
-																					View
-																					Case
-																				</button>
-																			)}
+																				{connection.target_alias && (
+																					<p className="text-sm text-gray-500 leading-5 break-words">
+																						{
+																							connection.target_alias
+																						}
+																					</p>
+																				)}
+																			</div>
+																			<div className="shrink-0 flex flex-col items-end gap-2 text-right">
+																				<p className="text-xs font-medium text-gray-600 bg-gray-100 rounded-full px-2 py-0.5">
+																					{connection.relationship_type ||
+																						"Unspecified"}
+																				</p>
+																				{connection.linked_case_id && (
+																					<button
+																						type="button"
+																						onClick={() =>
+																							navigate(
+																								`/case/${connection.linked_case_id}`,
+																							)
+																						}
+																						className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
+																					>
+																						View
+																						Case
+																					</button>
+																				)}
+																			</div>
 																		</div>
 																	</div>
-																</div>
-															),
+																),
+															)}
+														</div>
+														{sortedConnections.length >
+															NETWORK_PER_PAGE && (
+															<div className="flex items-center justify-between border-t pt-4 mt-4">
+																<p className="text-sm text-gray-600">
+																	Showing{" "}
+																	{(networkCurrentPage -
+																		1) *
+																		NETWORK_PER_PAGE +
+																		1}
+																	-
+																	{Math.min(
+																		networkCurrentPage *
+																			NETWORK_PER_PAGE,
+																		sortedConnections.length,
+																	)}
+																</p>
+																<Pagination>
+																	<PaginationContent>
+																		<PaginationItem>
+																			<PaginationPrevious
+																				href="#"
+																				onClick={(
+																					e,
+																				) => {
+																					e.preventDefault();
+																					if (
+																						networkCurrentPage >
+																						1
+																					) {
+																						setNetworkCurrentPage(
+																							(
+																								prev,
+																							) =>
+																								Math.max(
+																									1,
+																									prev -
+																										1,
+																								),
+																						);
+																					}
+																				}}
+																				aria-disabled={
+																					networkCurrentPage ===
+																					1
+																				}
+																				className={
+																					networkCurrentPage ===
+																					1
+																						? "pointer-events-none opacity-50"
+																						: undefined
+																				}
+																			/>
+																		</PaginationItem>
+
+																		{networkPageWindow[0] >
+																			1 && (
+																			<>
+																				<PaginationItem>
+																					<PaginationLink
+																						href="#"
+																						onClick={(
+																							e,
+																						) => {
+																							e.preventDefault();
+																							setNetworkCurrentPage(
+																								1,
+																							);
+																						}}
+																						isActive={
+																							networkCurrentPage ===
+																							1
+																						}
+																					>
+																						1
+																					</PaginationLink>
+																				</PaginationItem>
+																				{networkPageWindow[0] >
+																					2 && (
+																					<PaginationItem>
+																						<PaginationEllipsis />
+																					</PaginationItem>
+																				)}
+																			</>
+																		)}
+
+																		{networkPageWindow.map(
+																			(
+																				page,
+																			) => (
+																				<PaginationItem
+																					key={
+																						page
+																					}
+																				>
+																					<PaginationLink
+																						href="#"
+																						onClick={(
+																							e,
+																						) => {
+																							e.preventDefault();
+																							setNetworkCurrentPage(
+																								page,
+																							);
+																						}}
+																						isActive={
+																							networkCurrentPage ===
+																							page
+																						}
+																					>
+																						{
+																							page
+																						}
+																					</PaginationLink>
+																				</PaginationItem>
+																			),
+																		)}
+
+																		{networkPageWindow[
+																			networkPageWindow.length -
+																				1
+																		] <
+																			totalNetworkPages && (
+																			<>
+																				{networkPageWindow[
+																					networkPageWindow.length -
+																						1
+																				] <
+																					totalNetworkPages -
+																						1 && (
+																					<PaginationItem>
+																						<PaginationEllipsis />
+																					</PaginationItem>
+																				)}
+																				<PaginationItem>
+																					<PaginationLink
+																						href="#"
+																						onClick={(
+																							e,
+																						) => {
+																							e.preventDefault();
+																							setNetworkCurrentPage(
+																								totalNetworkPages,
+																							);
+																						}}
+																						isActive={
+																							networkCurrentPage ===
+																							totalNetworkPages
+																						}
+																					>
+																						{
+																							totalNetworkPages
+																						}
+																					</PaginationLink>
+																				</PaginationItem>
+																			</>
+																		)}
+
+																		<PaginationItem>
+																			<PaginationNext
+																				href="#"
+																				onClick={(
+																					e,
+																				) => {
+																					e.preventDefault();
+																					if (
+																						networkCurrentPage <
+																						totalNetworkPages
+																					) {
+																						setNetworkCurrentPage(
+																							(
+																								prev,
+																							) =>
+																								Math.min(
+																									totalNetworkPages,
+																									prev +
+																										1,
+																								),
+																						);
+																					}
+																				}}
+																				aria-disabled={
+																					networkCurrentPage ===
+																					totalNetworkPages
+																				}
+																				className={
+																					networkCurrentPage ===
+																					totalNetworkPages
+																						? "pointer-events-none opacity-50"
+																						: undefined
+																				}
+																			/>
+																		</PaginationItem>
+																	</PaginationContent>
+																</Pagination>
+															</div>
 														)}
-													</div>
+													</>
 												)}
 											</div>
 										</TabsContent>
@@ -4508,36 +5002,234 @@ export default function ProfileView() {
 														database.
 													</p>
 												) : (
-													<div className="space-y-4">
-														{aggregatedAreas.map(
-															(area) => (
-																<div
-																	key={
-																		area.id
-																	}
-																	className="border rounded-md px-4 py-3 bg-white"
-																>
-																	<div className="flex items-start justify-between gap-4">
-																		<p className="text-sm font-semibold text-gray-900 leading-5">
-																			{
-																				area.name
-																			}
-																		</p>
-																		<p className="text-sm text-gray-500 text-right whitespace-nowrap">
-																			From{" "}
-																			{
-																				area.case_count
-																			}{" "}
-																			{area.case_count ===
-																			1
-																				? "case"
-																				: "cases"}
-																		</p>
+													<>
+														<div className="space-y-4">
+															{paginatedAreas.map(
+																(area) => (
+																	<div
+																		key={
+																			area.id
+																		}
+																		className="border rounded-md px-4 py-3 bg-white"
+																	>
+																		<div className="flex items-start justify-between gap-4">
+																			<p className="text-sm font-semibold text-gray-900 leading-5">
+																				{
+																					area.name
+																				}
+																			</p>
+																			<p className="text-sm text-gray-500 text-right whitespace-nowrap">
+																				From{" "}
+																				{
+																					area.case_count
+																				}{" "}
+																				{area.case_count ===
+																				1
+																					? "case"
+																					: "cases"}
+																			</p>
+																		</div>
 																	</div>
-																</div>
-															),
+																),
+															)}
+														</div>
+														{aggregatedAreas.length >
+															AREAS_PER_PAGE && (
+															<div className="flex items-center justify-between border-t pt-4 mt-4">
+																<p className="text-sm text-gray-600">
+																	Showing{" "}
+																	{(areasCurrentPage -
+																		1) *
+																		AREAS_PER_PAGE +
+																		1}
+																	-
+																	{Math.min(
+																		areasCurrentPage *
+																			AREAS_PER_PAGE,
+																		aggregatedAreas.length,
+																	)}
+																</p>
+																<Pagination>
+																	<PaginationContent>
+																		<PaginationItem>
+																			<PaginationPrevious
+																				href="#"
+																				onClick={(
+																					e,
+																				) => {
+																					e.preventDefault();
+																					if (
+																						areasCurrentPage >
+																						1
+																					) {
+																						setAreasCurrentPage(
+																							(
+																								prev,
+																							) =>
+																								Math.max(
+																									1,
+																									prev -
+																										1,
+																								),
+																						);
+																					}
+																				}}
+																				aria-disabled={
+																					areasCurrentPage ===
+																					1
+																				}
+																				className={
+																					areasCurrentPage ===
+																					1
+																						? "pointer-events-none opacity-50"
+																						: undefined
+																				}
+																			/>
+																		</PaginationItem>
+
+																		{areasPageWindow[0] >
+																			1 && (
+																			<>
+																				<PaginationItem>
+																					<PaginationLink
+																						href="#"
+																						onClick={(
+																							e,
+																						) => {
+																							e.preventDefault();
+																							setAreasCurrentPage(
+																								1,
+																							);
+																						}}
+																						isActive={
+																							areasCurrentPage ===
+																							1
+																						}
+																					>
+																						1
+																					</PaginationLink>
+																				</PaginationItem>
+																				{areasPageWindow[0] >
+																					2 && (
+																					<PaginationItem>
+																						<PaginationEllipsis />
+																					</PaginationItem>
+																				)}
+																			</>
+																		)}
+
+																		{areasPageWindow.map(
+																			(
+																				page,
+																			) => (
+																				<PaginationItem
+																					key={
+																						page
+																					}
+																				>
+																					<PaginationLink
+																						href="#"
+																						onClick={(
+																							e,
+																						) => {
+																							e.preventDefault();
+																							setAreasCurrentPage(
+																								page,
+																							);
+																						}}
+																						isActive={
+																							areasCurrentPage ===
+																							page
+																						}
+																					>
+																						{
+																							page
+																						}
+																					</PaginationLink>
+																				</PaginationItem>
+																			),
+																		)}
+
+																		{areasPageWindow[
+																			areasPageWindow.length -
+																				1
+																		] <
+																			totalAreasPages && (
+																			<>
+																				{areasPageWindow[
+																					areasPageWindow.length -
+																						1
+																				] <
+																					totalAreasPages -
+																						1 && (
+																					<PaginationItem>
+																						<PaginationEllipsis />
+																					</PaginationItem>
+																				)}
+																				<PaginationItem>
+																					<PaginationLink
+																						href="#"
+																						onClick={(
+																							e,
+																						) => {
+																							e.preventDefault();
+																							setAreasCurrentPage(
+																								totalAreasPages,
+																							);
+																						}}
+																						isActive={
+																							areasCurrentPage ===
+																							totalAreasPages
+																						}
+																					>
+																						{
+																							totalAreasPages
+																						}
+																					</PaginationLink>
+																				</PaginationItem>
+																			</>
+																		)}
+
+																		<PaginationItem>
+																			<PaginationNext
+																				href="#"
+																				onClick={(
+																					e,
+																				) => {
+																					e.preventDefault();
+																					if (
+																						areasCurrentPage <
+																						totalAreasPages
+																					) {
+																						setAreasCurrentPage(
+																							(
+																								prev,
+																							) =>
+																								Math.min(
+																									totalAreasPages,
+																									prev +
+																										1,
+																								),
+																						);
+																					}
+																				}}
+																				aria-disabled={
+																					areasCurrentPage ===
+																					totalAreasPages
+																				}
+																				className={
+																					areasCurrentPage ===
+																					totalAreasPages
+																						? "pointer-events-none opacity-50"
+																						: undefined
+																				}
+																			/>
+																		</PaginationItem>
+																	</PaginationContent>
+																</Pagination>
+															</div>
 														)}
-													</div>
+													</>
 												)}
 											</div>
 										</TabsContent>
