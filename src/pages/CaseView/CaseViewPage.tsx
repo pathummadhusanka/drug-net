@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -263,12 +263,10 @@ const ReadOnlyCustomEdge = ({
 		event.stopPropagation();
 
 		window.dispatchEvent(
-			new CustomEvent("open-profile-info-dialog", {
+			new CustomEvent("open-relationship-info-dialog", {
 				detail: {
-					sourceProfileId: parseInt(source),
-					targetProfileId: parseInt(target),
-					label,
-					caseId: parseInt(id || "0"),
+					linkedCaseId: parseInt(id || "0"),
+					relationshipType: label,
 				},
 			}),
 		);
@@ -375,8 +373,15 @@ export default function CaseViewPage() {
 		label: string;
 		caseData?: any;
 	} | null>(null);
+	const [isRelationshipInfoDialogOpen, setIsRelationshipInfoDialogOpen] =
+		useState(false);
+	const [relationshipCaseData, setRelationshipCaseData] = useState<any>(null);
 	const [nodes, setNodes, onNodesChange] = useNodesState([]);
 	const [edges, setEdges] = useEdgesState([]);
+
+	// Memoize nodeTypes and edgeTypes to prevent recreation on every render
+	const nodeTypes = useMemo(() => ({ custom: ReadOnlyCustomNode }), []);
+	const edgeTypes = useMemo(() => ({ custom: ReadOnlyCustomEdge }), []);
 
 	useEffect(() => {
 		fetchCaseDetails();
@@ -414,51 +419,50 @@ export default function CaseViewPage() {
 		};
 	}, []);
 
-	// Set up event listener for profile info dialog
+	// Set up event listener for relationship info dialog
 	useEffect(() => {
-		const handleOpenProfileInfoDialog = (event: Event) => {
+		const handleOpenRelationshipInfoDialog = (event: Event) => {
 			const customEvent = event as CustomEvent<{
-				sourceProfileId: number;
-				targetProfileId: number;
-				label: string;
-				caseId: number;
+				linkedCaseId: number | null;
+				relationshipType: string;
 			}>;
 
-			setIsProfileInfoDialogOpen(true);
+			setIsRelationshipInfoDialogOpen(true);
 
-			// Load both profile details and case information
-			Promise.all([
-				getProfile(customEvent.detail.sourceProfileId),
-				getProfile(customEvent.detail.targetProfileId),
-				customEvent.detail.caseId
-					? getCase(customEvent.detail.caseId)
-					: Promise.resolve(null),
-			])
-				.then(([sourceProfile, targetProfile, caseInfo]) => {
-					setProfileInfoData({
-						source: sourceProfile,
-						target: targetProfile,
-						label: customEvent.detail.label,
-						caseData: caseInfo,
+			// Load case data and related metadata
+			if (customEvent.detail.linkedCaseId) {
+				Promise.all([
+					getCase(customEvent.detail.linkedCaseId),
+					getCaseDrugs(customEvent.detail.linkedCaseId),
+					getCaseAreas(customEvent.detail.linkedCaseId),
+					getCaseProfiles(customEvent.detail.linkedCaseId),
+				])
+					.then(([caseInfo, drugsData, areasData, profilesData]) => {
+						setRelationshipCaseData({
+							...caseInfo,
+							drugs: drugsData,
+							areas: areasData,
+							profiles: profilesData,
+						});
+					})
+					.catch((error) => {
+						console.error("Failed to load case data:", error);
+						toast.error("Failed to load case information", {
+							position: "top-center",
+						});
 					});
-				})
-				.catch((error) => {
-					console.error("Failed to load profile data:", error);
-					toast.error("Failed to load profile details", {
-						position: "top-center",
-					});
-				});
+			}
 		};
 
 		window.addEventListener(
-			"open-profile-info-dialog",
-			handleOpenProfileInfoDialog,
+			"open-relationship-info-dialog",
+			handleOpenRelationshipInfoDialog,
 		);
 
 		return () => {
 			window.removeEventListener(
-				"open-profile-info-dialog",
-				handleOpenProfileInfoDialog,
+				"open-relationship-info-dialog",
+				handleOpenRelationshipInfoDialog,
 			);
 		};
 	}, []);
@@ -837,12 +841,8 @@ export default function CaseViewPage() {
 										nodes={nodes}
 										edges={edges}
 										onNodesChange={onNodesChange}
-										nodeTypes={{
-											custom: ReadOnlyCustomNode,
-										}}
-										edgeTypes={{
-											custom: ReadOnlyCustomEdge,
-										}}
+										nodeTypes={nodeTypes}
+										edgeTypes={edgeTypes}
 									>
 										<Background
 											color="#aaa"
@@ -1309,6 +1309,238 @@ export default function CaseViewPage() {
 						<AlertDialogCancel className="cursor-pointer">
 							Close
 						</AlertDialogCancel>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			{/* Relationship Case Info Dialog */}
+			<AlertDialog
+				open={isRelationshipInfoDialogOpen}
+				onOpenChange={(open) => {
+					setIsRelationshipInfoDialogOpen(open);
+					if (!open) {
+						setRelationshipCaseData(null);
+					}
+				}}
+			>
+				<AlertDialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+					<AlertDialogHeader>
+						<AlertDialogTitle>
+							Related Case Information
+						</AlertDialogTitle>
+					</AlertDialogHeader>
+					{relationshipCaseData ? (
+						<Card>
+							<CardContent className="pt-6 space-y-4">
+								{/* Case Info */}
+								<div className="space-y-3">
+									<Badge className="bg-blue-600">Info</Badge>
+									<div className="space-y-2 text-sm">
+										<div>
+											<Label className="text-xs text-gray-500">
+												Case ID
+											</Label>
+											<Badge variant="secondary">
+												{relationshipCaseData.case_id}
+											</Badge>
+										</div>
+										<div>
+											<Label className="text-xs text-gray-500">
+												Case Name
+											</Label>
+											<p className="font-medium text-gray-900">
+												{relationshipCaseData.case_name}
+											</p>
+										</div>
+										<div className="flex flex-wrap gap-2">
+											{relationshipCaseData.case_type && (
+												<Badge variant="outline">
+													{
+														relationshipCaseData.case_type
+													}
+												</Badge>
+											)}
+											{relationshipCaseData.severity_level && (
+												<Badge variant="outline">
+													{
+														relationshipCaseData.severity_level
+													}
+												</Badge>
+											)}
+											{relationshipCaseData.status && (
+												<Badge variant="outline">
+													{
+														relationshipCaseData.status
+													}
+												</Badge>
+											)}
+										</div>
+									</div>
+								</div>
+
+								<Separator />
+
+								{/* Network - Profiles */}
+								{relationshipCaseData.profiles &&
+									relationshipCaseData.profiles.length >
+										0 && (
+										<>
+											<div className="space-y-2">
+												<Badge className="bg-cyan-600">
+													Network
+												</Badge>
+												<p className="text-sm text-gray-600">
+													{
+														relationshipCaseData
+															.profiles.length
+													}{" "}
+													profile(s) involved
+												</p>
+												{relationshipCaseData.profiles.map(
+													(
+														profile: [
+															number,
+															string,
+														],
+													) => (
+														<div
+															key={profile[0]}
+															className="pl-3 border-l border-gray-200 text-sm"
+														>
+															<p className="font-medium text-gray-900">
+																{profile[1]}
+															</p>
+														</div>
+													),
+												)}
+											</div>
+											<Separator />
+										</>
+									)}
+
+								{/* Drugs */}
+								{relationshipCaseData.drugs &&
+									relationshipCaseData.drugs.length > 0 && (
+										<>
+											<div className="space-y-2">
+												<Badge className="bg-purple-600">
+													Drugs
+												</Badge>
+												{relationshipCaseData.drugs.map(
+													(
+														drug: any,
+														idx: number,
+													) => (
+														<div
+															key={idx}
+															className="pl-3 border-l border-gray-200 text-sm"
+														>
+															<p className="font-medium text-gray-900">
+																{drug.drug_name}
+															</p>
+															{drug.quantity && (
+																<p className="text-xs text-gray-600">
+																	Quantity:{" "}
+																	{
+																		drug.quantity
+																	}
+																</p>
+															)}
+															{drug.quantified_by && (
+																<p className="text-xs text-gray-600">
+																	By:{" "}
+																	{
+																		drug.quantified_by
+																	}
+																</p>
+															)}
+														</div>
+													),
+												)}
+											</div>
+											<Separator />
+										</>
+									)}
+
+								{/* Areas */}
+								{relationshipCaseData.areas &&
+									relationshipCaseData.areas.length > 0 && (
+										<>
+											<div className="space-y-2">
+												<Badge className="bg-orange-600">
+													Areas
+												</Badge>
+												<div className="flex flex-wrap gap-2">
+													{relationshipCaseData.areas.map(
+														(
+															area: string,
+															idx: number,
+														) => (
+															<Badge
+																key={idx}
+																variant="secondary"
+															>
+																{area}
+															</Badge>
+														),
+													)}
+												</div>
+											</div>
+											<Separator />
+										</>
+									)}
+
+								{/* Notes */}
+								{relationshipCaseData.description && (
+									<>
+										<div className="space-y-2">
+											<Badge className="bg-green-600">
+												Notes
+											</Badge>
+											<p className="text-sm text-gray-600 whitespace-pre-wrap">
+												{
+													relationshipCaseData.description
+												}
+											</p>
+										</div>
+										<Separator />
+									</>
+								)}
+
+								{/* Created At */}
+								{relationshipCaseData.created_at && (
+									<div className="text-xs text-gray-500">
+										Created:{" "}
+										{new Date(
+											relationshipCaseData.created_at,
+										).toLocaleString()}
+									</div>
+								)}
+							</CardContent>
+						</Card>
+					) : (
+						<div className="py-8 text-center text-sm text-muted-foreground">
+							Loading case information...
+						</div>
+					)}
+					<AlertDialogFooter>
+						<AlertDialogCancel className="cursor-pointer">
+							Close
+						</AlertDialogCancel>
+						{relationshipCaseData && (
+							<Button
+								onClick={() => {
+									setIsRelationshipInfoDialogOpen(false);
+									setRelationshipCaseData(null);
+									navigate(
+										`/case/${relationshipCaseData.id}`,
+									);
+								}}
+								className="bg-blue-600 hover:bg-blue-700 text-white"
+							>
+								Go to Case
+							</Button>
+						)}
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
