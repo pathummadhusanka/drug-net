@@ -74,6 +74,11 @@ import {
 	Eye,
 	User,
 	CircleHelp,
+	FileText,
+	Network,
+	Pill,
+	MapPin,
+	MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -265,8 +270,8 @@ const ReadOnlyCustomEdge = ({
 		window.dispatchEvent(
 			new CustomEvent("open-relationship-info-dialog", {
 				detail: {
-					linkedCaseId: parseInt(id || "0"),
-					relationshipType: label,
+					linkedCaseId: data?.caseId || null,
+					relationshipType: data?.label || label,
 				},
 			}),
 		);
@@ -635,7 +640,10 @@ export default function CaseViewPage() {
 					source: rel.source_profile_id.toString(),
 					target: rel.target_profile_id.toString(),
 					type: "custom",
-					data: { label: rel.relationship_type || "" },
+					data: {
+						label: rel.relationship_type || "",
+						caseId: caseData.id,
+					},
 					markerEnd: { type: MarkerType.ArrowClosed },
 				}),
 			);
@@ -1331,190 +1339,404 @@ export default function CaseViewPage() {
 					</AlertDialogHeader>
 					{relationshipCaseData ? (
 						<Card>
-							<CardContent className="pt-6 space-y-4">
-								{/* Case Info */}
-								<div className="space-y-3">
-									<Badge className="bg-blue-600">Info</Badge>
-									<div className="space-y-2 text-sm">
-										<div>
-											<Label className="text-xs text-gray-500">
-												Case ID
-											</Label>
-											<Badge variant="secondary">
-												{relationshipCaseData.case_id}
-											</Badge>
+							<CardContent className="pt-2 space-y-2 pb-2">
+								{/* Info Badge - Case ID, Title, Type, Severity, Status */}
+								<div className="flex items-start gap-2">
+									<Badge
+										variant="secondary"
+										className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+									>
+										<FileText className="h-3 w-3" />
+										Info
+									</Badge>
+									<div className="flex-1 space-y-1 font-semibold">
+										{/* Line 1: Case ID | Name + Type/Severity/Status badges */}
+										<div className="flex items-start justify-between gap-3 text-sm text-gray-700">
+											<div className="min-w-0 flex items-center gap-2 flex-wrap">
+												{relationshipCaseData.case_id && (
+													<span>
+														{
+															relationshipCaseData.case_id
+														}
+													</span>
+												)}
+												{relationshipCaseData.case_id &&
+													relationshipCaseData.case_name && (
+														<span className="text-muted-foreground">
+															|
+														</span>
+													)}
+												{relationshipCaseData.case_name && (
+													<span>
+														{relationshipCaseData
+															.case_name.length >
+														20
+															? relationshipCaseData.case_name.substring(
+																	0,
+																	20,
+																) + "..."
+															: relationshipCaseData.case_name}
+													</span>
+												)}
+											</div>
+											<div className="shrink-0 flex items-center gap-2 flex-wrap justify-end">
+												{relationshipCaseData.case_type && (
+													<span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+														{relationshipCaseData.case_type
+															.split(/[\s_-]+/)
+															.filter(Boolean)
+															.map(
+																(
+																	part: string,
+																) =>
+																	part
+																		.charAt(
+																			0,
+																		)
+																		.toUpperCase() +
+																	part
+																		.slice(
+																			1,
+																		)
+																		.toLowerCase(),
+															)
+															.join(" ")}
+													</span>
+												)}
+												{relationshipCaseData.severity_level && (
+													<span
+														className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+															relationshipCaseData.severity_level ===
+															"low"
+																? "bg-green-100 text-green-800"
+																: relationshipCaseData.severity_level ===
+																	  "medium"
+																	? "bg-yellow-100 text-yellow-800"
+																	: relationshipCaseData.severity_level ===
+																		  "high"
+																		? "bg-orange-100 text-orange-800"
+																		: "bg-red-100 text-red-800"
+														}`}
+													>
+														{relationshipCaseData.severity_level
+															.split(/[\s_-]+/)
+															.filter(Boolean)
+															.map(
+																(
+																	part: string,
+																) =>
+																	part
+																		.charAt(
+																			0,
+																		)
+																		.toUpperCase() +
+																	part
+																		.slice(
+																			1,
+																		)
+																		.toLowerCase(),
+															)
+															.join(" ")}
+													</span>
+												)}
+												{relationshipCaseData.status && (
+													<span
+														className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+															relationshipCaseData.status ===
+															"active"
+																? "bg-green-100 text-green-800"
+																: relationshipCaseData.status ===
+																	  "under-surveillance"
+																	? "bg-yellow-100 text-yellow-800"
+																	: "bg-gray-100 text-gray-800"
+														}`}
+													>
+														{relationshipCaseData.status
+															.split(/[\s_-]+/)
+															.filter(Boolean)
+															.map(
+																(
+																	part: string,
+																) =>
+																	part
+																		.charAt(
+																			0,
+																		)
+																		.toUpperCase() +
+																	part
+																		.slice(
+																			1,
+																		)
+																		.toLowerCase(),
+															)
+															.join(" ")}
+													</span>
+												)}
+											</div>
 										</div>
-										<div>
-											<Label className="text-xs text-gray-500">
-												Case Name
-											</Label>
-											<p className="font-medium text-gray-900">
-												{relationshipCaseData.case_name}
-											</p>
-										</div>
-										<div className="flex flex-wrap gap-2">
-											{relationshipCaseData.case_type && (
-												<Badge variant="outline">
-													{
-														relationshipCaseData.case_type
-													}
-												</Badge>
-											)}
-											{relationshipCaseData.severity_level && (
-												<Badge variant="outline">
-													{
-														relationshipCaseData.severity_level
-													}
-												</Badge>
-											)}
-											{relationshipCaseData.status && (
-												<Badge variant="outline">
-													{
-														relationshipCaseData.status
-													}
-												</Badge>
-											)}
-										</div>
+
+										{/* Line 2: Date/Time | Description */}
+										{(relationshipCaseData.case_date ||
+											relationshipCaseData.case_time ||
+											relationshipCaseData.description) && (
+											<div className="flex items-center gap-2 flex-wrap text-sm text-gray-700">
+												{(relationshipCaseData.case_date ||
+													relationshipCaseData.case_time) && (
+													<>
+														{relationshipCaseData.case_date && (
+															<span>
+																{relationshipCaseData.case_time
+																	? (() => {
+																			try {
+																				const dateObj =
+																					new Date(
+																						relationshipCaseData.case_date,
+																					);
+																				const [
+																					hours,
+																					minutes,
+																				] =
+																					relationshipCaseData.case_time.split(
+																						":",
+																					);
+																				dateObj.setHours(
+																					parseInt(
+																						hours,
+																					),
+																					parseInt(
+																						minutes,
+																					),
+																				);
+																				const dateStr =
+																					dateObj.toLocaleDateString(
+																						"en-US",
+																						{
+																							month: "short",
+																							day: "numeric",
+																							year: "numeric",
+																						},
+																					);
+																				const timeStr =
+																					dateObj.toLocaleTimeString(
+																						"en-US",
+																						{
+																							hour: "2-digit",
+																							minute: "2-digit",
+																							hour12: true,
+																						},
+																					);
+																				return `${dateStr} @ ${timeStr}`;
+																			} catch {
+																				return new Date(
+																					relationshipCaseData.case_date,
+																				).toLocaleDateString();
+																			}
+																		})()
+																	: new Date(
+																			relationshipCaseData.case_date,
+																		).toLocaleString(
+																			"en-US",
+																			{
+																				month: "short",
+																				day: "numeric",
+																				year: "numeric",
+																			},
+																		)}
+															</span>
+														)}
+														{!relationshipCaseData.case_date &&
+															relationshipCaseData.case_time && (
+																<span>
+																	{
+																		relationshipCaseData.case_time
+																	}
+																</span>
+															)}
+														{relationshipCaseData.description && (
+															<span className="text-muted-foreground">
+																|
+															</span>
+														)}
+													</>
+												)}
+												{relationshipCaseData.description && (
+													<span>
+														{relationshipCaseData.description.replace(
+															/[\r\n]+/g,
+															" \\ ",
+														).length > 100
+															? relationshipCaseData.description
+																	.replace(
+																		/[\r\n]+/g,
+																		" \\ ",
+																	)
+																	.substring(
+																		0,
+																		100,
+																	) + "..."
+															: relationshipCaseData.description.replace(
+																	/[\r\n]+/g,
+																	" \\ ",
+																)}
+													</span>
+												)}
+											</div>
+										)}
 									</div>
 								</div>
 
-								<Separator />
-
-								{/* Network - Profiles */}
+								{/* Network Badge + Profiles */}
 								{relationshipCaseData.profiles &&
 									relationshipCaseData.profiles.length >
 										0 && (
-										<>
-											<div className="space-y-2">
-												<Badge className="bg-cyan-600">
-													Network
-												</Badge>
-												<p className="text-sm text-gray-600">
-													{
-														relationshipCaseData
-															.profiles.length
-													}{" "}
-													profile(s) involved
-												</p>
+										<div className="flex items-start gap-2">
+											<Badge
+												variant="secondary"
+												className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+											>
+												<Network className="h-3 w-3" />
+												Network
+											</Badge>
+											<div className="text-sm text-gray-700 truncate font-semibold">
 												{relationshipCaseData.profiles.map(
-													(
-														profile: [
-															number,
-															string,
-														],
-													) => (
-														<div
-															key={profile[0]}
-															className="pl-3 border-l border-gray-200 text-sm"
-														>
-															<p className="font-medium text-gray-900">
-																{profile[1]}
-															</p>
-														</div>
+													(p: any) => (
+														<span key={p[0]}>
+															{p[1].length > 20
+																? p[1].substring(
+																		0,
+																		20,
+																	) + "..."
+																: p[1]}
+															{relationshipCaseData.profiles.indexOf(
+																p,
+															) !==
+																relationshipCaseData
+																	.profiles
+																	.length -
+																	1 && ", "}
+														</span>
 													),
 												)}
 											</div>
-											<Separator />
-										</>
+										</div>
 									)}
 
-								{/* Drugs */}
+								{/* Drugs Badge + Details */}
 								{relationshipCaseData.drugs &&
 									relationshipCaseData.drugs.length > 0 && (
-										<>
-											<div className="space-y-2">
-												<Badge className="bg-purple-600">
-													Drugs
-												</Badge>
+										<div className="flex items-start gap-2">
+											<Badge
+												variant="secondary"
+												className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+											>
+												<Pill className="h-3 w-3" />
+												Drugs
+											</Badge>
+											<p className="text-sm text-gray-700 font-semibold">
 												{relationshipCaseData.drugs.map(
-													(
-														drug: any,
-														idx: number,
-													) => (
-														<div
-															key={idx}
-															className="pl-3 border-l border-gray-200 text-sm"
+													(d: any, index: number) => (
+														<span
+															key={`${d.drug_name}-${index}`}
 														>
-															<p className="font-medium text-gray-900">
-																{drug.drug_name}
-															</p>
-															{drug.quantity && (
-																<p className="text-xs text-gray-600">
-																	Quantity:{" "}
-																	{
-																		drug.quantity
-																	}
-																</p>
-															)}
-															{drug.quantified_by && (
-																<p className="text-xs text-gray-600">
-																	By:{" "}
-																	{
-																		drug.quantified_by
-																	}
-																</p>
-															)}
-														</div>
+															{d.drug_name
+																.length > 20
+																? d.drug_name.substring(
+																		0,
+																		20,
+																	) + "..."
+																: d.drug_name}
+															({d.quantified_by}):{" "}
+															{d.quantity}
+															{index !==
+																relationshipCaseData
+																	.drugs
+																	.length -
+																	1 && ", "}
+														</span>
 													),
 												)}
-											</div>
-											<Separator />
-										</>
-									)}
-
-								{/* Areas */}
-								{relationshipCaseData.areas &&
-									relationshipCaseData.areas.length > 0 && (
-										<>
-											<div className="space-y-2">
-												<Badge className="bg-orange-600">
-													Areas
-												</Badge>
-												<div className="flex flex-wrap gap-2">
-													{relationshipCaseData.areas.map(
-														(
-															area: string,
-															idx: number,
-														) => (
-															<Badge
-																key={idx}
-																variant="secondary"
-															>
-																{area}
-															</Badge>
-														),
-													)}
-												</div>
-											</div>
-											<Separator />
-										</>
-									)}
-
-								{/* Notes */}
-								{relationshipCaseData.description && (
-									<>
-										<div className="space-y-2">
-											<Badge className="bg-green-600">
-												Notes
-											</Badge>
-											<p className="text-sm text-gray-600 whitespace-pre-wrap">
-												{
-													relationshipCaseData.description
-												}
 											</p>
 										</div>
-										<Separator />
-									</>
+									)}
+
+								{/* Areas Badge + Details */}
+								{relationshipCaseData.areas &&
+									relationshipCaseData.areas.length > 0 && (
+										<div className="flex items-start gap-2">
+											<Badge
+												variant="secondary"
+												className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+											>
+												<MapPin className="h-3 w-3" />
+												Areas
+											</Badge>
+											<p className="text-sm text-gray-700 font-semibold">
+												{relationshipCaseData.areas.map(
+													(
+														area: string,
+														index: number,
+													) => (
+														<span
+															key={`${area}-${index}`}
+														>
+															{area}
+															{index !==
+																relationshipCaseData
+																	.areas
+																	.length -
+																	1 && ", "}
+														</span>
+													),
+												)}
+											</p>
+										</div>
+									)}
+
+								{/* Notes Badge + Details */}
+								{relationshipCaseData.notes && (
+									<div className="flex items-start gap-2">
+										<Badge
+											variant="secondary"
+											className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+										>
+											<MessageSquare className="h-3 w-3" />
+											Notes
+										</Badge>
+										<p className="text-sm text-gray-700 font-semibold">
+											{relationshipCaseData.notes.replace(
+												/[\r\n]+/g,
+												" \\ ",
+											).length > 100
+												? relationshipCaseData.notes
+														.replace(
+															/[\r\n]+/g,
+															" \\ ",
+														)
+														.substring(0, 100) +
+													"..."
+												: relationshipCaseData.notes.replace(
+														/[\r\n]+/g,
+														" \\ ",
+													)}
+										</p>
+									</div>
 								)}
 
 								{/* Created At */}
 								{relationshipCaseData.created_at && (
-									<div className="text-xs text-gray-500">
-										Created:{" "}
+									<p className="text-xs text-gray-400 pt-1">
+										Created At:{" "}
 										{new Date(
 											relationshipCaseData.created_at,
-										).toLocaleString()}
-									</div>
+										).toLocaleString("en-US", {
+											month: "short",
+											day: "numeric",
+											year: "numeric",
+											hour: "2-digit",
+											minute: "2-digit",
+											hour12: true,
+										})}
+									</p>
 								)}
 							</CardContent>
 						</Card>
@@ -1527,16 +1749,15 @@ export default function CaseViewPage() {
 						<AlertDialogCancel className="cursor-pointer">
 							Close
 						</AlertDialogCancel>
-						{relationshipCaseData && (
+						{relationshipCaseData?.id && (
 							<Button
+								variant="default"
 								onClick={() => {
 									setIsRelationshipInfoDialogOpen(false);
-									setRelationshipCaseData(null);
 									navigate(
 										`/case/${relationshipCaseData.id}`,
 									);
 								}}
-								className="bg-blue-600 hover:bg-blue-700 text-white"
 							>
 								Go to Case
 							</Button>
