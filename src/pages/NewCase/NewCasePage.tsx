@@ -684,6 +684,7 @@ export default function NewCasePage() {
 		relationshipType: string;
 	} | null>(null);
 	const [relationshipCaseData, setRelationshipCaseData] = useState<any>(null);
+	const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
 
 	const initialNodes: Node[] =
 		hasDefaultProfile && defaultProfile
@@ -1433,6 +1434,25 @@ export default function NewCasePage() {
 		setDrugSearch("");
 		setAreas([]);
 		setPendingArea("");
+		setNodes(initialNodes);
+		setEdges([]);
+		setNodeId(hasDefaultProfile ? 2 : 1);
+		setPendingConnection(null);
+		setConnectionLabel("");
+		setEditingEdgeId(null);
+		setIsConnectionDialogOpen(false);
+		setIsAddProfileDialogOpen(false);
+		setProfileSearch("");
+		setIsNewProfileDialogOpen(false);
+		resetNewProfileForm();
+		setIsRelationshipInfoDialogOpen(false);
+		setRelationshipInfoData(null);
+		setRelationshipCaseData(null);
+		setIsClearAllDialogOpen(false);
+
+		toast.success("Draft case cleared", {
+			position: "top-center",
+		});
 	};
 
 	const caseDetailsTotalFields = 8;
@@ -1446,6 +1466,23 @@ export default function NewCasePage() {
 		severityLevel,
 		caseStatus,
 	].filter((value) => value.trim().length > 0).length;
+
+	const hasDraftData =
+		caseId.trim().length > 0 ||
+		caseTitle.trim().length > 0 ||
+		caseDescription.trim().length > 0 ||
+		caseNotes.trim().length > 0 ||
+		caseType.trim().length > 0 ||
+		caseStatus.trim().length > 0 ||
+		severityLevel.trim().length > 0 ||
+		caseDate.trim().length > 0 ||
+		caseTime.trim().length > 0 ||
+		drugSearch.trim().length > 0 ||
+		pendingArea.trim().length > 0 ||
+		Object.keys(selectedDrugs).length > 0 ||
+		areas.length > 0 ||
+		edges.length > 0 ||
+		nodes.length !== initialNodes.length;
 
 	return (
 		<div className="w-full mx-auto space-y-1">
@@ -2590,14 +2627,44 @@ export default function NewCasePage() {
 					</Accordion>
 
 					<div className="flex justify-between pt-4">
-						<Button
-							type="button"
-							variant="outline"
-							className="cursor-pointer"
-							onClick={clearAll}
+						<AlertDialog
+							open={isClearAllDialogOpen}
+							onOpenChange={setIsClearAllDialogOpen}
 						>
-							Clear All
-						</Button>
+							<AlertDialogTrigger asChild>
+								<Button
+									type="button"
+									variant="outline"
+									className="cursor-pointer"
+									disabled={!hasDraftData}
+								>
+									Clear All
+								</Button>
+							</AlertDialogTrigger>
+							<AlertDialogContent>
+								<AlertDialogHeader>
+									<AlertDialogTitle>
+										Clear all draft data?
+									</AlertDialogTitle>
+									<AlertDialogDescription>
+										This will remove all unsaved case
+										details, network profiles, connections,
+										drugs, areas, and notes from this draft.
+									</AlertDialogDescription>
+								</AlertDialogHeader>
+								<AlertDialogFooter>
+									<AlertDialogCancel className="cursor-pointer">
+										Cancel
+									</AlertDialogCancel>
+									<AlertDialogAction
+										onClick={clearAll}
+										className="cursor-pointer"
+									>
+										Clear All
+									</AlertDialogAction>
+								</AlertDialogFooter>
+							</AlertDialogContent>
+						</AlertDialog>
 						<Button type="submit" className="cursor-pointer">
 							{isEditMode ? "Update Case" : "Save Case"}
 						</Button>
