@@ -425,14 +425,29 @@ const CustomEdge = ({
 					y2={resolvedTargetY}
 					gradientUnits="userSpaceOnUse"
 				>
-					<stop
-						offset="0%"
-						stopColor={selected ? "#2563eb" : "#3b82f6"}
-					/>
-					<stop
-						offset="100%"
-						stopColor={selected ? "#dc2626" : "#ef4444"}
-					/>
+					{readonly ? (
+						<>
+							<stop
+								offset="0%"
+								stopColor={selected ? "#4b5563" : "#d1d5db"}
+							/>
+							<stop
+								offset="100%"
+								stopColor={selected ? "#1f2937" : "#6b7280"}
+							/>
+						</>
+					) : (
+						<>
+							<stop
+								offset="0%"
+								stopColor={selected ? "#2563eb" : "#3b82f6"}
+							/>
+							<stop
+								offset="100%"
+								stopColor={selected ? "#dc2626" : "#ef4444"}
+							/>
+						</>
+					)}
 				</linearGradient>
 				<marker
 					id={markerId}
@@ -445,7 +460,15 @@ const CustomEdge = ({
 				>
 					<path
 						d="M 0 0 L 10 5 L 0 10 z"
-						fill={selected ? "#dc2626" : "#ef4444"}
+						fill={
+							readonly
+								? selected
+									? "#1f2937"
+									: "#6b7280"
+								: selected
+									? "#dc2626"
+									: "#ef4444"
+						}
 					/>
 				</marker>
 			</defs>
@@ -1145,11 +1168,11 @@ export default function NewCasePage() {
 									source: sourceNode.id,
 									target: targetNode.id,
 									type: "custom",
-									label:
-										relationship.relationship_type ||
-										"Connected",
 									data: {
 										readonly: true,
+										label:
+											relationship.relationship_type ||
+											"Connected",
 										relationshipType:
 											relationship.relationship_type,
 									},
@@ -2006,533 +2029,6 @@ export default function NewCasePage() {
 										</ReactFlow>
 									</div>
 
-									<Dialog
-										open={isConnectionDialogOpen}
-										onOpenChange={(open) => {
-											setIsConnectionDialogOpen(open);
-											if (!open) {
-												setPendingConnection(null);
-												setConnectionLabel("");
-												setEditingEdgeId(null);
-											}
-										}}
-									>
-										<DialogContent className="sm:max-w-md">
-											<form
-												onSubmit={
-													handleConnectionSubmit
-												}
-											>
-												<DialogHeader className="px-1 pb-1">
-													<DialogTitle>
-														{editingEdgeId
-															? "Edit"
-															: "Add"}{" "}
-														Connection
-													</DialogTitle>
-													<DialogDescription>
-														{editingEdgeId
-															? "Update the"
-															: "Create a"}{" "}
-														connection between
-														profiles
-													</DialogDescription>
-												</DialogHeader>
-												<div className="space-y-4 py-4">
-													{pendingConnection && (
-														<div className="bg-muted p-3 rounded-md text-sm">
-															<div className="flex items-center justify-between gap-2">
-																<div className="flex min-w-0 items-center gap-2">
-																	<span
-																		className="font-medium truncate max-w-45"
-																		title={
-																			(nodes.find(
-																				(
-																					n,
-																				) =>
-																					n.id ===
-																					pendingConnection.source,
-																			)
-																				?.data
-																				.label as string) ||
-																			""
-																		}
-																	>
-																		{
-																			nodes.find(
-																				(
-																					n,
-																				) =>
-																					n.id ===
-																					pendingConnection.source,
-																			)
-																				?.data
-																				.label as string
-																		}
-																	</span>
-																	<span className="text-muted-foreground shrink-0">
-																		→
-																	</span>
-																	<span
-																		className="font-medium truncate max-w-45"
-																		title={
-																			(nodes.find(
-																				(
-																					n,
-																				) =>
-																					n.id ===
-																					pendingConnection.target,
-																			)
-																				?.data
-																				.label as string) ||
-																			""
-																		}
-																	>
-																		{
-																			nodes.find(
-																				(
-																					n,
-																				) =>
-																					n.id ===
-																					pendingConnection.target,
-																			)
-																				?.data
-																				.label as string
-																		}
-																	</span>
-																</div>
-																{editingEdgeId && (
-																	<Trash2
-																		className="h-4 w-4 shrink-0 text-destructive cursor-pointer hover:text-destructive/80"
-																		onClick={
-																			handleConnectionDelete
-																		}
-																	/>
-																)}
-															</div>
-														</div>
-													)}
-													<Field>
-														<Label htmlFor="connection-type">
-															Connection Type
-														</Label>
-														<Input
-															id="connection-type"
-															name="connectionType"
-															placeholder="e.g., Supplier, Associate, Family, Known Contact"
-															value={
-																connectionLabel
-															}
-															onChange={(e) =>
-																setConnectionLabel(
-																	e.target
-																		.value,
-																)
-															}
-															required
-															autoFocus
-														/>
-													</Field>
-												</div>
-												<DialogFooter className="px-1 pt-1">
-													<div className="flex w-full justify-between">
-														<DialogClose asChild>
-															<Button
-																variant="outline"
-																type="button"
-																className="cursor-pointer"
-															>
-																Cancel
-															</Button>
-														</DialogClose>
-														<Button
-															type="submit"
-															className="cursor-pointer"
-														>
-															{editingEdgeId
-																? "Update"
-																: "Add"}{" "}
-															Connection
-														</Button>
-													</div>
-												</DialogFooter>
-											</form>
-										</DialogContent>
-									</Dialog>
-
-									<Dialog
-										open={isNewProfileDialogOpen}
-										onOpenChange={(open) => {
-											setIsNewProfileDialogOpen(open);
-											if (!open) {
-												resetNewProfileForm();
-											}
-										}}
-									>
-										<DialogContent className="sm:max-w-2xl px-6">
-											<form
-												onSubmit={
-													handleCreateNewProfile
-												}
-											>
-												<DialogHeader>
-													<DialogTitle>
-														Create New Profile
-													</DialogTitle>
-													<DialogDescription>
-														Create a profile and add
-														it to this case network
-													</DialogDescription>
-												</DialogHeader>
-												<div className="grid gap-4 my-2 py-4 px-1 max-h-[65vh] overflow-y-auto pr-1">
-													<div className="grid gap-2">
-														<Label htmlFor="new-profile-full-name">
-															Full Name
-														</Label>
-														<Input
-															id="new-profile-full-name"
-															placeholder="John Doe"
-															value={
-																newProfileFullName
-															}
-															onChange={(e) =>
-																setNewProfileFullName(
-																	e.target
-																		.value,
-																)
-															}
-															required
-															autoFocus
-														/>
-													</div>
-													<div className="grid gap-2">
-														<Label htmlFor="new-profile-alias">
-															Alias
-														</Label>
-														<Input
-															id="new-profile-alias"
-															placeholder="Optional"
-															value={
-																newProfileAlias
-															}
-															onChange={(e) =>
-																setNewProfileAlias(
-																	e.target
-																		.value,
-																)
-															}
-														/>
-													</div>
-													<div className="grid gap-2">
-														<Label htmlFor="new-profile-nic">
-															NIC
-														</Label>
-														<Input
-															id="new-profile-nic"
-															placeholder="Optional (must be unique)"
-															value={
-																newProfileNic
-															}
-															onChange={(e) =>
-																setNewProfileNic(
-																	e.target
-																		.value,
-																)
-															}
-														/>
-													</div>
-
-													<div className="grid gap-2">
-														<Label htmlFor="new-profile-address-line1">
-															Address Line 1
-														</Label>
-														<Input
-															id="new-profile-address-line1"
-															placeholder="Optional"
-															value={
-																newProfileAddressLine1
-															}
-															onChange={(e) =>
-																setNewProfileAddressLine1(
-																	e.target
-																		.value,
-																)
-															}
-														/>
-													</div>
-													<div className="grid gap-2">
-														<Label htmlFor="new-profile-address-line2">
-															Address Line 2
-														</Label>
-														<Input
-															id="new-profile-address-line2"
-															placeholder="Optional"
-															value={
-																newProfileAddressLine2
-															}
-															onChange={(e) =>
-																setNewProfileAddressLine2(
-																	e.target
-																		.value,
-																)
-															}
-														/>
-													</div>
-													<div className="grid gap-2">
-														<Label htmlFor="new-profile-city">
-															City
-														</Label>
-														<Input
-															id="new-profile-city"
-															placeholder="Optional"
-															value={
-																newProfileCity
-															}
-															onChange={(e) =>
-																setNewProfileCity(
-																	e.target
-																		.value,
-																)
-															}
-														/>
-													</div>
-
-													<div className="grid gap-2">
-														<Label htmlFor="new-profile-notes">
-															Notes
-														</Label>
-														<Textarea
-															ref={
-																newProfileNotesRef
-															}
-															id="new-profile-notes"
-															maxLength={500}
-															placeholder="Include notes"
-															value={
-																newProfileNotes
-															}
-															onChange={(e) =>
-																setNewProfileNotes(
-																	e.target
-																		.value,
-																)
-															}
-															className="resize-none overflow-hidden"
-														/>
-														<div className="text-sm text-gray-500">
-															{
-																newProfileNotes.length
-															}
-															/500
-														</div>
-													</div>
-													<div className="flex w-full justify-between gap-2 pt-2">
-														<Button
-															type="button"
-															variant="outline"
-															onClick={
-																resetNewProfileForm
-															}
-															className="cursor-pointer"
-														>
-															Clear
-														</Button>
-														<div className="flex gap-2">
-															<DialogClose
-																asChild
-															>
-																<Button
-																	type="button"
-																	variant="outline"
-																	className="cursor-pointer"
-																>
-																	Cancel
-																</Button>
-															</DialogClose>
-															<Button
-																type="submit"
-																className="cursor-pointer"
-																disabled={
-																	isCreatingProfile
-																}
-															>
-																{isCreatingProfile
-																	? "Creating..."
-																	: "Save Profile"}
-															</Button>
-														</div>
-													</div>
-												</div>
-											</form>
-										</DialogContent>
-									</Dialog>
-
-									{/* Profile Selection Dialog */}
-									<Dialog
-										open={isAddProfileDialogOpen}
-										onOpenChange={(open) => {
-											setIsAddProfileDialogOpen(open);
-											if (!open) {
-												setProfileSearch("");
-											}
-										}}
-									>
-										<DialogContent className="sm:max-w-2xl">
-											<DialogHeader>
-												<DialogTitle>
-													Add Profile to Case
-												</DialogTitle>
-												<DialogDescription>
-													Search and select a profile
-													from the database
-												</DialogDescription>
-											</DialogHeader>
-											<div className="space-y-4 py-4">
-												<Input
-													placeholder="Search by name or alias..."
-													value={profileSearch}
-													onChange={(e) =>
-														setProfileSearch(
-															e.target.value,
-														)
-													}
-													autoFocus
-												/>
-												<div className="max-h-80 overflow-y-auto rounded-md border">
-													{(() => {
-														const filteredProfiles =
-															availableProfiles
-																.map(
-																	(
-																		profile,
-																	) => ({
-																		profile,
-																		...fuzzyMatch(
-																			profileSearch,
-																			`${profile.full_name} ${profile.alias || ""}`,
-																		),
-																	}),
-																)
-																.filter(
-																	({
-																		match,
-																	}) => match,
-																)
-																.sort(
-																	(a, b) =>
-																		b.score -
-																		a.score,
-																)
-																.slice(0, 50);
-
-														if (
-															availableProfiles.length ===
-															0
-														) {
-															return (
-																<div className="p-4 text-center text-sm text-muted-foreground">
-																	No profiles
-																	found in
-																	database
-																</div>
-															);
-														}
-
-														if (
-															filteredProfiles.length ===
-															0
-														) {
-															return (
-																<div className="p-4 text-center text-sm text-muted-foreground">
-																	No matching
-																	profiles
-																	found
-																</div>
-															);
-														}
-
-														return filteredProfiles.map(
-															({ profile }) => {
-																const isProfileAdded =
-																	nodes.some(
-																		(
-																			node,
-																		) =>
-																			node
-																				.data
-																				?.profileId ===
-																			profile.id,
-																	);
-
-																return (
-																	<button
-																		key={
-																			profile.id
-																		}
-																		type="button"
-																		disabled={
-																			isProfileAdded
-																		}
-																		onClick={() => {
-																			addNode(
-																				profile,
-																			);
-																			setIsAddProfileDialogOpen(
-																				false,
-																			);
-																			setProfileSearch(
-																				"",
-																			);
-																		}}
-																		className={`w-full border-b px-3 py-2 text-left last:border-b-0 ${
-																			isProfileAdded
-																				? "opacity-50 cursor-not-allowed bg-muted/30 hover:bg-muted/30"
-																				: "hover:bg-muted/50 cursor-pointer"
-																		}`}
-																	>
-																		<div className="flex flex-col">
-																			<span className="font-medium">
-																				{
-																					profile.full_name
-																				}
-																			</span>
-																			{profile.alias && (
-																				<span className="text-sm text-muted-foreground">
-																					Alias:{" "}
-																					{
-																						profile.alias
-																					}
-																				</span>
-																			)}
-																			{profile.city && (
-																				<span className="text-xs text-muted-foreground">
-																					{
-																						profile.city
-																					}
-																				</span>
-																			)}
-																		</div>
-																	</button>
-																);
-															},
-														);
-													})()}
-												</div>
-											</div>
-											<DialogFooter>
-												<DialogClose asChild>
-													<Button
-														variant="outline"
-														type="button"
-														className="cursor-pointer"
-													>
-														Cancel
-													</Button>
-												</DialogClose>
-											</DialogFooter>
-										</DialogContent>
-									</Dialog>
-
 									<p className="text-sm text-gray-500">
 										Click "Add Profile" to select profiles
 										from the database. Drag profiles to
@@ -2998,6 +2494,389 @@ export default function NewCasePage() {
 					</div>
 				</form>
 			)}
+
+			{/* Dialogs moved outside of form to prevent event bubbling */}
+			<Dialog
+				open={isConnectionDialogOpen}
+				onOpenChange={(open) => {
+					setIsConnectionDialogOpen(open);
+					if (!open) {
+						setPendingConnection(null);
+						setConnectionLabel("");
+						setEditingEdgeId(null);
+					}
+				}}
+			>
+				<DialogContent className="sm:max-w-md">
+					<form onSubmit={handleConnectionSubmit}>
+						<DialogHeader className="px-1 pb-1">
+							<DialogTitle>
+								{editingEdgeId ? "Edit" : "Add"} Connection
+							</DialogTitle>
+							<DialogDescription>
+								{editingEdgeId ? "Update the" : "Create a"}{" "}
+								connection between profiles
+							</DialogDescription>
+						</DialogHeader>
+						<div className="space-y-4 py-4">
+							{pendingConnection && (
+								<div className="bg-muted p-3 rounded-md text-sm">
+									<div className="flex items-center justify-between gap-2">
+										<div className="flex min-w-0 items-center gap-2">
+											<span
+												className="font-medium truncate max-w-45"
+												title={
+													(nodes.find(
+														(n) =>
+															n.id ===
+															pendingConnection.source,
+													)?.data.label as string) ||
+													""
+												}
+											>
+												{
+													nodes.find(
+														(n) =>
+															n.id ===
+															pendingConnection.source,
+													)?.data.label as string
+												}
+											</span>
+											<span className="text-muted-foreground shrink-0">
+												→
+											</span>
+											<span
+												className="font-medium truncate max-w-45"
+												title={
+													(nodes.find(
+														(n) =>
+															n.id ===
+															pendingConnection.target,
+													)?.data.label as string) ||
+													""
+												}
+											>
+												{
+													nodes.find(
+														(n) =>
+															n.id ===
+															pendingConnection.target,
+													)?.data.label as string
+												}
+											</span>
+										</div>
+										{editingEdgeId && (
+											<Trash2
+												className="h-4 w-4 shrink-0 text-destructive cursor-pointer hover:text-destructive/80"
+												onClick={handleConnectionDelete}
+											/>
+										)}
+									</div>
+								</div>
+							)}
+							<Field>
+								<Label htmlFor="connection-type">
+									Connection Type
+								</Label>
+								<Input
+									id="connection-type"
+									name="connectionType"
+									placeholder="e.g., Supplier, Associate, Family, Known Contact"
+									value={connectionLabel}
+									onChange={(e) =>
+										setConnectionLabel(e.target.value)
+									}
+									required
+									autoFocus
+								/>
+							</Field>
+						</div>
+						<DialogFooter className="px-1 pt-1">
+							<div className="flex w-full justify-between">
+								<DialogClose asChild>
+									<Button
+										variant="outline"
+										type="button"
+										className="cursor-pointer"
+									>
+										Cancel
+									</Button>
+								</DialogClose>
+								<Button
+									type="submit"
+									className="cursor-pointer"
+								>
+									{editingEdgeId ? "Update" : "Add"}{" "}
+									Connection
+								</Button>
+							</div>
+						</DialogFooter>
+					</form>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
+				open={isNewProfileDialogOpen}
+				onOpenChange={(open) => {
+					setIsNewProfileDialogOpen(open);
+					if (!open) {
+						resetNewProfileForm();
+					}
+				}}
+			>
+				<DialogContent className="sm:max-w-2xl px-6">
+					<form onSubmit={handleCreateNewProfile}>
+						<DialogHeader>
+							<DialogTitle>Create New Profile</DialogTitle>
+							<DialogDescription>
+								Create a profile and add it to this case network
+							</DialogDescription>
+						</DialogHeader>
+						<div className="grid gap-4 my-2 py-4 px-1 max-h-[65vh] overflow-y-auto pr-1">
+							<div className="grid gap-2">
+								<Label htmlFor="new-profile-full-name">
+									Full Name
+								</Label>
+								<Input
+									id="new-profile-full-name"
+									placeholder="John Doe"
+									value={newProfileFullName}
+									onChange={(e) =>
+										setNewProfileFullName(e.target.value)
+									}
+									required
+									autoFocus
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="new-profile-alias">Alias</Label>
+								<Input
+									id="new-profile-alias"
+									placeholder="Optional"
+									value={newProfileAlias}
+									onChange={(e) =>
+										setNewProfileAlias(e.target.value)
+									}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="new-profile-nic">NIC</Label>
+								<Input
+									id="new-profile-nic"
+									placeholder="Optional (must be unique)"
+									value={newProfileNic}
+									onChange={(e) =>
+										setNewProfileNic(e.target.value)
+									}
+								/>
+							</div>
+
+							<div className="grid gap-2">
+								<Label htmlFor="new-profile-address-line1">
+									Address Line 1
+								</Label>
+								<Input
+									id="new-profile-address-line1"
+									placeholder="Optional"
+									value={newProfileAddressLine1}
+									onChange={(e) =>
+										setNewProfileAddressLine1(
+											e.target.value,
+										)
+									}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="new-profile-address-line2">
+									Address Line 2
+								</Label>
+								<Input
+									id="new-profile-address-line2"
+									placeholder="Optional"
+									value={newProfileAddressLine2}
+									onChange={(e) =>
+										setNewProfileAddressLine2(
+											e.target.value,
+										)
+									}
+								/>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="new-profile-city">City</Label>
+								<Input
+									id="new-profile-city"
+									placeholder="Optional"
+									value={newProfileCity}
+									onChange={(e) =>
+										setNewProfileCity(e.target.value)
+									}
+								/>
+							</div>
+
+							<div className="grid gap-2">
+								<Label htmlFor="new-profile-notes">Notes</Label>
+								<Textarea
+									ref={newProfileNotesRef}
+									id="new-profile-notes"
+									maxLength={500}
+									placeholder="Include notes"
+									value={newProfileNotes}
+									onChange={(e) =>
+										setNewProfileNotes(e.target.value)
+									}
+									className="resize-none overflow-hidden"
+								/>
+								<div className="text-sm text-gray-500">
+									{newProfileNotes.length}
+									/500
+								</div>
+							</div>
+							<div className="flex w-full justify-between gap-2 pt-2">
+								<Button
+									type="button"
+									variant="outline"
+									onClick={resetNewProfileForm}
+									className="cursor-pointer"
+								>
+									Clear
+								</Button>
+								<div className="flex gap-2">
+									<DialogClose asChild>
+										<Button
+											type="button"
+											variant="outline"
+											className="cursor-pointer"
+										>
+											Cancel
+										</Button>
+									</DialogClose>
+									<Button
+										type="submit"
+										className="cursor-pointer"
+										disabled={isCreatingProfile}
+									>
+										{isCreatingProfile
+											? "Creating..."
+											: "Save Profile"}
+									</Button>
+								</div>
+							</div>
+						</div>
+					</form>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog
+				open={isAddProfileDialogOpen}
+				onOpenChange={(open) => {
+					setIsAddProfileDialogOpen(open);
+					if (!open) {
+						setProfileSearch("");
+					}
+				}}
+			>
+				<DialogContent className="sm:max-w-2xl">
+					<DialogHeader>
+						<DialogTitle>Add Profile to Case</DialogTitle>
+						<DialogDescription>
+							Search and select a profile from the database
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 py-4">
+						<Input
+							placeholder="Search by name or alias..."
+							value={profileSearch}
+							onChange={(e) => setProfileSearch(e.target.value)}
+							autoFocus
+						/>
+						<div className="max-h-80 overflow-y-auto rounded-md border">
+							{(() => {
+								const filteredProfiles = availableProfiles
+									.map((profile) => ({
+										profile,
+										...fuzzyMatch(
+											profileSearch,
+											`${profile.full_name} ${profile.alias || ""}`,
+										),
+									}))
+									.filter(({ match }) => match)
+									.sort((a, b) => b.score - a.score)
+									.slice(0, 50);
+
+								if (availableProfiles.length === 0) {
+									return (
+										<div className="p-4 text-center text-sm text-muted-foreground">
+											No profiles found in database
+										</div>
+									);
+								}
+
+								if (filteredProfiles.length === 0) {
+									return (
+										<div className="p-4 text-center text-sm text-muted-foreground">
+											No matching profiles found
+										</div>
+									);
+								}
+
+								return filteredProfiles.map(({ profile }) => {
+									const isProfileAdded = nodes.some(
+										(node) =>
+											node.data?.profileId === profile.id,
+									);
+
+									return (
+										<button
+											key={profile.id}
+											type="button"
+											disabled={isProfileAdded}
+											onClick={() => {
+												addNode(profile);
+												setIsAddProfileDialogOpen(
+													false,
+												);
+												setProfileSearch("");
+											}}
+											className={`w-full border-b px-3 py-2 text-left last:border-b-0 ${
+												isProfileAdded
+													? "opacity-50 cursor-not-allowed bg-muted/30 hover:bg-muted/30"
+													: "hover:bg-muted/50 cursor-pointer"
+											}`}
+										>
+											<div className="flex flex-col">
+												<span className="font-medium">
+													{profile.full_name}
+												</span>
+												{profile.alias && (
+													<span className="text-sm text-muted-foreground">
+														Alias: {profile.alias}
+													</span>
+												)}
+												{profile.city && (
+													<span className="text-xs text-muted-foreground">
+														{profile.city}
+													</span>
+												)}
+											</div>
+										</button>
+									);
+								});
+							})()}
+						</div>
+					</div>
+					<DialogFooter>
+						<DialogClose asChild>
+							<Button
+								variant="outline"
+								type="button"
+								className="cursor-pointer"
+							>
+								Cancel
+							</Button>
+						</DialogClose>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
