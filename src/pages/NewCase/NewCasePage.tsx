@@ -2773,31 +2773,14 @@ export default function NewCasePage() {
 																		>
 																			<div className="flex items-start justify-between gap-3">
 																				<div className="min-w-0 flex-1">
-																					<div className="flex flex-wrap items-center gap-2">
-																						<span className="font-medium text-sm">
-																							{
-																								caseItem.cno
-																							}
-																						</span>
-																						{caseItem.case_id && (
-																							<span className="text-xs text-gray-500">
-																								{
-																									caseItem.case_id
-																								}
-																							</span>
-																						)}
+																					<div className="flex items-center justify-between gap-3 text-xs text-gray-500">
+																						<span className="font-medium text-gray-900">Case ID: {caseItem.case_id || "N/A"}</span>
+																						<span className="shrink-0">Last updated: {caseItem.updated_at || "Unknown"}</span>
 																					</div>
-																					<div className="text-sm text-gray-700 truncate">
+																					<div className="text-sm text-gray-700 truncate mt-1">
 																						{
 																							caseItem.case_name
 																						}
-																					</div>
-																					<div className="text-xs text-gray-500">
-																						{caseItem.case_type ||
-																							"Unknown type"}
-																						{caseItem.status
-																							? ` G�� ${caseItem.status}`
-																							: ""}
 																					</div>
 																				</div>
 																				<span className="text-xs font-medium text-blue-600">
@@ -2836,13 +2819,11 @@ export default function NewCasePage() {
 																	className="inline-flex items-center gap-2 rounded-md bg-secondary px-2.5 py-1 text-sm text-secondary-foreground"
 																>
 																	<span>
-																		{
-																			caseItem.cno
-																		}
+																		{caseItem.case_id || "N/A"}
 																	</span>
 																	<button
 																		type="button"
-																		aria-label={`Remove ${caseItem.cno}`}
+																		aria-label={`Remove ${caseItem.case_id || "case"}`}
 																		onClick={() =>
 																			setAttachedCases(
 																				(
