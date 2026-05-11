@@ -102,6 +102,7 @@ import {
 	ChevronLeft,
 	CircleHelp,
 	Clock,
+	Eye,
 	FileText,
 	MapPin,
 	MessageSquare,
@@ -1342,6 +1343,36 @@ export default function NewCasePage() {
 			setCaseSearchResults([]);
 		} finally {
 			setIsSearchingCases(false);
+		}
+	}, []);
+
+	const openAttachedCaseInfo = useCallback(async (caseId: number) => {
+		setRelationshipInfoData({
+			linkedCaseId: caseId,
+			relationshipType: "Attached Case",
+		});
+		setRelationshipCaseData(null);
+		setIsRelationshipInfoDialogOpen(true);
+
+		try {
+			const [caseData, drugsData, areasData, profilesData] = await Promise.all([
+				getCase(caseId),
+				getCaseDrugs(caseId),
+				getCaseAreas(caseId),
+				getCaseProfiles(caseId),
+			]);
+
+			setRelationshipCaseData({
+				...caseData,
+				drugs: drugsData,
+				areas: areasData,
+				profiles: profilesData,
+			});
+		} catch (error) {
+			console.error("Failed to load attached case data:", error);
+			toast.error("Failed to load case information", {
+				position: "top-center",
+			});
 		}
 	}, []);
 
@@ -2772,7 +2803,7 @@ export default function NewCasePage() {
 
 										<div className="space-y-2">
 											<Label className="text-xs text-gray-500">
-												Attached Cases
+												Attached Cases ({attachedCases.length})
 											</Label>
 											<div className="min-h-12 rounded-md border bg-white p-2">
 												{attachedCases.length === 0 ? (
@@ -2803,6 +2834,16 @@ export default function NewCasePage() {
 																				{caseItem.case_name}
 																			</div>
 																		</div>
+																	<div className="flex shrink-0 items-center gap-1">
+																		<button
+																			type="button"
+																			aria-label={`View ${caseItem.case_id || "case"} information`}
+																			title="View case information"
+																			onClick={() => void openAttachedCaseInfo(caseItem.id)}
+																			className="inline-flex h-6 w-6 items-center justify-center rounded-full text-gray-500 hover:bg-muted hover:text-gray-700"
+																		>
+																			<Eye className="h-4 w-4" />
+																		</button>
 																		<button
 																			type="button"
 																			aria-label={`Remove ${caseItem.case_id || "case"}`}
@@ -2814,10 +2855,11 @@ export default function NewCasePage() {
 																					),
 																				)
 																			}
-																			className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-muted hover:text-gray-700"
+																			className="inline-flex h-6 w-6 items-center justify-center rounded-full text-gray-500 hover:bg-muted hover:text-gray-700"
 																		>
 																			<X className="h-4 w-4" />
 																		</button>
+																	</div>
 																	</div>
 																</div>
 															),
