@@ -72,6 +72,15 @@ export async function getAllCases(): Promise<CaseWithDetails[]> {
 }
 
 /**
+ * Search cases in the database by case number, case ID, title, or notes.
+ * @param query - Search text
+ * @returns Matching cases, newest first
+ */
+export async function searchCases(query: string): Promise<CaseWithDetails[]> {
+	return await invoke<CaseWithDetails[]>("search_cases", { query });
+}
+
+/**
  * Link a case to a profile
  * @param caseId - The case ID
  * @param profileId - The profile ID

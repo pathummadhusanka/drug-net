@@ -18,6 +18,10 @@ pub fn list_cases(db: &DbConnection) -> Result<Vec<CaseWithDetails>, String> {
     super::repository::get_all_cases(db)
 }
 
+pub fn search_cases(db: &DbConnection, query: String) -> Result<Vec<CaseWithDetails>, String> {
+    super::repository::search_cases(db, query)
+}
+
 pub fn assign_case_to_profile(
     db: &DbConnection,
     case_id: i64,

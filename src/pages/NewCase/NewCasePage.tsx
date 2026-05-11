@@ -8,9 +8,11 @@ import {
 	getCaseAreas,
 	getCaseRelationships,
 	getCaseProfiles,
+	searchCases,
 	saveCaseRelationships,
 	assignCaseToProfile,
 	linkCaseToArea,
+	type CaseWithDetails,
 	type CaseRelationshipData,
 } from "@/lib/cases";
 import { getAllAreas, getAreaByName, createArea, type Area } from "@/lib/areas";
@@ -640,6 +642,12 @@ export default function NewCasePage() {
 	const [caseStatus, setCaseStatus] = useState("");
 	const [caseDate, setCaseDate] = useState("");
 	const [caseTime, setCaseTime] = useState("");
+	const [caseSearchQuery, setCaseSearchQuery] = useState("");
+	const [caseSearchResults, setCaseSearchResults] = useState<
+		CaseWithDetails[]
+	>([]);
+	const [isSearchingCases, setIsSearchingCases] = useState(false);
+	const [attachedCases, setAttachedCases] = useState<CaseWithDetails[]>([]);
 	const [activeAccordion, setActiveAccordion] = useState("");
 	const [completedSections] = useState<string[]>([]);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -679,7 +687,7 @@ export default function NewCasePage() {
 
 	const [isRelationshipInfoDialogOpen, setIsRelationshipInfoDialogOpen] =
 		useState(false);
-	const [relationshipInfoData, setRelationshipInfoData] = useState<{
+	const [, setRelationshipInfoData] = useState<{
 		linkedCaseId: number | null;
 		relationshipType: string;
 	} | null>(null);
@@ -1317,6 +1325,41 @@ export default function NewCasePage() {
 		handleTextareaResize(newProfileNotesRef);
 	}, [newProfileNotes]);
 
+	const runCaseSearch = useCallback(async (query: string) => {
+		const trimmedQuery = query.trim();
+		if (trimmedQuery.length < 2) {
+			setCaseSearchResults([]);
+			setIsSearchingCases(false);
+			return;
+		}
+
+		setIsSearchingCases(true);
+		try {
+			const results = await searchCases(trimmedQuery);
+			setCaseSearchResults(results);
+		} catch (error) {
+			console.error("Failed to search cases:", error);
+			setCaseSearchResults([]);
+		} finally {
+			setIsSearchingCases(false);
+		}
+	}, []);
+
+	useEffect(() => {
+		const trimmedQuery = caseSearchQuery.trim();
+		if (trimmedQuery.length < 2) {
+			setCaseSearchResults([]);
+			setIsSearchingCases(false);
+			return;
+		}
+
+		const timeoutId = window.setTimeout(() => {
+			void runCaseSearch(trimmedQuery);
+		}, 250);
+
+		return () => window.clearTimeout(timeoutId);
+	}, [caseSearchQuery, runCaseSearch]);
+
 	const fetchProfiles = useCallback(async () => {
 		try {
 			const allProfiles = await getAllProfiles();
@@ -1429,6 +1472,10 @@ export default function NewCasePage() {
 		setCaseStatus("");
 		setCaseDate("");
 		setCaseTime("");
+		setCaseSearchQuery("");
+		setCaseSearchResults([]);
+		setAttachedCases([]);
+		setIsSearchingCases(false);
 		setActiveAccordion("");
 		setSelectedDrugs({});
 		setDrugSearch("");
@@ -1477,8 +1524,10 @@ export default function NewCasePage() {
 		severityLevel.trim().length > 0 ||
 		caseDate.trim().length > 0 ||
 		caseTime.trim().length > 0 ||
+		caseSearchQuery.trim().length > 0 ||
 		drugSearch.trim().length > 0 ||
 		pendingArea.trim().length > 0 ||
+		attachedCases.length > 0 ||
 		Object.keys(selectedDrugs).length > 0 ||
 		areas.length > 0 ||
 		edges.length > 0 ||
@@ -2621,36 +2670,203 @@ export default function NewCasePage() {
 									<div className="text-sm text-gray-500">
 										{caseNotes.length}/1000
 									</div>
-									{/* Attach other cases UI (UI-only) */}
-									<div className="pt-4 border-t mt-4">
-										<Label className="text-sm">
-											Attach Other Cases
-										</Label>
-										<p className="text-xs text-gray-500 mb-2">
-											Search and attach existing cases to
-											this case
-										</p>
-										<div className="flex gap-2 items-center">
-											<Input
-												id="attach-case-search"
-												placeholder="Search cases by ID or title..."
-												// value and handlers can be wired later
-												className="flex-1"
-											/>
-											<Button
-												type="button"
-												variant="outline"
-												size="sm"
-												className="whitespace-nowrap"
-											>
-												Search
-											</Button>
-										</div>
-										<div className="mt-3 max-h-40 overflow-y-auto border rounded-md p-2 bg-white">
-											{/* Placeholder list - will be populated when wired */}
-											<p className="text-sm text-gray-500">
-												No attached cases
+									<div className="pt-4 border-t mt-4 space-y-3">
+										<div className="space-y-1">
+											<Label className="text-sm">
+												Attach Other Cases
+											</Label>
+											<p className="text-xs text-gray-500">
+												Search existing cases from the
+												database and attach them here.
 											</p>
+										</div>
+										<div className="relative">
+											<div className="flex gap-2 items-center">
+												<Input
+													id="attach-case-search"
+													placeholder="Search cases by CNO, case ID, or title..."
+													value={caseSearchQuery}
+													onChange={(e) =>
+														setCaseSearchQuery(
+															e.target.value,
+														)
+													}
+													className="flex-1"
+												/>
+												<Button
+													type="button"
+													variant="outline"
+													size="sm"
+													className="whitespace-nowrap"
+													onClick={() =>
+														void runCaseSearch(
+															caseSearchQuery,
+														)
+													}
+												>
+													Search
+												</Button>
+											</div>
+
+											{caseSearchQuery.trim().length >=
+												2 && (
+												<div className="absolute left-0 right-0 top-full z-20 mt-2 rounded-md border bg-white shadow-lg">
+													<div className="border-b px-3 py-2 text-xs text-gray-500">
+														{isSearchingCases
+															? "Searching cases..."
+															: `${caseSearchResults.length} result${caseSearchResults.length === 1 ? "" : "s"}`}
+													</div>
+													<div className="max-h-56 overflow-y-auto">
+														{!isSearchingCases &&
+														caseSearchResults.length ===
+															0 ? (
+															<div className="px-3 py-3 text-sm text-gray-500">
+																No matching
+																cases found
+															</div>
+														) : (
+															caseSearchResults.map(
+																(caseItem) => {
+																	const isAlreadyAttached =
+																		attachedCases.some(
+																			(
+																				attachedCase,
+																			) =>
+																				attachedCase.id ===
+																				caseItem.id,
+																		);
+
+																	return (
+																		<button
+																			key={
+																				caseItem.id
+																			}
+																			type="button"
+																			disabled={
+																				isAlreadyAttached
+																			}
+																			onClick={() => {
+																				if (
+																					isAlreadyAttached
+																				)
+																					return;
+																				setAttachedCases(
+																					(
+																						current,
+																					) => [
+																						...current,
+																						caseItem,
+																					],
+																				);
+																				setCaseSearchQuery(
+																					"",
+																				);
+																				setCaseSearchResults(
+																					[],
+																				);
+																			}}
+																			className={`w-full border-b px-3 py-2 text-left last:border-b-0 ${
+																				isAlreadyAttached
+																					? "cursor-not-allowed bg-gray-50 opacity-60"
+																					: "cursor-pointer hover:bg-gray-50"
+																			}`}
+																		>
+																			<div className="flex items-start justify-between gap-3">
+																				<div className="min-w-0 flex-1">
+																					<div className="flex flex-wrap items-center gap-2">
+																						<span className="font-medium text-sm">
+																							{
+																								caseItem.cno
+																							}
+																						</span>
+																						{caseItem.case_id && (
+																							<span className="text-xs text-gray-500">
+																								{
+																									caseItem.case_id
+																								}
+																							</span>
+																						)}
+																					</div>
+																					<div className="text-sm text-gray-700 truncate">
+																						{
+																							caseItem.case_name
+																						}
+																					</div>
+																					<div className="text-xs text-gray-500">
+																						{caseItem.case_type ||
+																							"Unknown type"}
+																						{caseItem.status
+																							? ` • ${caseItem.status}`
+																							: ""}
+																					</div>
+																				</div>
+																				<span className="text-xs font-medium text-blue-600">
+																					{isAlreadyAttached
+																						? "Attached"
+																						: "Attach"}
+																				</span>
+																			</div>
+																		</button>
+																	);
+																},
+															)
+														)}
+													</div>
+												</div>
+											)}
+										</div>
+
+										<div className="space-y-2">
+											<Label className="text-xs text-gray-500">
+												Attached Cases
+											</Label>
+											<div className="min-h-12 rounded-md border bg-white p-2">
+												{attachedCases.length === 0 ? (
+													<p className="text-sm text-gray-500">
+														No cases attached yet
+													</p>
+												) : (
+													<div className="flex flex-wrap gap-2">
+														{attachedCases.map(
+															(caseItem) => (
+																<div
+																	key={
+																		caseItem.id
+																	}
+																	className="inline-flex items-center gap-2 rounded-md bg-secondary px-2.5 py-1 text-sm text-secondary-foreground"
+																>
+																	<span>
+																		{
+																			caseItem.cno
+																		}
+																	</span>
+																	<button
+																		type="button"
+																		aria-label={`Remove ${caseItem.cno}`}
+																		onClick={() =>
+																			setAttachedCases(
+																				(
+																					current,
+																				) =>
+																					current.filter(
+																						(
+																							attachedCase,
+																						) =>
+																							attachedCase.id !==
+																							caseItem.id,
+																					),
+																			)
+																		}
+																		className="inline-flex h-4 w-4 items-center justify-center rounded-full text-xs hover:bg-muted"
+																	>
+																		<X className="h-3 w-3" />
+																	</button>
+																</div>
+															),
+														)}
+													</div>
+												)}
+											</div>
 										</div>
 									</div>
 								</div>

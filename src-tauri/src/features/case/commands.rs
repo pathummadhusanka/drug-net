@@ -24,6 +24,14 @@ pub async fn get_all_cases(state: State<'_, AppState>) -> Result<Vec<CaseWithDet
 }
 
 #[tauri::command]
+pub async fn search_cases(
+    state: State<'_, AppState>,
+    query: String,
+) -> Result<Vec<CaseWithDetails>, String> {
+    super::service::search_cases(&state.db, query)
+}
+
+#[tauri::command]
 pub async fn assign_case_to_profile(
     state: State<'_, AppState>,
     case_id: i64,

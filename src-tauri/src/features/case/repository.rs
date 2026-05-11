@@ -143,6 +143,57 @@ pub fn get_all_cases(db: &DbConnection) -> Result<Vec<CaseWithDetails>, String> 
     Ok(cases)
 }
 
+pub fn search_cases(db: &DbConnection, query: String) -> Result<Vec<CaseWithDetails>, String> {
+    let trimmed_query = query.trim();
+    if trimmed_query.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    let search_pattern = format!("%{}%", trimmed_query);
+
+    let mut stmt = conn.prepare(
+        "SELECT id, cno, case_id, case_name, description, case_type, status, severity_level, notes, case_date, case_time, created_at, updated_at
+         FROM cases
+         WHERE cno LIKE ?1 COLLATE NOCASE
+            OR case_id LIKE ?1 COLLATE NOCASE
+            OR case_name LIKE ?1 COLLATE NOCASE
+            OR description LIKE ?1 COLLATE NOCASE
+            OR case_type LIKE ?1 COLLATE NOCASE
+            OR status LIKE ?1 COLLATE NOCASE
+            OR severity_level LIKE ?1 COLLATE NOCASE
+            OR notes LIKE ?1 COLLATE NOCASE
+         ORDER BY created_at DESC
+         LIMIT 25"
+    )
+    .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+    let cases = stmt.query_map(params![search_pattern], |row| {
+        Ok(CaseWithDetails {
+            id: row.get(0)?,
+            cno: row.get(1)?,
+            case_id: row.get(2)?,
+            case_name: row.get(3)?,
+            description: row.get(4)?,
+            case_type: row.get(5)?,
+            status: row.get(6)?,
+            severity_level: row.get(7)?,
+            notes: row.get(8)?,
+            case_date: row.get(9)?,
+            case_time: row.get(10)?,
+            created_at: row.get(11)?,
+            updated_at: row.get(12)?,
+        })
+    })
+    .map_err(|e| format!("Query error: {}", e))?
+    .collect::<Result<Vec<CaseWithDetails>, _>>()
+    .map_err(|e| format!("Failed to collect results: {}", e))?;
+
+    Ok(cases)
+}
+
 pub fn link_case_to_profile(
     db: &DbConnection,
     case_id: i64,
