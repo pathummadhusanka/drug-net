@@ -2712,7 +2712,7 @@ export default function NewCasePage() {
 											</p>
 										</div>
 										<div className="relative">
-											<div className="flex gap-2 items-center">
+											<div className="relative flex-1">
 												<Input
 													id="attach-case-search"
 													placeholder="Search cases by CNO, case ID, or title..."
@@ -2722,21 +2722,21 @@ export default function NewCasePage() {
 															e.target.value,
 														)
 													}
-													className="flex-1"
+													className="flex-1 pr-10"
 												/>
-												<Button
-													type="button"
-													variant="outline"
-													size="sm"
-													className="whitespace-nowrap"
-													onClick={() =>
-														void runCaseSearch(
-															caseSearchQuery,
-														)
-													}
-												>
-													Search
-												</Button>
+												{caseSearchQuery && (
+													<button
+														type="button"
+														onClick={() => {
+															setCaseSearchQuery("");
+															setCaseSearchResults([]);
+														}}
+														className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+														aria-label="Clear search"
+													>
+														<X className="h-4 w-4" />
+													</button>
+												)}
 											</div>
 
 											{caseSearchQuery.trim().length >= 2 && (
