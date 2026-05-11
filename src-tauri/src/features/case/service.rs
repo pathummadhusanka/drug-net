@@ -51,6 +51,22 @@ pub fn get_areas_for_case(
 ) -> Result<Vec<String>, String> {
     super::repository::get_case_areas(db, case_id)
 }
+
+pub fn save_case_attachments(
+    db: &DbConnection,
+    case_id: i64,
+    attached_case_ids: Vec<i64>,
+) -> Result<(), String> {
+    super::repository::save_case_attachments(db, case_id, attached_case_ids)
+}
+
+pub fn get_case_attachments(
+    db: &DbConnection,
+    case_id: i64,
+) -> Result<Vec<CaseWithDetails>, String> {
+    super::repository::get_case_attachments(db, case_id)
+}
+
 pub fn save_case_relationships(
     db: &DbConnection,
     case_id: i64,

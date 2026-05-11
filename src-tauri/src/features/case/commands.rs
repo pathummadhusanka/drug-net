@@ -64,6 +64,24 @@ pub async fn get_case_areas(
 ) -> Result<Vec<String>, String> {
     super::service::get_areas_for_case(&state.db, case_id)
 }
+
+#[tauri::command]
+pub async fn save_case_attachments(
+    state: State<'_, AppState>,
+    case_id: i64,
+    attached_case_ids: Vec<i64>,
+) -> Result<(), String> {
+    super::service::save_case_attachments(&state.db, case_id, attached_case_ids)
+}
+
+#[tauri::command]
+pub async fn get_case_attachments(
+    state: State<'_, AppState>,
+    case_id: i64,
+) -> Result<Vec<CaseWithDetails>, String> {
+    super::service::get_case_attachments(&state.db, case_id)
+}
+
 #[tauri::command]
 pub async fn save_case_relationships(
     state: State<'_, AppState>,

@@ -6,9 +6,11 @@ import {
 	updateCase,
 	getCase,
 	getCaseAreas,
+	getCaseAttachments,
 	getCaseRelationships,
 	getCaseProfiles,
 	searchCases,
+	saveCaseAttachments,
 	saveCaseRelationships,
 	assignCaseToProfile,
 	linkCaseToArea,
@@ -855,7 +857,9 @@ export default function NewCasePage() {
 
 					// Load profiles and relationships
 					const caseProfiles = await getCaseProfiles(caseNumId);
+					const caseAttachments = await getCaseAttachments(caseNumId);
 					const relationships = await getCaseRelationships(caseNumId);
+					setAttachedCases(caseAttachments);
 
 					// Create nodes for each profile
 					const profileNodes: Node[] = [];
@@ -1675,6 +1679,11 @@ export default function NewCasePage() {
 										);
 									}
 								}
+
+								await saveCaseAttachments(
+									targetCaseId,
+									attachedCases.map((caseItem) => caseItem.id),
+								);
 							} else {
 								// Create new case with areas and get case ID
 								targetCaseId = await createCaseWithAreas(
@@ -2756,20 +2765,24 @@ export default function NewCasePage() {
 																const isAlreadyAttached = attachedCases.some(
 																	(attachedCase) => attachedCase.id === caseItem.id,
 																);
+																const isCurrentCase = Boolean(
+																	id && caseItem.id === Number(id),
+																);
+																const isDisabled = isAlreadyAttached || isCurrentCase;
 
 																return (
 																	<button
 																		key={caseItem.id}
 																		type="button"
-																		disabled={isAlreadyAttached}
+																		disabled={isDisabled}
 																		onClick={() => {
-																			if (isAlreadyAttached) return;
+																			if (isDisabled) return;
 																			setAttachedCases((current) => [...current, caseItem]);
 																			setCaseSearchQuery("");
 																			setCaseSearchResults([]);
 																		}}
 																		className={`w-full border-b px-3 py-2 text-left last:border-b-0 ${
-																			isAlreadyAttached
+																			isDisabled
 																				? "cursor-not-allowed bg-gray-50 opacity-60"
 																				: "cursor-pointer hover:bg-gray-50"
 																		}`}
@@ -2789,7 +2802,11 @@ export default function NewCasePage() {
 																				</div>
 																			</div>
 																			<span className="text-xs font-medium text-blue-600">
-																				{isAlreadyAttached ? "Attached" : "Attach"}
+																				{isCurrentCase
+																					? "Current"
+																					: isAlreadyAttached
+																						? "Attached"
+																						: "Attach"}
 																			</span>
 																		</div>
 																	</button>

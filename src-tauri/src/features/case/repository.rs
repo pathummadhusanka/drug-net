@@ -295,6 +295,94 @@ pub fn get_case_areas(
 
     Ok(areas)
 }
+
+pub fn save_case_attachments(
+    db: &DbConnection,
+    case_id: i64,
+    attached_case_ids: Vec<i64>,
+) -> Result<(), String> {
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    conn.execute(
+        "DELETE FROM case_attachments WHERE case_id = ?1",
+        params![case_id],
+    )
+    .map_err(|e| format!("Failed to clear existing attachments: {}", e))?;
+
+    let mut unique_ids = std::collections::BTreeSet::new();
+    for attached_case_id in attached_case_ids {
+        if attached_case_id > 0 && attached_case_id != case_id {
+            unique_ids.insert(attached_case_id);
+        }
+    }
+
+    for attached_case_id in unique_ids {
+        let case_exists: bool = conn
+            .query_row(
+                "SELECT 1 FROM cases WHERE id = ?1",
+                params![attached_case_id],
+                |_| Ok(true),
+            )
+            .unwrap_or(false);
+
+        if !case_exists {
+            return Err(format!(
+                "Attached case {} does not exist in database",
+                attached_case_id
+            ));
+        }
+
+        conn.execute(
+            "INSERT OR IGNORE INTO case_attachments (case_id, attached_case_id)
+             VALUES (?1, ?2)",
+            params![case_id, attached_case_id],
+        )
+        .map_err(|e| format!("Failed to save case attachment: {}", e))?;
+    }
+
+    Ok(())
+}
+
+pub fn get_case_attachments(
+    db: &DbConnection,
+    case_id: i64,
+) -> Result<Vec<CaseWithDetails>, String> {
+    let conn = db.lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    let mut stmt = conn.prepare(
+        "SELECT c.id, c.cno, c.case_id, c.case_name, c.description, c.case_type, c.status, c.severity_level, c.notes, c.case_date, c.case_time, c.created_at, c.updated_at
+         FROM cases c
+         JOIN case_attachments ca ON ca.attached_case_id = c.id
+         WHERE ca.case_id = ?1
+         ORDER BY c.updated_at DESC, c.created_at DESC"
+    )
+    .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+    let cases = stmt.query_map(params![case_id], |row| {
+        Ok(CaseWithDetails {
+            id: row.get(0)?,
+            cno: row.get(1)?,
+            case_id: row.get(2)?,
+            case_name: row.get(3)?,
+            description: row.get(4)?,
+            case_type: row.get(5)?,
+            status: row.get(6)?,
+            severity_level: row.get(7)?,
+            notes: row.get(8)?,
+            case_date: row.get(9)?,
+            case_time: row.get(10)?,
+            created_at: row.get(11)?,
+            updated_at: row.get(12)?,
+        })
+    })
+    .map_err(|e| format!("Query error: {}", e))?
+    .collect::<Result<Vec<CaseWithDetails>, _>>()
+    .map_err(|e| format!("Failed to collect results: {}", e))?;
+
+    Ok(cases)
+}
 pub fn save_case_relationships(
     db: &DbConnection,
     case_id: i64,

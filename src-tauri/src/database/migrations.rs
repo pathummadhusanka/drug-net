@@ -92,6 +92,15 @@ pub fn run_migrations(db: &DbConnection) -> Result<(), String> {
             FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE
         );
 
+        CREATE TABLE IF NOT EXISTS case_attachments (
+            case_id INTEGER,
+            attached_case_id INTEGER,
+            PRIMARY KEY (case_id, attached_case_id),
+            FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE,
+            FOREIGN KEY (attached_case_id) REFERENCES cases(id) ON DELETE CASCADE
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_case_attachments_unique ON case_attachments(case_id, attached_case_id);
+
         CREATE TABLE IF NOT EXISTS case_relationships (
             case_id INTEGER,
             relationship_id INTEGER,

@@ -13,6 +13,7 @@ pub fn reset_database(db: &DbConnection) -> Result<(), String> {
         DELETE FROM network_node_positions;
         DELETE FROM case_drugs;
         DELETE FROM case_relationships;
+        DELETE FROM case_attachments;
         DELETE FROM case_areas;
         DELETE FROM case_profiles;
         DELETE FROM cases;

@@ -132,6 +132,24 @@ export async function getCaseAreas(caseId: number): Promise<string[]> {
 	return await invoke<string[]>("get_case_areas", { caseId });
 }
 
+export async function saveCaseAttachments(
+	caseId: number,
+	attachedCaseIds: number[],
+): Promise<void> {
+	return await invoke<void>("save_case_attachments", {
+		caseId,
+		attachedCaseIds,
+	});
+}
+
+export async function getCaseAttachments(
+	caseId: number,
+): Promise<CaseWithDetails[]> {
+	return await invoke<CaseWithDetails[]>("get_case_attachments", {
+		caseId,
+	});
+}
+
 /**
  * Save relationships (edges) for a case
  * @param caseId - The case ID
