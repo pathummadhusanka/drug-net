@@ -1951,7 +1951,7 @@ export default function NewCasePage() {
 									</div>
 									<div className="space-y-2">
 										<Label htmlFor="case-date">Date</Label>
-										<div className="relative">
+										<div className="space-y-2">
 											<Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
 											<Input
 												id="case-date"
@@ -2120,7 +2120,7 @@ export default function NewCasePage() {
 												{nodes.length === 1
 													? "profile"
 													: "profiles"}{" "}
-												• {edges.length}{" "}
+												G�� {edges.length}{" "}
 												{edges.length === 1
 													? "connection"
 													: "connections"}
@@ -2710,7 +2710,7 @@ export default function NewCasePage() {
 
 											{caseSearchQuery.trim().length >=
 												2 && (
-												<div className="absolute left-0 right-0 top-full z-20 mt-2 rounded-md border bg-white shadow-lg">
+												<div className="rounded-md border bg-white shadow-lg">
 													<div className="border-b px-3 py-2 text-xs text-gray-500">
 														{isSearchingCases
 															? "Searching cases..."
@@ -2796,7 +2796,7 @@ export default function NewCasePage() {
 																						{caseItem.case_type ||
 																							"Unknown type"}
 																						{caseItem.status
-																							? ` • ${caseItem.status}`
+																							? ` G�� ${caseItem.status}`
 																							: ""}
 																					</div>
 																				</div>
@@ -2968,7 +2968,7 @@ export default function NewCasePage() {
 												}
 											</span>
 											<span className="text-muted-foreground shrink-0">
-												→
+												G��
 											</span>
 											<span
 												className="font-medium truncate max-w-45"
