@@ -2621,6 +2621,38 @@ export default function NewCasePage() {
 									<div className="text-sm text-gray-500">
 										{caseNotes.length}/1000
 									</div>
+									{/* Attach other cases UI (UI-only) */}
+									<div className="pt-4 border-t mt-4">
+										<Label className="text-sm">
+											Attach Other Cases
+										</Label>
+										<p className="text-xs text-gray-500 mb-2">
+											Search and attach existing cases to
+											this case
+										</p>
+										<div className="flex gap-2 items-center">
+											<Input
+												id="attach-case-search"
+												placeholder="Search cases by ID or title..."
+												// value and handlers can be wired later
+												className="flex-1"
+											/>
+											<Button
+												type="button"
+												variant="outline"
+												size="sm"
+												className="whitespace-nowrap"
+											>
+												Search
+											</Button>
+										</div>
+										<div className="mt-3 max-h-40 overflow-y-auto border rounded-md p-2 bg-white">
+											{/* Placeholder list - will be populated when wired */}
+											<p className="text-sm text-gray-500">
+												No attached cases
+											</p>
+										</div>
+									</div>
 								</div>
 							</AccordionContent>
 						</AccordionItem>
