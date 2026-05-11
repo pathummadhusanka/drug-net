@@ -2708,8 +2708,7 @@ export default function NewCasePage() {
 												</Button>
 											</div>
 
-											{caseSearchQuery.trim().length >=
-												2 && (
+											{caseSearchQuery.trim().length >= 2 && (
 												<div className="rounded-md border bg-white shadow-lg">
 													<div className="border-b px-3 py-2 text-xs text-gray-500">
 														{isSearchingCases
@@ -2717,82 +2716,54 @@ export default function NewCasePage() {
 															: `${caseSearchResults.length} result${caseSearchResults.length === 1 ? "" : "s"}`}
 													</div>
 													<div className="max-h-56 overflow-y-auto">
-														{!isSearchingCases &&
-														caseSearchResults.length ===
-															0 ? (
+														{!isSearchingCases && caseSearchResults.length === 0 ? (
 															<div className="px-3 py-3 text-sm text-gray-500">
-																No matching
-																cases found
+																No matching cases found
 															</div>
 														) : (
-															caseSearchResults.map(
-																(caseItem) => {
-																	const isAlreadyAttached =
-																		attachedCases.some(
-																			(
-																				attachedCase,
-																			) =>
-																				attachedCase.id ===
-																				caseItem.id,
-																		);
+															caseSearchResults.map((caseItem) => {
+																const isAlreadyAttached = attachedCases.some(
+																	(attachedCase) => attachedCase.id === caseItem.id,
+																);
 
-																	return (
-																		<button
-																			key={
-																				caseItem.id
-																			}
-																			type="button"
-																			disabled={
-																				isAlreadyAttached
-																			}
-																			onClick={() => {
-																				if (
-																					isAlreadyAttached
-																				)
-																					return;
-																				setAttachedCases(
-																					(
-																						current,
-																					) => [
-																						...current,
-																						caseItem,
-																					],
-																				);
-																				setCaseSearchQuery(
-																					"",
-																				);
-																				setCaseSearchResults(
-																					[],
-																				);
-																			}}
-																			className={`w-full border-b px-3 py-2 text-left last:border-b-0 ${
-																				isAlreadyAttached
-																					? "cursor-not-allowed bg-gray-50 opacity-60"
-																					: "cursor-pointer hover:bg-gray-50"
-																			}`}
-																		>
-																			<div className="flex items-start justify-between gap-3">
-																				<div className="min-w-0 flex-1">
-																					<div className="flex items-center justify-between gap-3 text-xs text-gray-500">
-																						<span className="font-medium text-gray-900">Case ID: {caseItem.case_id || "N/A"}</span>
-																						<span className="shrink-0">Last updated: {caseItem.updated_at || "Unknown"}</span>
-																					</div>
-																					<div className="text-sm text-gray-700 truncate mt-1">
-																						{
-																							caseItem.case_name
-																						}
-																					</div>
+																return (
+																	<button
+																		key={caseItem.id}
+																		type="button"
+																		disabled={isAlreadyAttached}
+																		onClick={() => {
+																			if (isAlreadyAttached) return;
+																			setAttachedCases((current) => [...current, caseItem]);
+																			setCaseSearchQuery("");
+																			setCaseSearchResults([]);
+																		}}
+																		className={`w-full border-b px-3 py-2 text-left last:border-b-0 ${
+																			isAlreadyAttached
+																				? "cursor-not-allowed bg-gray-50 opacity-60"
+																				: "cursor-pointer hover:bg-gray-50"
+																		}`}
+																	>
+																		<div className="flex items-start justify-between gap-3">
+																			<div className="min-w-0 flex-1">
+																				<div className="flex items-center justify-between gap-3 text-xs text-gray-500">
+																					<span className="font-medium text-gray-900">
+																						Case ID: {caseItem.case_id || "N/A"}
+																					</span>
+																					<span className="shrink-0">
+																						Last updated: {caseItem.updated_at || "Unknown"}
+																					</span>
 																				</div>
-																				<span className="text-xs font-medium text-blue-600">
-																					{isAlreadyAttached
-																						? "Attached"
-																						: "Attach"}
-																				</span>
+																				<div className="text-sm text-gray-700 truncate mt-1">
+																					{caseItem.case_name}
+																				</div>
 																			</div>
-																		</button>
-																	);
-																},
-															)
+																			<span className="text-xs font-medium text-blue-600">
+																				{isAlreadyAttached ? "Attached" : "Attach"}
+																			</span>
+																		</div>
+																	</button>
+																);
+															})
 														)}
 													</div>
 												</div>
@@ -2809,39 +2780,45 @@ export default function NewCasePage() {
 														No cases attached yet
 													</p>
 												) : (
-													<div className="flex flex-wrap gap-2">
+													<div className="space-y-2">
 														{attachedCases.map(
 															(caseItem) => (
 																<div
 																	key={
 																		caseItem.id
 																	}
-																	className="inline-flex items-center gap-2 rounded-md bg-secondary px-2.5 py-1 text-sm text-secondary-foreground"
+																	className="rounded-md border bg-white px-3 py-2"
 																>
-																	<span>
-																		{caseItem.case_id || "N/A"}
-																	</span>
-																	<button
-																		type="button"
-																		aria-label={`Remove ${caseItem.case_id || "case"}`}
-																		onClick={() =>
-																			setAttachedCases(
-																				(
-																					current,
-																				) =>
+																	<div className="flex items-start justify-between gap-3">
+																		<div className="min-w-0 flex-1">
+																			<div className="flex items-center justify-between gap-3 text-xs text-gray-500">
+																				<span className="font-medium text-gray-900">
+																					Case ID: {caseItem.case_id || "N/A"}
+																				</span>
+																				<span className="shrink-0">
+																					Last updated: {caseItem.updated_at || "Unknown"}
+																				</span>
+																			</div>
+																			<div className="text-sm text-gray-700 truncate mt-1">
+																				{caseItem.case_name}
+																			</div>
+																		</div>
+																		<button
+																			type="button"
+																			aria-label={`Remove ${caseItem.case_id || "case"}`}
+																			onClick={() =>
+																				setAttachedCases((current) =>
 																					current.filter(
-																						(
-																							attachedCase,
-																						) =>
-																							attachedCase.id !==
-																							caseItem.id,
+																						(attachedCase) =>
+																							attachedCase.id !== caseItem.id,
 																					),
-																			)
-																		}
-																		className="inline-flex h-4 w-4 items-center justify-center rounded-full text-xs hover:bg-muted"
-																	>
-																		<X className="h-3 w-3" />
-																	</button>
+																				)
+																			}
+																			className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-muted hover:text-gray-700"
+																		>
+																			<X className="h-4 w-4" />
+																		</button>
+																	</div>
 																</div>
 															),
 														)}
