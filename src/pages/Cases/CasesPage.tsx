@@ -1190,7 +1190,9 @@ export default function CasesPage() {
 								>
 									<AlertDialogContent
 										className="sm:max-w-2xl max-h-[85vh] overflow-y-auto"
-										onEscapeKeyDown={(e: any) => e.preventDefault()}
+										onEscapeKeyDown={(e: any) =>
+											e.preventDefault()
+										}
 									>
 										<AlertDialogHeader>
 											<AlertDialogTitle>
@@ -1469,128 +1471,160 @@ export default function CasesPage() {
 													</div>
 
 													{/* Network Badge + Profiles */}
-													{(relationshipCaseData.profiles ?? []).length > 0 && (
-															<div className="flex items-start gap-2">
-																<Badge
-																	variant="secondary"
-																	className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
-																>
-																	<Network className="h-3 w-3" />
-																	Network
-																</Badge>
-																<div className="text-sm text-gray-700 truncate font-semibold">
-																	{(relationshipCaseData.profiles ?? []).map(
-																		(
-																			p: any,
-																		) => (
-																			<span
-																				key={
-																					p[0]
-																				}
-																			>
-																				{p[1]
-																					.length >
-																				20
-																					? p[1].substring(
-																							0,
-																							20,
-																						) +
-																						"..."
-																					: p[1]}
-																				{(relationshipCaseData.profiles ?? []).indexOf(
-																					p,
-																				) !==
-																					(relationshipCaseData.profiles ?? []).length -
-																						1 &&
-																					", "}
-																			</span>
-																		),
-																	)}
-																</div>
+													{(
+														relationshipCaseData.profiles ??
+														[]
+													).length > 0 && (
+														<div className="flex items-start gap-2">
+															<Badge
+																variant="secondary"
+																className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+															>
+																<Network className="h-3 w-3" />
+																Network
+															</Badge>
+															<div className="text-sm text-gray-700 truncate font-semibold">
+																{(
+																	relationshipCaseData.profiles ??
+																	[]
+																).map(
+																	(
+																		p: any,
+																	) => (
+																		<span
+																			key={
+																				p[0]
+																			}
+																		>
+																			{p[1]
+																				.length >
+																			20
+																				? p[1].substring(
+																						0,
+																						20,
+																					) +
+																					"..."
+																				: p[1]}
+																			{(
+																				relationshipCaseData.profiles ??
+																				[]
+																			).indexOf(
+																				p,
+																			) !==
+																				(
+																					relationshipCaseData.profiles ??
+																					[]
+																				)
+																					.length -
+																					1 &&
+																				", "}
+																		</span>
+																	),
+																)}
 															</div>
-														)}
+														</div>
+													)}
 
 													{/* Drugs Badge + Details */}
-													{(relationshipCaseData.drugs ?? []).length > 0 && (
-															<div className="flex items-start gap-2">
-																<Badge
-																	variant="secondary"
-																	className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
-																>
-																	<Pill className="h-3 w-3" />
-																	Drugs
-																</Badge>
-																<p className="text-sm text-gray-700 font-semibold">
-																	{(relationshipCaseData.drugs ?? []).map(
-																		(
-																			d: any,
-																			index: number,
-																		) => (
-																			<span
-																				key={`${d.drug_name}-${index}`}
-																			>
-																				{d
-																					.drug_name
-																					.length >
-																				20
-																					? d.drug_name.substring(
-																							0,
-																							20,
-																						) +
-																						"..."
-																					: d.drug_name}
-
+													{(
+														relationshipCaseData.drugs ??
+														[]
+													).length > 0 && (
+														<div className="flex items-start gap-2">
+															<Badge
+																variant="secondary"
+																className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+															>
+																<Pill className="h-3 w-3" />
+																Drugs
+															</Badge>
+															<p className="text-sm text-gray-700 font-semibold">
+																{(
+																	relationshipCaseData.drugs ??
+																	[]
+																).map(
+																	(
+																		d: any,
+																		index: number,
+																	) => (
+																		<span
+																			key={`${d.drug_name}-${index}`}
+																		>
+																			{d
+																				.drug_name
+																				.length >
+																			20
+																				? d.drug_name.substring(
+																						0,
+																						20,
+																					) +
+																					"..."
+																				: d.drug_name}
+																			(
+																			{
+																				d.quantified_by
+																			}
+																			):{" "}
+																			{
+																				d.quantity
+																			}
+																			{index !==
 																				(
-																				{
-																					d.quantified_by
-																				}
-																				):{" "}
-																				{
-																					d.quantity
-																				}
-																				{index !==
-																					(relationshipCaseData.drugs ?? []).length -
-																						1 &&
-																					", "}
-																			</span>
-																		),
-																	)}
-																</p>
-															</div>
-														)}
+																					relationshipCaseData.drugs ??
+																					[]
+																				)
+																					.length -
+																					1 &&
+																				", "}
+																		</span>
+																	),
+																)}
+															</p>
+														</div>
+													)}
 
 													{/* Areas Badge + Details */}
-													{(relationshipCaseData.areas ?? []).length > 0 && (
-															<div className="flex items-start gap-2">
-																<Badge
-																	variant="secondary"
-																	className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
-																>
-																	<MapPin className="h-3 w-3" />
-																	Areas
-																</Badge>
-																<p className="text-sm text-gray-700 font-semibold">
-																	{(relationshipCaseData.areas ?? []).map(
-																		(
-																			area: string,
-																			index: number,
-																		) => (
-																			<span
-																				key={`${area}-${index}`}
-																			>
-																				{
-																					area
-																				}
-																				{index !==
-																					(relationshipCaseData.areas ?? []).length -
-																						1 &&
-																					", "}
-																			</span>
-																		),
-																	)}
-																</p>
-															</div>
-														)}
+													{(
+														relationshipCaseData.areas ??
+														[]
+													).length > 0 && (
+														<div className="flex items-start gap-2">
+															<Badge
+																variant="secondary"
+																className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+															>
+																<MapPin className="h-3 w-3" />
+																Areas
+															</Badge>
+															<p className="text-sm text-gray-700 font-semibold">
+																{(
+																	relationshipCaseData.areas ??
+																	[]
+																).map(
+																	(
+																		area: string,
+																		index: number,
+																	) => (
+																		<span
+																			key={`${area}-${index}`}
+																		>
+																			{
+																				area
+																			}
+																			{index !==
+																				(
+																					relationshipCaseData.areas ??
+																					[]
+																				)
+																					.length -
+																					1 &&
+																				", "}
+																		</span>
+																	),
+																)}
+															</p>
+														</div>
+													)}
 
 													{/* Notes Badge + Details */}
 													{relationshipCaseData.notes && (

@@ -1359,12 +1359,13 @@ export default function NewCasePage() {
 		setIsRelationshipInfoDialogOpen(true);
 
 		try {
-			const [caseData, drugsData, areasData, profilesData] = await Promise.all([
-				getCase(caseId),
-				getCaseDrugs(caseId),
-				getCaseAreas(caseId),
-				getCaseProfiles(caseId),
-			]);
+			const [caseData, drugsData, areasData, profilesData] =
+				await Promise.all([
+					getCase(caseId),
+					getCaseDrugs(caseId),
+					getCaseAreas(caseId),
+					getCaseProfiles(caseId),
+				]);
 
 			setRelationshipCaseData({
 				...caseData,
@@ -1682,7 +1683,9 @@ export default function NewCasePage() {
 
 								await saveCaseAttachments(
 									targetCaseId,
-									attachedCases.map((caseItem) => caseItem.id),
+									attachedCases.map(
+										(caseItem) => caseItem.id,
+									),
 								);
 							} else {
 								// Create new case with areas and get case ID
@@ -2737,8 +2740,12 @@ export default function NewCasePage() {
 													<button
 														type="button"
 														onClick={() => {
-															setCaseSearchQuery("");
-															setCaseSearchResults([]);
+															setCaseSearchQuery(
+																"",
+															);
+															setCaseSearchResults(
+																[],
+															);
 														}}
 														className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
 														aria-label="Clear search"
@@ -2748,7 +2755,8 @@ export default function NewCasePage() {
 												)}
 											</div>
 
-											{caseSearchQuery.trim().length >= 2 && (
+											{caseSearchQuery.trim().length >=
+												2 && (
 												<div className="rounded-md border bg-white shadow-lg">
 													<div className="border-b px-3 py-2 text-xs text-gray-500">
 														{isSearchingCases
@@ -2756,62 +2764,105 @@ export default function NewCasePage() {
 															: `${caseSearchResults.length} result${caseSearchResults.length === 1 ? "" : "s"}`}
 													</div>
 													<div className="max-h-56 overflow-y-auto">
-														{!isSearchingCases && caseSearchResults.length === 0 ? (
+														{!isSearchingCases &&
+														caseSearchResults.length ===
+															0 ? (
 															<div className="px-3 py-3 text-sm text-gray-500">
-																No matching cases found
+																No matching
+																cases found
 															</div>
 														) : (
-															caseSearchResults.map((caseItem) => {
-																const isAlreadyAttached = attachedCases.some(
-																	(attachedCase) => attachedCase.id === caseItem.id,
-																);
-																const isCurrentCase = Boolean(
-																	id && caseItem.id === Number(id),
-																);
-																const isDisabled = isAlreadyAttached || isCurrentCase;
+															caseSearchResults.map(
+																(caseItem) => {
+																	const isAlreadyAttached =
+																		attachedCases.some(
+																			(
+																				attachedCase,
+																			) =>
+																				attachedCase.id ===
+																				caseItem.id,
+																		);
+																	const isCurrentCase =
+																		Boolean(
+																			id &&
+																			caseItem.id ===
+																				Number(
+																					id,
+																				),
+																		);
+																	const isDisabled =
+																		isAlreadyAttached ||
+																		isCurrentCase;
 
-																return (
-																	<button
-																		key={caseItem.id}
-																		type="button"
-																		disabled={isDisabled}
-																		onClick={() => {
-																			if (isDisabled) return;
-																			setAttachedCases((current) => [...current, caseItem]);
-																			setCaseSearchQuery("");
-																			setCaseSearchResults([]);
-																		}}
-																		className={`w-full border-b px-3 py-2 text-left last:border-b-0 ${
-																			isDisabled
-																				? "cursor-not-allowed bg-gray-50 opacity-60"
-																				: "cursor-pointer hover:bg-gray-50"
-																		}`}
-																	>
-																		<div className="flex items-start justify-between gap-3">
-																			<div className="min-w-0 flex-1">
-																				<div className="flex items-center justify-between gap-3 text-xs text-gray-500">
-																					<span className="font-medium text-gray-900">
-																						Case ID: {caseItem.case_id || "N/A"}
-																					</span>
-																					<span className="shrink-0">
-																						Last updated: {caseItem.updated_at || "Unknown"}
-																					</span>
+																	return (
+																		<button
+																			key={
+																				caseItem.id
+																			}
+																			type="button"
+																			disabled={
+																				isDisabled
+																			}
+																			onClick={() => {
+																				if (
+																					isDisabled
+																				)
+																					return;
+																				setAttachedCases(
+																					(
+																						current,
+																					) => [
+																						...current,
+																						caseItem,
+																					],
+																				);
+																				setCaseSearchQuery(
+																					"",
+																				);
+																				setCaseSearchResults(
+																					[],
+																				);
+																			}}
+																			className={`w-full border-b px-3 py-2 text-left last:border-b-0 ${
+																				isDisabled
+																					? "cursor-not-allowed bg-gray-50 opacity-60"
+																					: "cursor-pointer hover:bg-gray-50"
+																			}`}
+																		>
+																			<div className="flex items-start justify-between gap-3">
+																				<div className="min-w-0 flex-1">
+																					<div className="flex items-center justify-between gap-3 text-xs text-gray-500">
+																						<span className="font-medium text-gray-900">
+																							Case
+																							ID:{" "}
+																							{caseItem.case_id ||
+																								"N/A"}
+																						</span>
+																						<span className="shrink-0">
+																							Last
+																							updated:{" "}
+																							{caseItem.updated_at ||
+																								"Unknown"}
+																						</span>
+																					</div>
+																					<div className="text-sm text-gray-700 truncate mt-1">
+																						{
+																							caseItem.case_name
+																						}
+																					</div>
 																				</div>
-																				<div className="text-sm text-gray-700 truncate mt-1">
-																					{caseItem.case_name}
-																				</div>
+																				<span className="text-xs font-medium text-blue-600">
+																					{isCurrentCase
+																						? "Current"
+																						: isAlreadyAttached
+																							? "Attached"
+																							: "Attach"}
+																				</span>
 																			</div>
-																			<span className="text-xs font-medium text-blue-600">
-																				{isCurrentCase
-																					? "Current"
-																					: isAlreadyAttached
-																						? "Attached"
-																						: "Attach"}
-																			</span>
-																		</div>
-																	</button>
-																);
-															})
+																		</button>
+																	);
+																},
+															)
 														)}
 													</div>
 												</div>
@@ -2820,7 +2871,8 @@ export default function NewCasePage() {
 
 										<div className="space-y-2">
 											<Label className="text-xs text-gray-500">
-												Attached Cases ({attachedCases.length})
+												Attached Cases (
+												{attachedCases.length})
 											</Label>
 											<div className="min-h-12 rounded-md border bg-white p-2">
 												{attachedCases.length === 0 ? (
@@ -2841,42 +2893,60 @@ export default function NewCasePage() {
 																		<div className="min-w-0 flex-1">
 																			<div className="flex items-center justify-between gap-3 text-xs text-gray-500">
 																				<span className="font-medium text-gray-900">
-																					Case ID: {caseItem.case_id || "N/A"}
+																					Case
+																					ID:{" "}
+																					{caseItem.case_id ||
+																						"N/A"}
 																				</span>
 																				<span className="shrink-0">
-																					Last updated: {caseItem.updated_at || "Unknown"}
+																					Last
+																					updated:{" "}
+																					{caseItem.updated_at ||
+																						"Unknown"}
 																				</span>
 																			</div>
 																			<div className="text-sm text-gray-700 truncate mt-1">
-																				{caseItem.case_name}
+																				{
+																					caseItem.case_name
+																				}
 																			</div>
 																		</div>
-																	<div className="flex shrink-0 items-center gap-1">
-																		<button
-																			type="button"
-																			aria-label={`View ${caseItem.case_id || "case"} information`}
-																			title="View case information"
-																			onClick={() => void openAttachedCaseInfo(caseItem.id)}
-																			className="inline-flex h-6 w-6 items-center justify-center rounded-full text-gray-500 hover:bg-muted hover:text-gray-700"
-																		>
-																			<Eye className="h-4 w-4" />
-																		</button>
-																		<button
-																			type="button"
-																			aria-label={`Remove ${caseItem.case_id || "case"}`}
-																			onClick={() =>
-																				setAttachedCases((current) =>
-																					current.filter(
-																						(attachedCase) =>
-																							attachedCase.id !== caseItem.id,
-																					),
-																				)
-																			}
-																			className="inline-flex h-6 w-6 items-center justify-center rounded-full text-gray-500 hover:bg-muted hover:text-gray-700"
-																		>
-																			<X className="h-4 w-4" />
-																		</button>
-																	</div>
+																		<div className="flex shrink-0 items-center gap-1">
+																			<button
+																				type="button"
+																				aria-label={`View ${caseItem.case_id || "case"} information`}
+																				title="View case information"
+																				onClick={() =>
+																					void openAttachedCaseInfo(
+																						caseItem.id,
+																					)
+																				}
+																				className="inline-flex h-6 w-6 items-center justify-center rounded-full text-gray-500 hover:bg-muted hover:text-gray-700"
+																			>
+																				<Eye className="h-4 w-4" />
+																			</button>
+																			<button
+																				type="button"
+																				aria-label={`Remove ${caseItem.case_id || "case"}`}
+																				onClick={() =>
+																					setAttachedCases(
+																						(
+																							current,
+																						) =>
+																							current.filter(
+																								(
+																									attachedCase,
+																								) =>
+																									attachedCase.id !==
+																									caseItem.id,
+																							),
+																					)
+																				}
+																				className="inline-flex h-6 w-6 items-center justify-center rounded-full text-gray-500 hover:bg-muted hover:text-gray-700"
+																			>
+																				<X className="h-4 w-4" />
+																			</button>
+																		</div>
 																	</div>
 																</div>
 															),
