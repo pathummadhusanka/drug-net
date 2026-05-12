@@ -36,9 +36,11 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AttachedCasesList } from "@/components/cases/AttachedCasesList";
 import {
 	getCase,
 	getCaseAreas,
+	getCaseAttachments,
 	getCaseRelationships,
 	getCaseProfiles,
 	deleteCase,
@@ -85,6 +87,7 @@ import { toast } from "sonner";
 interface CaseDetails extends CaseWithDetails {
 	drugs?: { drug_name: string; quantity: string; quantified_by: string }[];
 	areas?: string[];
+	attachedCases?: CaseWithDetails[];
 	profiles?: [number, string][];
 	relationships?: {
 		source_profile_id: number;
@@ -392,6 +395,35 @@ export default function CaseViewPage() {
 		fetchCaseDetails();
 	}, [id]);
 
+	const openAttachedCaseInfo = async (caseId: number) => {
+		setRelationshipCaseData(null);
+		setIsRelationshipInfoDialogOpen(true);
+
+		try {
+			const [caseInfo, drugsData, areasData, profilesData] =
+				await Promise.all([
+					getCase(caseId),
+					getCaseDrugs(caseId),
+					getCaseAreas(caseId),
+					getCaseProfiles(caseId),
+				]);
+
+			if (!caseInfo) return;
+
+			setRelationshipCaseData({
+				...caseInfo,
+				drugs: drugsData,
+				areas: areasData,
+				profiles: profilesData,
+			});
+		} catch (error) {
+			console.error("Failed to load attached case data:", error);
+			toast.error("Failed to load case information", {
+				position: "top-center",
+			});
+		}
+	};
+
 	// Set up event listener for connection info dialog
 	useEffect(() => {
 		const handleOpenConnectionInfoDialog = (event: Event) => {
@@ -478,20 +510,28 @@ export default function CaseViewPage() {
 		try {
 			setLoading(true);
 			const caseId = parseInt(id, 10);
-			const [caseDetails, drugs, areas, relationships, profiles] =
-				await Promise.all([
-					getCase(caseId),
-					getCaseDrugs(caseId),
-					getCaseAreas(caseId),
-					getCaseRelationships(caseId),
-					getCaseProfiles(caseId),
-				]);
+			const [
+				caseDetails,
+				drugs,
+				areas,
+				attachedCases,
+				relationships,
+				profiles,
+			] = await Promise.all([
+				getCase(caseId),
+				getCaseDrugs(caseId),
+				getCaseAreas(caseId),
+				getCaseAttachments(caseId),
+				getCaseRelationships(caseId),
+				getCaseProfiles(caseId),
+			]);
 
 			if (caseDetails) {
 				setCaseData({
 					...caseDetails,
 					drugs,
 					areas,
+					attachedCases,
 					profiles,
 					relationships,
 				});
@@ -940,6 +980,29 @@ export default function CaseViewPage() {
 							)}
 						</div>
 					</div>
+
+					{caseData.attachedCases &&
+						caseData.attachedCases.length > 0 && (
+							<>
+								<Separator />
+								<div className="space-y-4">
+									<h3 className="text-sm font-semibold text-gray-700">
+										Attached Cases (
+										{caseData.attachedCases.length})
+									</h3>
+									<AttachedCasesList
+										attachedCases={caseData.attachedCases}
+										onViewCase={(caseItem) =>
+											void openAttachedCaseInfo(
+												caseItem.id,
+											)
+										}
+										onRemoveCase={undefined}
+										emptyMessage="No attached cases"
+									/>
+								</div>
+							</>
+						)}
 
 					<Separator />
 

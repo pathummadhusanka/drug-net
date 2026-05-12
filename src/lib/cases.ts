@@ -27,6 +27,15 @@ export interface CaseWithDetails {
 	case_time: string | null;
 	created_at: string | null;
 	updated_at: string | null;
+
+	// Optional related data that may be returned by some APIs
+	profiles?: [number, string][]; // [profile_id, profile_name]
+	drugs?: Array<{
+		drug_name: string;
+		quantity: number | string;
+		quantified_by?: string | null;
+	}>;
+	areas?: string[];
 }
 
 export interface CaseRelationshipData {

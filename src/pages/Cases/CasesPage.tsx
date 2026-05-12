@@ -1190,12 +1190,7 @@ export default function CasesPage() {
 								>
 									<AlertDialogContent
 										className="sm:max-w-2xl max-h-[85vh] overflow-y-auto"
-										onInteractOutside={(e) =>
-											e.preventDefault()
-										}
-										onEscapeKeyDown={(e) =>
-											e.preventDefault()
-										}
+										onEscapeKeyDown={(e: any) => e.preventDefault()}
 									>
 										<AlertDialogHeader>
 											<AlertDialogTitle>
@@ -1474,10 +1469,7 @@ export default function CasesPage() {
 													</div>
 
 													{/* Network Badge + Profiles */}
-													{relationshipCaseData.profiles &&
-														relationshipCaseData
-															.profiles.length >
-															0 && (
+													{(relationshipCaseData.profiles ?? []).length > 0 && (
 															<div className="flex items-start gap-2">
 																<Badge
 																	variant="secondary"
@@ -1487,7 +1479,7 @@ export default function CasesPage() {
 																	Network
 																</Badge>
 																<div className="text-sm text-gray-700 truncate font-semibold">
-																	{relationshipCaseData.profiles.map(
+																	{(relationshipCaseData.profiles ?? []).map(
 																		(
 																			p: any,
 																		) => (
@@ -1505,12 +1497,10 @@ export default function CasesPage() {
 																						) +
 																						"..."
 																					: p[1]}
-																				{relationshipCaseData.profiles.indexOf(
+																				{(relationshipCaseData.profiles ?? []).indexOf(
 																					p,
 																				) !==
-																					relationshipCaseData
-																						.profiles
-																						.length -
+																					(relationshipCaseData.profiles ?? []).length -
 																						1 &&
 																					", "}
 																			</span>
@@ -1521,10 +1511,7 @@ export default function CasesPage() {
 														)}
 
 													{/* Drugs Badge + Details */}
-													{relationshipCaseData.drugs &&
-														relationshipCaseData
-															.drugs.length >
-															0 && (
+													{(relationshipCaseData.drugs ?? []).length > 0 && (
 															<div className="flex items-start gap-2">
 																<Badge
 																	variant="secondary"
@@ -1534,7 +1521,7 @@ export default function CasesPage() {
 																	Drugs
 																</Badge>
 																<p className="text-sm text-gray-700 font-semibold">
-																	{relationshipCaseData.drugs.map(
+																	{(relationshipCaseData.drugs ?? []).map(
 																		(
 																			d: any,
 																			index: number,
@@ -1562,9 +1549,7 @@ export default function CasesPage() {
 																					d.quantity
 																				}
 																				{index !==
-																					relationshipCaseData
-																						.drugs
-																						.length -
+																					(relationshipCaseData.drugs ?? []).length -
 																						1 &&
 																					", "}
 																			</span>
@@ -1575,10 +1560,7 @@ export default function CasesPage() {
 														)}
 
 													{/* Areas Badge + Details */}
-													{relationshipCaseData.areas &&
-														relationshipCaseData
-															.areas.length >
-															0 && (
+													{(relationshipCaseData.areas ?? []).length > 0 && (
 															<div className="flex items-start gap-2">
 																<Badge
 																	variant="secondary"
@@ -1588,7 +1570,7 @@ export default function CasesPage() {
 																	Areas
 																</Badge>
 																<p className="text-sm text-gray-700 font-semibold">
-																	{relationshipCaseData.areas.map(
+																	{(relationshipCaseData.areas ?? []).map(
 																		(
 																			area: string,
 																			index: number,
@@ -1600,9 +1582,7 @@ export default function CasesPage() {
 																					area
 																				}
 																				{index !==
-																					relationshipCaseData
-																						.areas
-																						.length -
+																					(relationshipCaseData.areas ?? []).length -
 																						1 &&
 																					", "}
 																			</span>
