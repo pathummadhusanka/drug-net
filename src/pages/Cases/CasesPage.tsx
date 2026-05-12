@@ -42,6 +42,7 @@ import {
 	getAllCases,
 	type CaseWithDetails,
 	getCaseAreas,
+	getCaseAttachments,
 	getCaseRelationships,
 	deleteCase,
 	getCaseProfiles,
@@ -74,6 +75,7 @@ interface CaseWithMetadata extends CaseWithDetails {
 		target_profile_id: number;
 		relationship_type: string | null;
 	}[];
+	attachedCases?: CaseWithDetails[];
 }
 
 export default function CasesPage() {
@@ -85,6 +87,8 @@ export default function CasesPage() {
 		null,
 	);
 	const [isDeleting, setIsDeleting] = useState(false);
+	const [relationshipInfoDialogOpen, setRelationshipInfoDialogOpen] = useState(false);
+	const [relationshipCaseData, setRelationshipCaseData] = useState<CaseWithDetails | null>(null);
 	const [profileDialogOpen, setProfileDialogOpen] = useState(false);
 	const [selectedProfile, setSelectedProfile] =
 		useState<ProfileWithId | null>(null);
@@ -163,10 +167,11 @@ export default function CasesPage() {
 			const enrichedCases = await Promise.all(
 				allCases.map(async (caseItem) => {
 					try {
-						const [drugs, areas, relationships, profiles] =
+						const [drugs, areas, attachments, relationships, profiles] =
 							await Promise.all([
 								getCaseDrugs(caseItem.id),
 								getCaseAreas(caseItem.id),
+								getCaseAttachments(caseItem.id),
 								getCaseRelationships(caseItem.id),
 								getCaseProfiles(caseItem.id),
 							]);
@@ -179,6 +184,7 @@ export default function CasesPage() {
 							profileCount: profiles.length,
 							drugs: drugs,
 							areas: areas,
+							attachedCases: attachments,
 							profiles: profiles,
 							relationships: relationships,
 						};
@@ -195,6 +201,7 @@ export default function CasesPage() {
 							profileCount: 0,
 							drugs: [],
 							areas: [],
+							attachedCases: [],
 							profiles: [],
 							relationships: [],
 						};
@@ -1118,6 +1125,91 @@ export default function CasesPage() {
 										</p>
 									</div>
 								)}
+
+								{caseItem.attachedCases &&
+									caseItem.attachedCases.length > 0 && (
+										<div className="flex items-start gap-2">
+											<span className="text-sm text-gray-700 font-semibold">
+												Attached Cases ({caseItem.attachedCases.length}):{" "}
+												{caseItem.attachedCases.map((attachedCase, index) => (
+													<span
+														key={attachedCase.id}
+														className="cursor-pointer underline hover:text-blue-600"
+														onClick={() => {
+															setRelationshipCaseData(attachedCase);
+															setRelationshipInfoDialogOpen(true);
+														}}
+													>
+														{attachedCase.case_id || attachedCase.cno}
+														{index !== caseItem.attachedCases!.length - 1 && ", "}
+													</span>
+												))}
+											</span>
+										</div>
+									)}
+			{/* Related Case Information Modal */}
+			<AlertDialog
+				open={relationshipInfoDialogOpen}
+				onOpenChange={(open) => {
+					setRelationshipInfoDialogOpen(open);
+					if (!open) setRelationshipCaseData(null);
+				}}
+			>
+				<AlertDialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+					<AlertDialogHeader>
+						<AlertDialogTitle>
+							Related Case Information
+						</AlertDialogTitle>
+					</AlertDialogHeader>
+					{relationshipCaseData ? (
+						<Card>
+							<CardContent className="pt-2 space-y-2 pb-2">
+								<div className="flex items-start gap-2">
+									<Badge
+										variant="secondary"
+										className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+									>
+										<FileText className="h-3 w-3" />
+										Info
+									</Badge>
+									<div className="flex-1 space-y-1 font-semibold">
+										<div className="flex items-start justify-between gap-3 text-sm text-gray-700">
+											<div className="min-w-0 flex items-center gap-2 flex-wrap">
+												{relationshipCaseData.case_id && (
+													<span>{relationshipCaseData.case_id}</span>
+												)}
+												{relationshipCaseData.case_name && (
+													<span className="truncate max-w-xs">{relationshipCaseData.case_name}</span>
+												)}
+												{relationshipCaseData.case_type && (
+													<span className="bg-gray-100 rounded px-2 py-0.5 text-xs">{relationshipCaseData.case_type}</span>
+												)}
+												{relationshipCaseData.severity_level && (
+													<span className="bg-gray-100 rounded px-2 py-0.5 text-xs">{relationshipCaseData.severity_level}</span>
+												)}
+												{relationshipCaseData.status && (
+													<span className="bg-gray-100 rounded px-2 py-0.5 text-xs">{relationshipCaseData.status}</span>
+												)}
+											</div>
+										</div>
+										<div className="text-xs text-gray-500">
+											Created: {relationshipCaseData.created_at}
+											{relationshipCaseData.updated_at && (
+												<> | Updated: {relationshipCaseData.updated_at}</>
+											)}
+										</div>
+										{relationshipCaseData.notes && (
+											<div className="text-sm text-gray-700 mt-2">
+												<strong>Notes:</strong> {relationshipCaseData.notes}
+											</div>
+										)}
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					) : null}
+				</AlertDialogContent>
+			</AlertDialog>
 
 								{caseItem.created_at && (
 									<p className="text-xs text-gray-500 mt-3">
