@@ -1135,7 +1135,8 @@ export default function CasesPage() {
 													<span
 														key={attachedCase.id}
 														className="cursor-pointer underline hover:text-blue-600"
-														onClick={() => {
+														onClick={(e) => {
+															e.stopPropagation();
 															setRelationshipCaseData(attachedCase);
 															setRelationshipInfoDialogOpen(true);
 														}}
@@ -1152,7 +1153,9 @@ export default function CasesPage() {
 				open={relationshipInfoDialogOpen}
 				onOpenChange={(open) => {
 					setRelationshipInfoDialogOpen(open);
-					if (!open) setRelationshipCaseData(null);
+					if (!open) {
+						setRelationshipCaseData(null);
+					}
 				}}
 			>
 				<AlertDialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -1164,6 +1167,7 @@ export default function CasesPage() {
 					{relationshipCaseData ? (
 						<Card>
 							<CardContent className="pt-2 space-y-2 pb-2">
+								{/* Info Badge - Case ID, Title, Type, Severity, Status */}
 								<div className="flex items-start gap-2">
 									<Badge
 										variant="secondary"
@@ -1173,38 +1177,394 @@ export default function CasesPage() {
 										Info
 									</Badge>
 									<div className="flex-1 space-y-1 font-semibold">
+										{/* Line 1: Case ID | Name + Type/Severity/Status badges */}
 										<div className="flex items-start justify-between gap-3 text-sm text-gray-700">
 											<div className="min-w-0 flex items-center gap-2 flex-wrap">
 												{relationshipCaseData.case_id && (
-													<span>{relationshipCaseData.case_id}</span>
+													<span>
+														{
+															relationshipCaseData.case_id
+														}
+													</span>
 												)}
+												{relationshipCaseData.case_id &&
+													relationshipCaseData.case_name && (
+														<span className="text-muted-foreground">
+															|
+														</span>
+													)}
 												{relationshipCaseData.case_name && (
-													<span className="truncate max-w-xs">{relationshipCaseData.case_name}</span>
+													<span>
+														{relationshipCaseData
+															.case_name.length >
+														20
+															? relationshipCaseData.case_name.substring(
+																	0,
+																	20,
+																) + "..."
+															: relationshipCaseData.case_name}
+													</span>
 												)}
+											</div>
+											<div className="shrink-0 flex items-center gap-2 flex-wrap justify-end">
 												{relationshipCaseData.case_type && (
-													<span className="bg-gray-100 rounded px-2 py-0.5 text-xs">{relationshipCaseData.case_type}</span>
+													<span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+														{relationshipCaseData.case_type
+															.split(/[\s_-]+/)
+															.filter(Boolean)
+															.map(
+																(
+																	part: string,
+																) =>
+																	part
+																		.charAt(
+																			0,
+																		)
+																		.toUpperCase() +
+																	part
+																		.slice(
+																			1,
+																		)
+																		.toLowerCase(),
+															)
+															.join(" ")}
+													</span>
 												)}
 												{relationshipCaseData.severity_level && (
-													<span className="bg-gray-100 rounded px-2 py-0.5 text-xs">{relationshipCaseData.severity_level}</span>
+													<span
+														className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+															relationshipCaseData.severity_level ===
+															"low"
+																? "bg-green-100 text-green-800"
+																: relationshipCaseData.severity_level ===
+																	  "medium"
+																	? "bg-yellow-100 text-yellow-800"
+																	: relationshipCaseData.severity_level ===
+																		  "high"
+																		? "bg-orange-100 text-orange-800"
+																		: "bg-red-100 text-red-800"
+														}`}
+													>
+														{relationshipCaseData.severity_level
+															.split(/[\s_-]+/)
+															.filter(Boolean)
+															.map(
+																(
+																	part: string,
+																) =>
+																	part
+																		.charAt(
+																			0,
+																		)
+																		.toUpperCase() +
+																	part
+																		.slice(
+																			1,
+																		)
+																		.toLowerCase(),
+															)
+															.join(" ")}
+													</span>
 												)}
 												{relationshipCaseData.status && (
-													<span className="bg-gray-100 rounded px-2 py-0.5 text-xs">{relationshipCaseData.status}</span>
+													<span
+														className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+															relationshipCaseData.status ===
+															"active"
+																? "bg-green-100 text-green-800"
+																: relationshipCaseData.status ===
+																	  "under-surveillance"
+																	? "bg-yellow-100 text-yellow-800"
+																	: "bg-gray-100 text-gray-800"
+														}`}
+													>
+														{relationshipCaseData.status
+															.split(/[\s_-]+/)
+															.filter(Boolean)
+															.map(
+																(
+																	part: string,
+																) =>
+																	part
+																		.charAt(
+																			0,
+																		)
+																		.toUpperCase() +
+																	part
+																		.slice(
+																			1,
+																		)
+																		.toLowerCase(),
+															)
+															.join(" ")}
+													</span>
 												)}
 											</div>
 										</div>
-										<div className="text-xs text-gray-500">
-											Created: {relationshipCaseData.created_at}
-											{relationshipCaseData.updated_at && (
-												<> | Updated: {relationshipCaseData.updated_at}</>
-											)}
-										</div>
-										{relationshipCaseData.notes && (
-											<div className="text-sm text-gray-700 mt-2">
-												<strong>Notes:</strong> {relationshipCaseData.notes}
+
+										{/* Line 2: Date/Time | Description */}
+										{(relationshipCaseData.case_date ||
+											relationshipCaseData.case_time ||
+											relationshipCaseData.description) && (
+											<div className="flex items-center gap-2 flex-wrap text-sm text-gray-700">
+												{(relationshipCaseData.case_date ||
+													relationshipCaseData.case_time) && (
+													<>
+														{relationshipCaseData.case_date && (
+															<span>
+																{relationshipCaseData.case_time
+																	? (() => {
+																			try {
+																				const dateObj =
+																					new Date(
+																						relationshipCaseData.case_date,
+																					);
+																				const [
+																					hours,
+																					minutes,
+																				] =
+																					relationshipCaseData.case_time.split(
+																						":",
+																					);
+																				dateObj.setHours(
+																					parseInt(
+																						hours,
+																					),
+																					parseInt(
+																						minutes,
+																					),
+																				);
+																				const dateStr =
+																					dateObj.toLocaleDateString(
+																						"en-US",
+																						{
+																							month: "short",
+																							day: "numeric",
+																							year: "numeric",
+																						},
+																					);
+																				const timeStr =
+																					dateObj.toLocaleTimeString(
+																						"en-US",
+																						{
+																							hour: "2-digit",
+																							minute: "2-digit",
+																							hour12: true,
+																						},
+																					);
+																				return `${dateStr} @ ${timeStr}`;
+																			} catch {
+																				return new Date(
+																					relationshipCaseData.case_date,
+																				).toLocaleDateString();
+																			}
+																		})()
+																	: new Date(
+																			relationshipCaseData.case_date,
+																		).toLocaleString(
+																			"en-US",
+																			{
+																				month: "short",
+																				day: "numeric",
+																				year: "numeric",
+																			},
+																		)}
+															</span>
+														)}
+														{!relationshipCaseData.case_date &&
+															relationshipCaseData.case_time && (
+																<span>
+																	{
+																		relationshipCaseData.case_time
+																	}
+																</span>
+															)}
+														{relationshipCaseData.description && (
+															<span className="text-muted-foreground">
+																|
+															</span>
+														)}
+													</>
+												)}
+												{relationshipCaseData.description && (
+													<span>
+														{relationshipCaseData.description.replace(
+															/[\r\n]+/g,
+															" \\ ",
+														).length > 100
+															? relationshipCaseData.description
+																	.replace(
+																		/[\r\n]+/g,
+																		" \\ ",
+																	)
+																	.substring(
+																		0,
+																		100,
+																	) + "..."
+															: relationshipCaseData.description.replace(
+																	/[\r\n]+/g,
+																	" \\ ",
+																)}
+													</span>
+												)}
 											</div>
 										)}
 									</div>
 								</div>
+
+								{/* Network Badge + Profiles */}
+								{relationshipCaseData.profiles &&
+									relationshipCaseData.profiles.length >
+										0 && (
+										<div className="flex items-start gap-2">
+											<Badge
+												variant="secondary"
+												className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+											>
+												<Network className="h-3 w-3" />
+												Network
+											</Badge>
+											<div className="text-sm text-gray-700 truncate font-semibold">
+												{relationshipCaseData.profiles.map(
+													(p: any) => (
+														<span key={p[0]}>
+															{p[1].length > 20
+																? p[1].substring(
+																		0,
+																		20,
+																	) + "..."
+																: p[1]}
+															{relationshipCaseData.profiles.indexOf(
+																p,
+															) !==
+																relationshipCaseData
+																	.profiles
+																	.length -
+																	1 && ", "}
+														</span>
+													),
+												)}
+											</div>
+										</div>
+									)}
+
+								{/* Drugs Badge + Details */}
+								{relationshipCaseData.drugs &&
+									relationshipCaseData.drugs.length > 0 && (
+										<div className="flex items-start gap-2">
+											<Badge
+												variant="secondary"
+												className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+											>
+												<Pill className="h-3 w-3" />
+												Drugs
+											</Badge>
+											<p className="text-sm text-gray-700 font-semibold">
+												{relationshipCaseData.drugs.map(
+													(d: any, index: number) => (
+														<span
+															key={`${d.drug_name}-${index}`}
+														>
+															{d.drug_name
+																.length > 20
+																? d.drug_name.substring(
+																		0,
+																		20,
+																	) + "..."
+																: d.drug_name}
+															({d.quantified_by}):{" "}
+															{d.quantity}
+															{index !==
+																relationshipCaseData
+																	.drugs
+																	.length -
+																	1 && ", "}
+														</span>
+													),
+												)}
+											</p>
+										</div>
+									)}
+
+								{/* Areas Badge + Details */}
+								{relationshipCaseData.areas &&
+									relationshipCaseData.areas.length > 0 && (
+										<div className="flex items-start gap-2">
+											<Badge
+												variant="secondary"
+												className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+											>
+												<MapPin className="h-3 w-3" />
+												Areas
+											</Badge>
+											<p className="text-sm text-gray-700 font-semibold">
+												{relationshipCaseData.areas.map(
+													(
+														area: string,
+														index: number,
+													) => (
+														<span
+															key={`${area}-${index}`}
+														>
+															{area}
+															{index !==
+																relationshipCaseData
+																	.areas
+																	.length -
+																	1 && ", "}
+														</span>
+													),
+												)}
+											</p>
+										</div>
+									)}
+
+								{/* Notes Badge + Details */}
+								{relationshipCaseData.notes && (
+									<div className="flex items-start gap-2">
+										<Badge
+											variant="secondary"
+											className="flex items-center gap-1 flex-shrink-0 mt-0.5 text-xs"
+										>
+											<MessageSquare className="h-3 w-3" />
+											Notes
+										</Badge>
+										<p className="text-sm text-gray-700 font-semibold">
+											{relationshipCaseData.notes.replace(
+												/[\r\n]+/g,
+												" \\ ",
+											).length > 100
+												? relationshipCaseData.notes
+														.replace(
+															/[\r\n]+/g,
+															" \\ ",
+														)
+														.substring(0, 100) +
+													"..."
+												: relationshipCaseData.notes.replace(
+														/[\r\n]+/g,
+														" \\ ",
+													)}
+										</p>
+									</div>
+								)}
+
+								{/* Created At */}
+								{relationshipCaseData.created_at && (
+									<p className="text-xs text-gray-400 pt-1">
+										Created At:{" "}
+										{new Date(
+											relationshipCaseData.created_at,
+										).toLocaleString("en-US", {
+											month: "short",
+											day: "numeric",
+											year: "numeric",
+											hour: "2-digit",
+											minute: "2-digit",
+											hour12: true,
+										})}
+									</p>
+								)}
 							</CardContent>
 						</Card>
 					) : null}
