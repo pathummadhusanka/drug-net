@@ -5,6 +5,7 @@ import {
 	CartesianGrid,
 	Cell,
 	Legend,
+	LabelList,
 	Pie,
 	PieChart,
 	XAxis,
@@ -511,6 +512,10 @@ export default function AnalyticsPage() {
 														}
 													/>
 												))}
+												<LabelList
+													dataKey="count"
+													position="top"
+												/>
 											</Bar>
 										</BarChart>
 									</ChartContainer>
@@ -678,7 +683,12 @@ export default function AnalyticsPage() {
 												dataKey="count"
 												radius={6}
 												fill="var(--color-count)"
-											/>
+											>
+												<LabelList
+													dataKey="count"
+													position="top"
+												/>
+											</Bar>
 										</BarChart>
 									</ChartContainer>
 
@@ -897,7 +907,12 @@ export default function AnalyticsPage() {
 												dataKey="count"
 												radius={6}
 												fill="var(--color-count)"
-											/>
+											>
+												<LabelList
+													dataKey="count"
+													position="top"
+												/>
+											</Bar>
 										</BarChart>
 									</ChartContainer>
 
