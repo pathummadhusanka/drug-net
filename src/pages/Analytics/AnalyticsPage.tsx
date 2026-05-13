@@ -41,6 +41,8 @@ type DrugDatum = {
 type AreaDatum = {
 	area: string;
 	count: number;
+	cases: number;
+	suspects: number;
 };
 
 type ProfileDatum = {
@@ -66,6 +68,15 @@ const AREA_COLORS = [
 	"#b91c1c",
 	"#fca5a5",
 	"#fecaca",
+];
+
+const AREA_DOT_CLASSES = [
+	"bg-red-500",
+	"bg-rose-400",
+	"bg-red-600",
+	"bg-red-800",
+	"bg-rose-300",
+	"bg-rose-200",
 ];
 
 const SEVERITY_COLORS: { [key: string]: string } = {
@@ -172,16 +183,36 @@ export default function AnalyticsPage() {
 				setTotalDrugs(drugCountMap.size);
 
 				// Area analysis
-				const areaCountMap = new Map<string, number>();
-				for (const caseAreas of allAreasByCase) {
+				const areaStatsMap = new Map<
+					string,
+					{ caseCount: number; suspectIds: Set<number> }
+				>();
+				for (
+					let caseIndex = 0;
+					caseIndex < allCases.length;
+					caseIndex++
+				) {
+					const caseAreas = allAreasByCase[caseIndex] ?? [];
+					const caseProfiles = allProfilesByCase[caseIndex] ?? [];
+					const caseSuspectIds = new Set(
+						caseProfiles.map((profile) => profile[0]),
+					);
+
 					for (const area of caseAreas) {
-						areaCountMap.set(
-							area,
-							(areaCountMap.get(area) ?? 0) + 1,
-						);
+						const existing = areaStatsMap.get(area) ?? {
+							caseCount: 0,
+							suspectIds: new Set<number>(),
+						};
+
+						existing.caseCount += 1;
+						for (const suspectId of caseSuspectIds) {
+							existing.suspectIds.add(suspectId);
+						}
+
+						areaStatsMap.set(area, existing);
 					}
 				}
-				setTotalAreas(areaCountMap.size);
+				setTotalAreas(areaStatsMap.size);
 
 				// Profile analysis with case count
 				const profileCountMap = new Map<
@@ -259,10 +290,15 @@ export default function AnalyticsPage() {
 
 				// Set area data
 				setAreaData(
-					Array.from(areaCountMap.entries())
-						.map(([area, count]) => ({ area, count }))
+					Array.from(areaStatsMap.entries())
+						.map(([area, stats]) => ({
+							area,
+							count: stats.caseCount,
+							cases: stats.caseCount,
+							suspects: stats.suspectIds.size,
+						}))
 						.sort((a, b) => b.count - a.count)
-						.slice(0, 8),
+						.slice(0, 10),
 				);
 
 				// Set profile data with connections
@@ -384,7 +420,7 @@ export default function AnalyticsPage() {
 							<CardContent>
 								{severityData.length > 0 ? (
 									<ChartContainer
-										className="h-[300px] w-full"
+										className="h-75 w-full"
 										config={{
 											count: {
 												label: "Count",
@@ -444,7 +480,7 @@ export default function AnalyticsPage() {
 							<CardContent>
 								{statusData.length > 0 ? (
 									<ChartContainer
-										className="h-[300px] w-full"
+										className="h-75 w-full"
 										config={{
 											count: {
 												label: "Count",
@@ -502,7 +538,7 @@ export default function AnalyticsPage() {
 						<CardContent>
 							{drugData.length > 0 ? (
 								<ChartContainer
-									className="h-[360px] w-full"
+									className="h-90 w-full"
 									config={{
 										count: {
 											label: "Count",
@@ -552,50 +588,100 @@ export default function AnalyticsPage() {
 				<TabsContent value="areas">
 					<Card>
 						<CardHeader>
-							<CardTitle>Top 8 Operational Areas</CardTitle>
+							<CardTitle>Top 10 Operational Areas</CardTitle>
 							<CardDescription>
-								Most frequently linked areas across all cases
+								Most frequently linked areas across all cases,
+								with case and suspect counts
 							</CardDescription>
 						</CardHeader>
 						<CardContent>
 							{areaData.length > 0 ? (
-								<ChartContainer
-									className="h-[360px] w-full"
-									config={{
-										count: {
-											label: "Count",
-											color: "#10b981",
-										},
-									}}
-								>
-									<PieChart accessibilityLayer>
-										<ChartTooltip
-											cursor={false}
-											content={<ChartTooltipContent />}
-										/>
-										<Legend />
-										<Pie
-											data={areaData}
-											dataKey="count"
-											nameKey="area"
-											innerRadius={60}
-											outerRadius={120}
-											paddingAngle={2}
-										>
-											{areaData.map((entry, index) => (
-												<Cell
-													key={entry.area}
-													fill={
-														AREA_COLORS[
-															index %
-																AREA_COLORS.length
-														]
-													}
-												/>
-											))}
-										</Pie>
-									</PieChart>
-								</ChartContainer>
+								<>
+									<ChartContainer
+										className="h-90 w-full"
+										config={{
+											count: {
+												label: "Count",
+												color: "#10b981",
+											},
+										}}
+									>
+										<PieChart accessibilityLayer>
+											<ChartTooltip
+												cursor={false}
+												content={
+													<ChartTooltipContent />
+												}
+											/>
+											<Legend />
+											<Pie
+												data={areaData}
+												dataKey="count"
+												nameKey="area"
+												innerRadius={60}
+												outerRadius={120}
+												paddingAngle={2}
+											>
+												{areaData.map(
+													(entry, index) => (
+														<Cell
+															key={entry.area}
+															fill={
+																AREA_COLORS[
+																	index %
+																		AREA_COLORS.length
+																]
+															}
+														/>
+													),
+												)}
+											</Pie>
+										</PieChart>
+									</ChartContainer>
+
+									<div className="mt-6 overflow-x-auto rounded-lg border bg-white">
+										<table className="w-full text-sm">
+											<thead className="border-b bg-gray-50">
+												<tr>
+													<th className="px-4 py-3 text-left font-semibold text-gray-700">
+														Area
+													</th>
+													<th className="px-4 py-3 text-center font-semibold text-gray-700">
+														Cases
+													</th>
+													<th className="px-4 py-3 text-center font-semibold text-gray-700">
+														Suspects
+													</th>
+												</tr>
+											</thead>
+											<tbody>
+												{areaData.map((area, index) => (
+													<tr
+														key={area.area}
+														className="border-b last:border-b-0"
+													>
+														<td className="px-4 py-3">
+															<div className="flex items-center gap-3">
+																<span
+																	className={`h-3 w-3 rounded-full ${AREA_DOT_CLASSES[index % AREA_DOT_CLASSES.length]}`}
+																/>
+																<span className="font-medium text-gray-900">
+																	{area.area}
+																</span>
+															</div>
+														</td>
+														<td className="px-4 py-3 text-center font-semibold text-emerald-700">
+															{area.cases}
+														</td>
+														<td className="px-4 py-3 text-center font-semibold text-blue-700">
+															{area.suspects}
+														</td>
+													</tr>
+												))}
+											</tbody>
+										</table>
+									</div>
+								</>
 							) : (
 								<p className="text-sm text-gray-600">
 									No area data available
@@ -619,7 +705,7 @@ export default function AnalyticsPage() {
 							{profileData.length > 0 ? (
 								<div className="space-y-4">
 									<ChartContainer
-										className="h-[360px] w-full"
+										className="h-90 w-full"
 										config={{
 											count: {
 												label: "Cases",
