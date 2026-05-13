@@ -1998,8 +1998,9 @@ export default function NewCasePage() {
 				>
 					{isSaving && (
 						<div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
-							<div className="rounded-md bg-white/80 px-4 py-2 shadow">
-								Saving…
+							<div className="flex items-center gap-3 rounded-md bg-white/80 px-4 py-2 shadow">
+								<div className="h-5 w-5 animate-spin rounded-full border-2 border-t-transparent border-gray-500" />
+								<div className="font-medium">Saving…</div>
 							</div>
 						</div>
 					)}
@@ -2342,11 +2343,13 @@ export default function NewCasePage() {
 												size="sm"
 												className="cursor-pointer"
 												onClick={() => {
+													if (isSaving) return;
 													setProfileSearch("");
 													setIsAddProfileDialogOpen(
 														true,
 													);
 												}}
+												disabled={isSaving}
 											>
 												<UserSearch className="h-4 w-4 mr-2" />
 												Add Profile
@@ -2357,11 +2360,13 @@ export default function NewCasePage() {
 												size="sm"
 												className="cursor-pointer"
 												onClick={() => {
+													if (isSaving) return;
 													resetNewProfileForm();
 													setIsNewProfileDialogOpen(
 														true,
 													);
 												}}
+												disabled={isSaving}
 											>
 												<UserPlus className="h-4 w-4 mr-2" />
 												New Profile
@@ -2396,6 +2401,8 @@ export default function NewCasePage() {
 											isValidConnection={
 												isValidConnectionCheck
 											}
+											nodesDraggable={!isSaving}
+											nodesConnectable={!isSaving}
 											connectionRadius={50}
 											connectionLineType={
 												ConnectionLineType.Straight
