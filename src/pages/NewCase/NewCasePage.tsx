@@ -697,6 +697,8 @@ export default function NewCasePage() {
 		areas: string[];
 		selectedDrugs: { [key: number]: string };
 		attachedCases: CaseWithDetails[];
+		nodes: Node[];
+		edges: Edge[];
 	} | null>(null);
 	const [hasChanges, setHasChanges] = useState(false);
 
@@ -962,6 +964,8 @@ export default function NewCasePage() {
 						areas: caseAreas,
 						selectedDrugs: drugsMap,
 						attachedCases: caseAttachments,
+						nodes: profileNodes,
+						edges: relationshipEdges,
 					};
 					setHasChanges(false);
 				} catch (error) {
@@ -1001,7 +1005,43 @@ export default function NewCasePage() {
 			JSON.stringify(selectedDrugs) !==
 				JSON.stringify(orig.selectedDrugs) ||
 			JSON.stringify(attachedCases.map((c) => c.id).sort()) !==
-				JSON.stringify(orig.attachedCases.map((c) => c.id).sort());
+				JSON.stringify(orig.attachedCases.map((c) => c.id).sort()) ||
+			JSON.stringify(
+				nodes
+					.map((n) => ({ id: n.id, profileId: n.data.profileId }))
+					.sort((a, b) => a.id.localeCompare(b.id)),
+			) !==
+				JSON.stringify(
+					orig.nodes
+						.map((n) => ({ id: n.id, profileId: n.data.profileId }))
+						.sort((a, b) => a.id.localeCompare(b.id)),
+				) ||
+			JSON.stringify(
+				edges
+					.map((e) => ({
+						source: e.source,
+						target: e.target,
+						label: e.data?.label,
+					}))
+					.sort((a, b) =>
+						(a.source + a.target).localeCompare(
+							b.source + b.target,
+						),
+					),
+			) !==
+				JSON.stringify(
+					orig.edges
+						.map((e) => ({
+							source: e.source,
+							target: e.target,
+							label: e.data?.label,
+						}))
+						.sort((a, b) =>
+							(a.source + a.target).localeCompare(
+								b.source + b.target,
+							),
+						),
+				);
 
 		setHasChanges(formHasChanged);
 	}, [
@@ -1018,6 +1058,8 @@ export default function NewCasePage() {
 		areas,
 		selectedDrugs,
 		attachedCases,
+		nodes,
+		edges,
 	]);
 
 	const getDrugDisplayName = (drug: Drug) => {
@@ -1061,6 +1103,8 @@ export default function NewCasePage() {
 		setAreas(orig.areas);
 		setSelectedDrugs(orig.selectedDrugs);
 		setAttachedCases(orig.attachedCases);
+		setNodes(orig.nodes);
+		setEdges(orig.edges);
 
 		toast.info("Changes discarded", {
 			position: "top-center",
