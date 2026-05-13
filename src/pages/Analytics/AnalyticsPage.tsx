@@ -4,6 +4,7 @@ import {
 	BarChart,
 	CartesianGrid,
 	Cell,
+	Legend,
 	Pie,
 	PieChart,
 	XAxis,
@@ -572,6 +573,7 @@ export default function AnalyticsPage() {
 											cursor={false}
 											content={<ChartTooltipContent />}
 										/>
+										<Legend />
 										<Pie
 											data={areaData}
 											dataKey="count"
