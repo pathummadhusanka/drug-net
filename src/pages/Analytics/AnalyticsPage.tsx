@@ -96,6 +96,15 @@ const STATUS_COLORS: { [key: string]: string } = {
 	Active: "#10b981",
 };
 
+const STATUS_DOT_CLASSES = [
+	"bg-blue-500",
+	"bg-slate-500",
+	"bg-amber-500",
+	"bg-emerald-500",
+	"bg-cyan-500",
+	"bg-violet-500",
+];
+
 // Metric Card Component
 function MetricCard({ icon: Icon, title, value, color }: any) {
 	return (
@@ -525,43 +534,91 @@ export default function AnalyticsPage() {
 							</CardHeader>
 							<CardContent>
 								{statusData.length > 0 ? (
-									<ChartContainer
-										className="h-75 w-full"
-										config={{
-											count: {
-												label: "Count",
-												color: "#f59e0b",
-											},
-										}}
-									>
-										<PieChart accessibilityLayer>
-											<ChartTooltip
-												cursor={false}
-												content={
-													<ChartTooltipContent />
-												}
-											/>
-											<Pie
-												data={statusData}
-												dataKey="count"
-												nameKey="status"
-												cx="50%"
-												cy="50%"
-												outerRadius={100}
-											>
-												{statusData.map((entry) => (
-													<Cell
-														key={entry.status}
-														fill={
-															STATUS_COLORS[
-																entry.status
-															] || "#6b7280"
-														}
-													/>
-												))}
-											</Pie>
-										</PieChart>
-									</ChartContainer>
+									<>
+										<ChartContainer
+											className="h-75 w-full"
+											config={{
+												count: {
+													label: "Count",
+													color: "#f59e0b",
+												},
+											}}
+										>
+											<PieChart accessibilityLayer>
+												<ChartTooltip
+													cursor={false}
+													content={
+														<ChartTooltipContent />
+													}
+												/>
+												<Legend />
+												<Pie
+													data={statusData}
+													dataKey="count"
+													nameKey="status"
+													cx="50%"
+													cy="50%"
+													outerRadius={100}
+												>
+													{statusData.map((entry) => (
+														<Cell
+															key={entry.status}
+															fill={
+																STATUS_COLORS[
+																	entry.status
+																] || "#6b7280"
+															}
+														/>
+													))}
+												</Pie>
+											</PieChart>
+										</ChartContainer>
+
+										<div className="mt-6 overflow-x-auto rounded-lg border bg-white">
+											<table className="w-full text-sm">
+												<thead className="border-b bg-gray-50">
+													<tr>
+														<th className="px-4 py-3 text-left font-semibold text-gray-700">
+															Status
+														</th>
+														<th className="px-4 py-3 text-center font-semibold text-gray-700">
+															Cases
+														</th>
+													</tr>
+												</thead>
+												<tbody>
+													{statusData.map(
+														(status, index) => (
+															<tr
+																key={
+																	status.status
+																}
+																className="border-b last:border-b-0"
+															>
+																<td className="px-4 py-3">
+																	<div className="flex items-center gap-3">
+																		<span
+																			className={`h-3 w-3 rounded-full ${STATUS_DOT_CLASSES[index % STATUS_DOT_CLASSES.length]}`}
+																		/>
+																		<span className="font-medium text-gray-900">
+																			{
+																				status.status
+																			}
+																		</span>
+																	</div>
+																</td>
+																<td className="px-4 py-3 text-center font-semibold text-amber-700">
+																	{
+																		status.count
+																	}
+																</td>
+															</tr>
+														),
+													)}
+												</tbody>
+											</table>
+										</div>
+									</>
 								) : (
 									<p className="text-sm text-gray-600">
 										No status data available
