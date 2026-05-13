@@ -683,6 +683,23 @@ export default function NewCasePage() {
 	const [isCreatingProfile, setIsCreatingProfile] = useState(false);
 	const newProfileNotesRef = useRef<HTMLTextAreaElement>(null);
 
+	// Store original case data for change detection
+	const originalCaseDataRef = useRef<{
+		caseId: string;
+		caseTitle: string;
+		caseDescription: string;
+		caseType: string;
+		caseStatus: string;
+		severityLevel: string;
+		caseNotes: string;
+		caseDate: string;
+		caseTime: string;
+		areas: string[];
+		selectedDrugs: { [key: number]: string };
+		attachedCases: CaseWithDetails[];
+	} | null>(null);
+	const [hasChanges, setHasChanges] = useState(false);
+
 	const [isConnectionDialogOpen, setIsConnectionDialogOpen] = useState(false);
 	const [pendingConnection, setPendingConnection] = useState<
 		Connection | Edge | null
@@ -930,6 +947,23 @@ export default function NewCasePage() {
 						.filter((edge) => edge.source && edge.target);
 
 					setEdges(relationshipEdges);
+
+					// Store original case data for change detection
+					originalCaseDataRef.current = {
+						caseId: caseData.case_id || "",
+						caseTitle: caseData.case_name,
+						caseDescription: caseData.description || "",
+						caseType: caseData.case_type || "",
+						caseStatus: caseData.status || "",
+						severityLevel: caseData.severity_level || "",
+						caseNotes: caseData.notes || "",
+						caseDate: caseData.case_date || "",
+						caseTime: caseData.case_time || "",
+						areas: caseAreas,
+						selectedDrugs: drugsMap,
+						attachedCases: caseAttachments,
+					};
+					setHasChanges(false);
 				} catch (error) {
 					console.error("Failed to load case:", error);
 					toast.error("Failed to load case data", {
@@ -943,6 +977,48 @@ export default function NewCasePage() {
 			loadCaseData();
 		}
 	}, [isEditMode, id, navigate]);
+
+	// Track changes to form fields
+	useEffect(() => {
+		if (!isEditMode || !originalCaseDataRef.current) {
+			setHasChanges(false);
+			return;
+		}
+
+		const orig = originalCaseDataRef.current;
+		const formHasChanged =
+			caseId !== orig.caseId ||
+			caseTitle !== orig.caseTitle ||
+			caseDescription !== orig.caseDescription ||
+			caseType !== orig.caseType ||
+			caseStatus !== orig.caseStatus ||
+			severityLevel !== orig.severityLevel ||
+			caseNotes !== orig.caseNotes ||
+			caseDate !== orig.caseDate ||
+			caseTime !== orig.caseTime ||
+			JSON.stringify(areas.sort()) !==
+				JSON.stringify(orig.areas.sort()) ||
+			JSON.stringify(selectedDrugs) !==
+				JSON.stringify(orig.selectedDrugs) ||
+			JSON.stringify(attachedCases.map((c) => c.id).sort()) !==
+				JSON.stringify(orig.attachedCases.map((c) => c.id).sort());
+
+		setHasChanges(formHasChanged);
+	}, [
+		isEditMode,
+		caseId,
+		caseTitle,
+		caseDescription,
+		caseType,
+		caseStatus,
+		severityLevel,
+		caseNotes,
+		caseDate,
+		caseTime,
+		areas,
+		selectedDrugs,
+		attachedCases,
+	]);
 
 	const getDrugDisplayName = (drug: Drug) => {
 		return `${drug.name} (${drug.quantified_by})`;
@@ -1602,6 +1678,14 @@ export default function NewCasePage() {
 				<form
 					onSubmit={async (e) => {
 						e.preventDefault();
+
+						// Check if there are any changes in edit mode
+						if (isEditMode && !hasChanges) {
+							toast.info("No changes detected", {
+								position: "top-center",
+							});
+							return;
+						}
 
 						const normalizedCaseTitle = caseTitle.trim();
 						if (!normalizedCaseTitle) {
@@ -3003,7 +3087,11 @@ export default function NewCasePage() {
 								</AlertDialogFooter>
 							</AlertDialogContent>
 						</AlertDialog>
-						<Button type="submit" className="cursor-pointer">
+						<Button
+							type="submit"
+							className="cursor-pointer"
+							disabled={isEditMode && !hasChanges}
+						>
 							{isEditMode ? "Update Case" : "Save Case"}
 						</Button>
 					</div>
