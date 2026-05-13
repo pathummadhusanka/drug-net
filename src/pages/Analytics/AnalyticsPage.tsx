@@ -36,6 +36,9 @@ import { Activity, MapPin, Users, Pill } from "lucide-react";
 type DrugDatum = {
 	drug: string;
 	count: number;
+	cases: number;
+	areas: number;
+	suspects: number;
 };
 
 type AreaDatum = {
@@ -173,14 +176,51 @@ export default function AnalyticsPage() {
 				]);
 
 				// Drug analysis
+				const drugStatsMap = new Map<
+					string,
+					{
+						caseCount: number;
+						areas: Set<string>;
+						suspects: Set<number>;
+					}
+				>();
 				const drugCountMap = new Map<string, number>();
-				for (const caseDrugs of allDrugsByCase) {
+				for (
+					let caseIndex = 0;
+					caseIndex < allCases.length;
+					caseIndex++
+				) {
+					const caseDrugs = allDrugsByCase[caseIndex] ?? [];
+					const caseAreas = allAreasByCase[caseIndex] ?? [];
+					const caseProfiles = allProfilesByCase[caseIndex] ?? [];
+					const caseSuspectIds = new Set(
+						caseProfiles.map((profile) => profile[0]),
+					);
+
 					for (const drug of caseDrugs) {
-						const key = drug.drug_name;
-						drugCountMap.set(key, (drugCountMap.get(key) ?? 0) + 1);
+						const drugName = drug.drug_name;
+						const existing = drugStatsMap.get(drugName) ?? {
+							caseCount: 0,
+							areas: new Set<string>(),
+							suspects: new Set<number>(),
+						};
+
+						existing.caseCount += 1;
+						for (const area of caseAreas) {
+							existing.areas.add(area);
+						}
+						for (const suspectId of caseSuspectIds) {
+							existing.suspects.add(suspectId);
+						}
+
+						drugStatsMap.set(drugName, existing);
+						drugCountMap.set(
+							drugName,
+							(drugCountMap.get(drugName) ?? 0) + 1,
+						);
 					}
 				}
-				setTotalDrugs(drugCountMap.size);
+				setTotalDrugs(drugStatsMap.size);
 
 				// Area analysis
 				const areaStatsMap = new Map<
@@ -282,8 +322,14 @@ export default function AnalyticsPage() {
 
 				// Set drug data
 				setDrugData(
-					Array.from(drugCountMap.entries())
-						.map(([drug, count]) => ({ drug, count }))
+					Array.from(drugStatsMap.entries())
+						.map(([drug, stats]) => ({
+							drug,
+							count: stats.caseCount,
+							cases: stats.caseCount,
+							areas: stats.areas.size,
+							suspects: stats.suspects.size,
+						}))
 						.sort((a, b) => b.count - a.count)
 						.slice(0, 10),
 				);
@@ -537,44 +583,97 @@ export default function AnalyticsPage() {
 						</CardHeader>
 						<CardContent>
 							{drugData.length > 0 ? (
-								<ChartContainer
-									className="h-90 w-full"
-									config={{
-										count: {
-											label: "Count",
-											color: "#ef4444",
-										},
-									}}
-								>
-									<BarChart
-										accessibilityLayer
-										data={drugData}
-										margin={{ left: 8, right: 8 }}
+								<>
+									<ChartContainer
+										className="h-90 w-full"
+										config={{
+											count: {
+												label: "Count",
+												color: "#ef4444",
+											},
+										}}
 									>
-										<CartesianGrid vertical={false} />
-										<XAxis
-											dataKey="drug"
-											tickLine={false}
-											axisLine={false}
-											tickMargin={10}
-											interval={0}
-											tickFormatter={(value) =>
-												String(value).length > 12
-													? `${String(value).slice(0, 12)}...`
-													: String(value)
-											}
-										/>
-										<ChartTooltip
-											cursor={false}
-											content={<ChartTooltipContent />}
-										/>
-										<Bar
-											dataKey="count"
-											radius={6}
-											fill="var(--color-count)"
-										/>
-									</BarChart>
-								</ChartContainer>
+										<BarChart
+											accessibilityLayer
+											data={drugData}
+											margin={{ left: 8, right: 8 }}
+										>
+											<CartesianGrid vertical={false} />
+											<XAxis
+												dataKey="drug"
+												tickLine={false}
+												axisLine={false}
+												tickMargin={10}
+												interval={0}
+												tickFormatter={(value) =>
+													String(value).length > 12
+														? `${String(value).slice(0, 12)}...`
+														: String(value)
+												}
+											/>
+											<ChartTooltip
+												cursor={false}
+												content={
+													<ChartTooltipContent />
+												}
+											/>
+											<Bar
+												dataKey="count"
+												radius={6}
+												fill="var(--color-count)"
+											/>
+										</BarChart>
+									</ChartContainer>
+
+									<div className="mt-6 overflow-x-auto rounded-lg border bg-white">
+										<table className="w-full text-sm">
+											<thead className="border-b bg-gray-50">
+												<tr>
+													<th className="px-4 py-3 text-left font-semibold text-gray-700">
+														Drug
+													</th>
+													<th className="px-4 py-3 text-center font-semibold text-gray-700">
+														Cases
+													</th>
+													<th className="px-4 py-3 text-center font-semibold text-gray-700">
+														Areas
+													</th>
+													<th className="px-4 py-3 text-center font-semibold text-gray-700">
+														Suspects
+													</th>
+												</tr>
+											</thead>
+											<tbody>
+												{drugData.map((drug, index) => (
+													<tr
+														key={drug.drug}
+														className="border-b last:border-b-0"
+													>
+														<td className="px-4 py-3">
+															<div className="flex items-center gap-3">
+																<span
+																	className={`h-3 w-3 rounded-full ${AREA_DOT_CLASSES[index % AREA_DOT_CLASSES.length]}`}
+																/>
+																<span className="font-medium text-gray-900">
+																	{drug.drug}
+																</span>
+															</div>
+														</td>
+														<td className="px-4 py-3 text-center font-semibold text-emerald-700">
+															{drug.cases}
+														</td>
+														<td className="px-4 py-3 text-center font-semibold text-amber-700">
+															{drug.areas}
+														</td>
+														<td className="px-4 py-3 text-center font-semibold text-blue-700">
+															{drug.suspects}
+														</td>
+													</tr>
+												))}
+											</tbody>
+										</table>
+									</div>
+								</>
 							) : (
 								<p className="text-sm text-gray-600">
 									No drug data available
