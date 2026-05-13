@@ -701,6 +701,7 @@ export default function NewCasePage() {
 		edges: Edge[];
 	} | null>(null);
 	const [hasChanges, setHasChanges] = useState(false);
+	const [isSaving, setIsSaving] = useState(false);
 
 	const [isConnectionDialogOpen, setIsConnectionDialogOpen] = useState(false);
 	const [pendingConnection, setPendingConnection] = useState<
@@ -1790,6 +1791,9 @@ export default function NewCasePage() {
 							return;
 						}
 
+						// prevent duplicate submissions
+						setIsSaving(true);
+
 						try {
 							let targetCaseId: number;
 
@@ -1986,10 +1990,19 @@ export default function NewCasePage() {
 									position: "top-center",
 								},
 							);
+						} finally {
+							setIsSaving(false);
 						}
 					}}
-					className="space-y-4"
+					className="space-y-4 relative"
 				>
+					{isSaving && (
+						<div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60">
+							<div className="rounded-md bg-white/80 px-4 py-2 shadow">
+								Saving…
+							</div>
+						</div>
+					)}
 					<Accordion
 						type="single"
 						collapsible
@@ -3124,7 +3137,7 @@ export default function NewCasePage() {
 									type="button"
 									variant="outline"
 									className="cursor-pointer"
-									disabled={!hasDraftData}
+									disabled={isSaving || !hasDraftData}
 								>
 									Clear All
 								</Button>
@@ -3157,7 +3170,9 @@ export default function NewCasePage() {
 							<Button
 								type="submit"
 								className="cursor-pointer"
-								disabled={isEditMode && !hasChanges}
+								disabled={
+									isSaving || (isEditMode && !hasChanges)
+								}
 							>
 								{isEditMode ? "Update Case" : "Save Case"}
 							</Button>
@@ -3166,7 +3181,7 @@ export default function NewCasePage() {
 									type="button"
 									variant="outline"
 									className="cursor-pointer"
-									disabled={!hasChanges}
+									disabled={isSaving || !hasChanges}
 									onClick={handleCancelChanges}
 								>
 									Discard Changes
