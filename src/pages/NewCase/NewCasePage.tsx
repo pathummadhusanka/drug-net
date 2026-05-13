@@ -1045,6 +1045,28 @@ export default function NewCasePage() {
 		setSelectedDrugs(updatedDrugs);
 	};
 
+	const handleCancelChanges = () => {
+		if (!originalCaseDataRef.current) return;
+
+		const orig = originalCaseDataRef.current;
+		setCaseId(orig.caseId);
+		setCaseTitle(orig.caseTitle);
+		setCaseDescription(orig.caseDescription);
+		setCaseType(orig.caseType);
+		setCaseStatus(orig.caseStatus);
+		setSeverityLevel(orig.severityLevel);
+		setCaseNotes(orig.caseNotes);
+		setCaseDate(orig.caseDate);
+		setCaseTime(orig.caseTime);
+		setAreas(orig.areas);
+		setSelectedDrugs(orig.selectedDrugs);
+		setAttachedCases(orig.attachedCases);
+
+		toast.info("Changes discarded", {
+			position: "top-center",
+		});
+	};
+
 	const onConnect = useCallback(
 		(params: Connection | Edge) => {
 			if (params.source === params.target) {
@@ -3087,13 +3109,26 @@ export default function NewCasePage() {
 								</AlertDialogFooter>
 							</AlertDialogContent>
 						</AlertDialog>
-						<Button
-							type="submit"
-							className="cursor-pointer"
-							disabled={isEditMode && !hasChanges}
-						>
-							{isEditMode ? "Update Case" : "Save Case"}
-						</Button>
+						<div className="flex gap-2">
+							<Button
+								type="submit"
+								className="cursor-pointer"
+								disabled={isEditMode && !hasChanges}
+							>
+								{isEditMode ? "Update Case" : "Save Case"}
+							</Button>
+							{isEditMode && (
+								<Button
+									type="button"
+									variant="outline"
+									className="cursor-pointer"
+									disabled={!hasChanges}
+									onClick={handleCancelChanges}
+								>
+									Discard Changes
+								</Button>
+							)}
+						</div>
 					</div>
 				</form>
 			)}
