@@ -65,6 +65,8 @@ import {
 	upsertNetworkNodePositions,
 } from "@/lib/network";
 import { toast } from "sonner";
+import { formatAuditTimestamp } from "@/lib/datetime";
+import { useAppTimeZone } from "@/hooks/useAppTimeZone";
 
 type NetworkNodeData = {
 	label: string;
@@ -336,6 +338,7 @@ const ReadOnlyNetworkEdge = ({
 
 export default function NetworkPage() {
 	const navigate = useNavigate();
+	const appTimeZone = useAppTimeZone();
 	const [loading, setLoading] = useState(true);
 	const [nodes, setNodes, onNodesChange] = useNodesState<NetworkNodeData>([]);
 	const [edges, setEdges] = useEdgesState<NetworkEdgeData>([]);
@@ -1186,16 +1189,10 @@ export default function NetworkPage() {
 								{relationshipCaseData.created_at && (
 									<p className="text-xs text-gray-400 pt-1">
 										Created At:{" "}
-										{new Date(
+										{formatAuditTimestamp(
 											relationshipCaseData.created_at,
-										).toLocaleString("en-US", {
-											month: "short",
-											day: "numeric",
-											year: "numeric",
-											hour: "2-digit",
-											minute: "2-digit",
-											hour12: true,
-										})}
+											appTimeZone,
+										)}
 									</p>
 								)}
 							</CardContent>

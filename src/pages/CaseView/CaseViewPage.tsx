@@ -83,6 +83,8 @@ import {
 	MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
+import { formatAuditTimestamp } from "@/lib/datetime";
+import { useAppTimeZone } from "@/hooks/useAppTimeZone";
 
 interface CaseDetails extends CaseWithDetails {
 	drugs?: { drug_name: string; quantity: string; quantified_by: string }[];
@@ -386,6 +388,7 @@ export default function CaseViewPage() {
 	const [relationshipCaseData, setRelationshipCaseData] = useState<any>(null);
 	const [nodes, setNodes, onNodesChange] = useNodesState([]);
 	const [edges, setEdges] = useEdgesState([]);
+	const appTimeZone = useAppTimeZone();
 
 	// Memoize nodeTypes and edgeTypes to prevent recreation on every render
 	const nodeTypes = useMemo(() => ({ custom: ReadOnlyCustomNode }), []);
@@ -1013,9 +1016,11 @@ export default function CaseViewPage() {
 									Created At
 								</Label>
 								<p className="text-xs font-medium text-gray-600">
-									{new Date(
+									{formatAuditTimestamp(
 										caseData.created_at,
-									).toLocaleString("en-GB")}
+										appTimeZone,
+										"en-GB",
+									)}
 								</p>
 							</div>
 						)}
@@ -1025,9 +1030,11 @@ export default function CaseViewPage() {
 									Updated At
 								</Label>
 								<p className="text-xs font-medium text-gray-600">
-									{new Date(
+									{formatAuditTimestamp(
 										caseData.updated_at,
-									).toLocaleString("en-GB")}
+										appTimeZone,
+										"en-GB",
+									)}
 								</p>
 							</div>
 						)}
@@ -1789,16 +1796,10 @@ export default function CaseViewPage() {
 								{relationshipCaseData.created_at && (
 									<p className="text-xs text-gray-400 pt-1">
 										Created At:{" "}
-										{new Date(
+										{formatAuditTimestamp(
 											relationshipCaseData.created_at,
-										).toLocaleString("en-US", {
-											month: "short",
-											day: "numeric",
-											year: "numeric",
-											hour: "2-digit",
-											minute: "2-digit",
-											hour12: true,
-										})}
+											appTimeZone,
+										)}
 									</p>
 								)}
 							</CardContent>

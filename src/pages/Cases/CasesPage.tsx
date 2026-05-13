@@ -61,6 +61,8 @@ import {
 	X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { formatAuditTimestamp } from "@/lib/datetime";
+import { useAppTimeZone } from "@/hooks/useAppTimeZone";
 
 interface CaseWithMetadata extends CaseWithDetails {
 	hasDrugs: boolean;
@@ -102,6 +104,7 @@ export default function CasesPage() {
 	const [dateRange, setDateRange] = useState<DateRange | undefined>();
 	const [sortBy, setSortBy] = useState("updated-desc");
 	const [currentPage, setCurrentPage] = useState(1);
+	const appTimeZone = useAppTimeZone();
 	const dividerClass = "text-muted-foreground";
 	const dividerText = "\u00A0\u00A0|\u00A0\u00A0";
 	const ITEMS_PER_PAGE = 10;
@@ -1663,18 +1666,9 @@ export default function CasesPage() {
 													{relationshipCaseData.created_at && (
 														<p className="text-xs text-gray-400 pt-1">
 															Created At:{" "}
-															{new Date(
+															{formatAuditTimestamp(
 																relationshipCaseData.created_at,
-															).toLocaleString(
-																"en-US",
-																{
-																	month: "short",
-																	day: "numeric",
-																	year: "numeric",
-																	hour: "2-digit",
-																	minute: "2-digit",
-																	hour12: true,
-																},
+																appTimeZone,
 															)}
 														</p>
 													)}
@@ -1722,45 +1716,20 @@ export default function CasesPage() {
 								{caseItem.created_at && (
 									<p className="text-xs text-gray-500 mt-3">
 										Created At:{" "}
-										{new Date(
+										{formatAuditTimestamp(
 											caseItem.created_at,
-										).toLocaleDateString("en-US", {
-											month: "short",
-											day: "numeric",
-											year: "numeric",
-										}) +
-											" @ " +
-											new Date(
-												caseItem.created_at,
-											).toLocaleTimeString("en-US", {
-												hour: "2-digit",
-												minute: "2-digit",
-												hour12: true,
-											})}
+											appTimeZone,
+										)}
 										{caseItem.updated_at && (
 											<>
 												<span className={dividerClass}>
 													{dividerText}
 												</span>
 												Updated At:{" "}
-												{new Date(
+												{formatAuditTimestamp(
 													caseItem.updated_at,
-												).toLocaleDateString("en-US", {
-													month: "short",
-													day: "numeric",
-													year: "numeric",
-												}) +
-													" @ " +
-													new Date(
-														caseItem.updated_at,
-													).toLocaleTimeString(
-														"en-US",
-														{
-															hour: "2-digit",
-															minute: "2-digit",
-															hour12: true,
-														},
-													)}
+													appTimeZone,
+												)}
 											</>
 										)}
 									</p>

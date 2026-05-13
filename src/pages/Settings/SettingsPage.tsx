@@ -45,6 +45,13 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+	COMMON_APP_TIMEZONES,
+	getAppTimeZone,
+	getSystemTimeZone,
+	isValidTimeZone,
+	setAppTimeZone,
+} from "@/lib/datetime";
 
 export default function SettingsPage() {
 	const [drugs, setDrugs] = useState<Drug[]>([]);
@@ -56,14 +63,19 @@ export default function SettingsPage() {
 	const [addDrugDialogOpen, setAddDrugDialogOpen] = useState(false);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [drugToDelete, setDrugToDelete] = useState<Drug | null>(null);
-	const [activeSection, setActiveSection] = useState<"drugs" | "dangerZone">(
-		"drugs",
-	);
+	const [activeSection, setActiveSection] = useState<
+		"general" | "drugs" | "dangerZone"
+	>("general");
+	const [timeZoneInput, setTimeZoneInput] = useState("");
+	const [savedTimeZone, setSavedTimeZone] = useState("");
 	const [resetDbDialogOpen, setResetDbDialogOpen] = useState(false);
 	const [resetConfirmationText, setResetConfirmationText] = useState("");
 
 	useEffect(() => {
 		fetchDrugs();
+		const currentTimeZone = getAppTimeZone();
+		setTimeZoneInput(currentTimeZone);
+		setSavedTimeZone(currentTimeZone);
 	}, []);
 
 	const fetchDrugs = async () => {
@@ -150,6 +162,35 @@ export default function SettingsPage() {
 		}
 	};
 
+	const handleSaveTimeZone = () => {
+		const trimmed = timeZoneInput.trim();
+		if (!trimmed || !isValidTimeZone(trimmed)) {
+			toast.error("Please enter a valid IANA timezone");
+			return;
+		}
+
+		if (!setAppTimeZone(trimmed)) {
+			toast.error("Failed to save timezone");
+			return;
+		}
+
+		setSavedTimeZone(trimmed);
+		toast.success(`Timezone updated to ${trimmed}`);
+	};
+
+	const handleUseSystemTimeZone = () => {
+		const systemTimeZone = getSystemTimeZone();
+		setTimeZoneInput(systemTimeZone);
+
+		if (!setAppTimeZone(systemTimeZone)) {
+			toast.error("Failed to save timezone");
+			return;
+		}
+
+		setSavedTimeZone(systemTimeZone);
+		toast.success(`Timezone reset to system default (${systemTimeZone})`);
+	};
+
 	return (
 		<div className="container mx-auto p-6 space-y-6">
 			<div className="space-y-4">
@@ -165,12 +206,21 @@ export default function SettingsPage() {
 					<MenubarMenu>
 						<MenubarTrigger
 							className={`cursor-pointer ${
-								activeSection === "drugs" ? "bg-secondary" : ""
+								activeSection === "general" ||
+								activeSection === "drugs"
+									? "bg-secondary"
+									: ""
 							}`}
 						>
 							Customize
 						</MenubarTrigger>
 						<MenubarContent>
+							<MenubarItem
+								onClick={() => setActiveSection("general")}
+								className="cursor-pointer"
+							>
+								Time and Region
+							</MenubarItem>
 							<MenubarItem
 								onClick={() => setActiveSection("drugs")}
 								className="cursor-pointer"
@@ -200,6 +250,62 @@ export default function SettingsPage() {
 					</MenubarMenu>
 				</Menubar>
 			</div>
+
+			{/* Timezone Section */}
+			{activeSection === "general" && (
+				<div className="space-y-6">
+					<div>
+						<h2 className="text-2xl font-bold">Time and Region</h2>
+						<p className="text-muted-foreground">
+							Choose the timezone used to render all audit
+							timestamps (created and updated times).
+						</p>
+					</div>
+
+					<div className="border rounded-lg p-4 space-y-4">
+						<div className="space-y-2">
+							<Label htmlFor="app-timezone">App Timezone</Label>
+							<Input
+								id="app-timezone"
+								list="app-timezone-options"
+								placeholder="e.g., Asia/Colombo"
+								value={timeZoneInput}
+								onChange={(e) =>
+									setTimeZoneInput(e.target.value)
+								}
+							/>
+							<datalist id="app-timezone-options">
+								{COMMON_APP_TIMEZONES.map((timezone) => (
+									<option key={timezone} value={timezone} />
+								))}
+							</datalist>
+						</div>
+
+						<p className="text-xs text-muted-foreground">
+							Saved timezone: {savedTimeZone || "Not set"}
+						</p>
+						<p className="text-xs text-muted-foreground">
+							System timezone: {getSystemTimeZone()}
+						</p>
+
+						<div className="flex items-center gap-2">
+							<Button
+								onClick={handleSaveTimeZone}
+								className="cursor-pointer"
+							>
+								Save Timezone
+							</Button>
+							<Button
+								variant="outline"
+								onClick={handleUseSystemTimeZone}
+								className="cursor-pointer"
+							>
+								Use System Timezone
+							</Button>
+						</div>
+					</div>
+				</div>
+			)}
 
 			{/* Drug Management Section */}
 			{activeSection === "drugs" && (
@@ -496,5 +602,3 @@ export default function SettingsPage() {
 		</div>
 	);
 }
-
-

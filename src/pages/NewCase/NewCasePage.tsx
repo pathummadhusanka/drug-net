@@ -118,6 +118,8 @@ import {
 	Network,
 } from "lucide-react";
 import { toast } from "sonner";
+import { formatAuditTimestamp } from "@/lib/datetime";
+import { useAppTimeZone } from "@/hooks/useAppTimeZone";
 
 const BubbleProfileNode = ({
 	data,
@@ -627,6 +629,7 @@ export default function NewCasePage() {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const { id } = useParams<{ id: string }>();
+	const appTimeZone = useAppTimeZone();
 	const isEditMode = Boolean(id);
 	const [isLoading, setIsLoading] = useState(false);
 
@@ -3795,16 +3798,10 @@ export default function NewCasePage() {
 								{relationshipCaseData.created_at && (
 									<p className="text-xs text-gray-400 pt-1">
 										Created At:{" "}
-										{new Date(
+										{formatAuditTimestamp(
 											relationshipCaseData.created_at,
-										).toLocaleString("en-US", {
-											month: "short",
-											day: "numeric",
-											year: "numeric",
-											hour: "2-digit",
-											minute: "2-digit",
-											hour12: true,
-										})}
+											appTimeZone,
+										)}
 									</p>
 								)}
 							</CardContent>
