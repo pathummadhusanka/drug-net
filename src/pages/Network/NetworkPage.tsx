@@ -34,11 +34,7 @@ import {
 	MapPin,
 	MessageSquare,
 } from "lucide-react";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+// tooltip removed: profile info now opens Profile Details dialog
 import {
 	AlertDialog,
 	AlertDialogContent,
@@ -46,6 +42,7 @@ import {
 	AlertDialogTitle,
 	AlertDialogFooter,
 	AlertDialogCancel,
+	AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -84,7 +81,13 @@ type NetworkEdgeData = {
 	caseIds?: number[];
 };
 
-const ReadOnlyNetworkNode = ({ data }: { data: NetworkNodeData }) => {
+const ReadOnlyNetworkNode = ({
+	id,
+	data,
+}: {
+	id: string;
+	data: NetworkNodeData;
+}) => {
 	const [tooltipOpen, setTooltipOpen] = useState(false);
 
 	const displayName = data.fullName
@@ -128,27 +131,25 @@ const ReadOnlyNetworkNode = ({ data }: { data: NetworkNodeData }) => {
 			</div>
 
 			<div className="absolute -right-5 -top-1 flex items-center gap-1">
-				<Tooltip open={tooltipOpen} onOpenChange={setTooltipOpen}>
-					<TooltipTrigger asChild>
-						<button
-							onClick={(event) => {
-								event.stopPropagation();
-								setTooltipOpen(!tooltipOpen);
-							}}
-							className="h-4 w-4 shrink-0 cursor-pointer rounded-full bg-white text-gray-500 shadow-sm hover:bg-gray-100 hover:text-gray-700"
-							title="Show profile info"
-						>
-							<CircleHelp className="mx-auto h-2.5 w-2.5" />
-						</button>
-					</TooltipTrigger>
-					<TooltipContent className="rounded-md bg-slate-900 p-3 text-white">
-						<div className="space-y-1 text-sm">
-							{tooltipParts.map((part, idx) => (
-								<div key={idx}>{part}</div>
-							))}
-						</div>
-					</TooltipContent>
-				</Tooltip>
+				<button
+					onClick={(event) => {
+						event.stopPropagation();
+						const profileId = Number(id);
+						window.dispatchEvent(
+							new CustomEvent("open-profile-dialog", {
+								detail: {
+									profileId: Number.isNaN(profileId)
+										? undefined
+										: profileId,
+								},
+							}),
+						);
+					}}
+					className="h-4 w-4 shrink-0 cursor-pointer rounded-full bg-white text-gray-500 shadow-sm hover:bg-gray-100 hover:text-gray-700"
+					title="Show profile info"
+				>
+					<CircleHelp className="mx-auto h-2.5 w-2.5" />
+				</button>
 			</div>
 
 			<div className="absolute left-1/2 top-full mt-1 w-32 -translate-x-1/2 text-center">
@@ -345,6 +346,11 @@ export default function NetworkPage() {
 	const [isRelationshipInfoDialogOpen, setIsRelationshipInfoDialogOpen] =
 		useState(false);
 	const [relationshipCaseData, setRelationshipCaseData] = useState<any>(null);
+	const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+	const [selectedProfile, setSelectedProfile] = useState<
+		import("@/lib/profiles").ProfileWithId | null
+	>(null);
+	const [loadingProfile, setLoadingProfile] = useState(false);
 	const nodeTypes = useMemo(() => ({ custom: ReadOnlyNetworkNode }), []);
 	const edgeTypes = useMemo(() => ({ custom: ReadOnlyNetworkEdge }), []);
 
@@ -712,6 +718,33 @@ export default function NetworkPage() {
 			}
 		};
 
+		const handleOpenProfileDialog = async (event: Event) => {
+			const customEvent = event as CustomEvent<{ profileId?: number }>;
+			const profileId = customEvent.detail?.profileId;
+			if (!profileId) return;
+
+			try {
+				setLoadingProfile(true);
+				const profile = await getProfile(profileId);
+				if (profile) {
+					setSelectedProfile(profile);
+					setProfileDialogOpen(true);
+				}
+			} catch (error) {
+				console.error("Failed to fetch profile:", error);
+				toast.error("Failed to load profile details", {
+					position: "top-center",
+				});
+			} finally {
+				setLoadingProfile(false);
+			}
+		};
+
+		window.addEventListener(
+			"open-profile-dialog",
+			handleOpenProfileDialog as EventListener,
+		);
+
 		window.addEventListener(
 			"open-relationship-info-dialog",
 			handleOpenRelationshipInfoDialog,
@@ -721,6 +754,10 @@ export default function NetworkPage() {
 			window.removeEventListener(
 				"open-relationship-info-dialog",
 				handleOpenRelationshipInfoDialog,
+			);
+			window.removeEventListener(
+				"open-profile-dialog",
+				handleOpenProfileDialog as EventListener,
 			);
 		};
 	}, []);
@@ -1219,6 +1256,129 @@ export default function NetworkPage() {
 								Go to Case
 							</Button>
 						)}
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			{/* Profile Details Dialog */}
+			<AlertDialog
+				open={profileDialogOpen}
+				onOpenChange={setProfileDialogOpen}
+			>
+				<AlertDialogContent className="max-w-md">
+					<AlertDialogHeader>
+						<AlertDialogTitle>
+							{selectedProfile?.full_name
+								? selectedProfile.full_name.length > 20
+									? selectedProfile.full_name.substring(
+											0,
+											20,
+										) + "..."
+									: selectedProfile.full_name
+								: "Profile Details"}
+						</AlertDialogTitle>
+					</AlertDialogHeader>
+					{loadingProfile ? (
+						<p className="text-center text-gray-500 py-4">
+							Loading profile details...
+						</p>
+					) : selectedProfile ? (
+						<div className="space-y-2 text-sm">
+							{selectedProfile.alias && (
+								<div>
+									<span className="font-semibold text-gray-600">
+										Alias:
+									</span>
+									<span className="ml-2">
+										{selectedProfile.alias.length > 20
+											? selectedProfile.alias.substring(
+													0,
+													20,
+												) + "..."
+											: selectedProfile.alias}
+									</span>
+								</div>
+							)}
+							{selectedProfile.nic && (
+								<div>
+									<span className="font-semibold text-gray-600">
+										NIC:
+									</span>
+									<span className="ml-2">
+										{selectedProfile.nic}
+									</span>
+								</div>
+							)}
+							{selectedProfile.city && (
+								<div>
+									<span className="font-semibold text-gray-600">
+										City:
+									</span>
+									<span className="ml-2">
+										{selectedProfile.city}
+									</span>
+								</div>
+							)}
+							{selectedProfile.address_line1 && (
+								<div>
+									<span className="font-semibold text-gray-600">
+										Address:
+									</span>
+									<span className="ml-2">
+										{selectedProfile.address_line1}
+										{selectedProfile.address_line2
+											? `, ${selectedProfile.address_line2}`
+											: ""}
+									</span>
+								</div>
+							)}
+							{selectedProfile.risk_level && (
+								<div>
+									<span className="font-semibold text-gray-600">
+										Risk Level:
+									</span>
+									<span className="ml-2">
+										{selectedProfile.risk_level}
+									</span>
+								</div>
+							)}
+							{selectedProfile.status && (
+								<div>
+									<span className="font-semibold text-gray-600">
+										Status:
+									</span>
+									<span className="ml-2">
+										{selectedProfile.status}
+									</span>
+								</div>
+							)}
+							{selectedProfile.notes && (
+								<div>
+									<span className="font-semibold text-gray-600">
+										Notes:
+									</span>
+									<p className="ml-2 text-gray-700 whitespace-pre-wrap">
+										{selectedProfile.notes}
+									</p>
+								</div>
+							)}
+						</div>
+					) : null}
+					<AlertDialogFooter>
+						<AlertDialogCancel className="cursor-pointer">
+							Close
+						</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={() => {
+								if (selectedProfile) {
+									navigate(`/profile/${selectedProfile.id}`);
+									setProfileDialogOpen(false);
+								}
+							}}
+							className="cursor-pointer"
+						>
+							View Profile
+						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
