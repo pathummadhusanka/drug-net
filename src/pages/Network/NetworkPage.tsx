@@ -25,7 +25,7 @@ import {
 import ReactFlow from "reactflow";
 import "reactflow/dist/style.css";
 import {
-	CircleHelp,
+	Info,
 	User,
 	Eye,
 	FileText,
@@ -72,6 +72,8 @@ type NetworkNodeData = {
 	alias?: string | null;
 	city?: string | null;
 	caseCount?: number;
+	risk_level?: string | null;
+	status?: string | null;
 };
 
 type NetworkEdgeData = {
@@ -126,9 +128,40 @@ const ReadOnlyNetworkNode = ({
 				position={Position.Top}
 				style={{ opacity: 0, pointerEvents: "none" }}
 			/>
-			<div className="h-12 w-12 rounded-full border border-gray-500 bg-white shadow-sm">
-				<User className="mx-auto mt-3 h-6 w-6 text-gray-500" />
-			</div>
+			{(() => {
+				const status = data.status
+					? data.status.toLowerCase()
+					: undefined;
+				const risk = data.risk_level
+					? data.risk_level.toLowerCase()
+					: undefined;
+
+				const borderClass =
+					status === "active"
+						? "border-purple-500"
+						: status === "suspended"
+							? "border-green-500"
+							: "border-gray-500";
+
+				const avatarTextClass =
+					risk === "low"
+						? "text-gray-500"
+						: risk === "medium"
+							? "text-black"
+							: risk === "high"
+								? "text-red-600"
+								: "text-gray-500";
+
+				return (
+					<div
+						className={`h-12 w-12 rounded-full border ${borderClass} bg-white shadow-sm`}
+					>
+						<User
+							className={`mx-auto mt-3 h-6 w-6 ${avatarTextClass}`}
+						/>
+					</div>
+				);
+			})()}
 
 			<div className="absolute -right-5 -top-1 flex items-center gap-1">
 				<button
@@ -148,7 +181,7 @@ const ReadOnlyNetworkNode = ({
 					className="h-4 w-4 shrink-0 cursor-pointer rounded-full bg-white text-gray-500 shadow-sm hover:bg-gray-100 hover:text-gray-700"
 					title="Show profile info"
 				>
-					<CircleHelp className="mx-auto h-2.5 w-2.5" />
+					<Info className="mx-auto h-2.5 w-2.5" />
 				</button>
 			</div>
 
@@ -585,6 +618,8 @@ export default function NetworkPage() {
 								city: details?.city || null,
 								caseCount:
 									profileCaseMap.get(profileId)?.size ?? 0,
+								risk_level: details?.risk_level || null,
+								status: details?.status || null,
 							},
 						};
 					},
