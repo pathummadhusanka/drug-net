@@ -1,6 +1,7 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 
 mod database;
+mod export;
 mod features;
 
 use database::connection::{init_connection, DbConnection};
@@ -84,6 +85,7 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
             greet,
@@ -124,7 +126,8 @@ pub fn run() {
             delete_area,
             get_network_node_positions,
             upsert_network_node_positions,
-            sync_network_node_positions
+            sync_network_node_positions,
+            export::export_database
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

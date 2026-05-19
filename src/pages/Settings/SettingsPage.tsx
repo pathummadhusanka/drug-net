@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { save } from "@tauri-apps/plugin-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,6 +70,9 @@ export default function SettingsPage() {
 	const [timeZoneInput, setTimeZoneInput] = useState("");
 	const [savedTimeZone, setSavedTimeZone] = useState("");
 	const [resetDbDialogOpen, setResetDbDialogOpen] = useState(false);
+	 const [exportDialogOpen, setExportDialogOpen] = useState(false);
+	 const [exportPath, setExportPath] = useState("");
+	 const [exporting, setExporting] = useState(false);
 	const [resetConfirmationText, setResetConfirmationText] = useState("");
 
 	useEffect(() => {
@@ -93,6 +97,46 @@ export default function SettingsPage() {
 		} catch (error) {
 			console.error("Failed to fetch drugs:", error);
 			toast.error("Failed to load drugs");
+		}
+	};
+
+	const handleBrowsePath = async () => {
+		try {
+			const filePath = await save({
+				defaultPath: "drugnet-backup.zip",
+				filters: [{ name: "ZIP Files", extensions: ["zip"] }],
+			});
+
+			if (filePath) {
+				setExportPath(filePath);
+			}
+		} catch (error) {
+			console.error("Failed to open file picker:", error);
+			toast.error("Failed to open file picker");
+		}
+	};
+
+	const handleExportDatabase = async () => {
+		if (!exportPath.trim()) {
+			toast.error("Please select a destination path");
+			return;
+		}
+
+		try {
+			setExporting(true);
+			const result = await invoke<string>("export_database", {
+				destPath: exportPath,
+			});
+			toast.success(`Database exported to ${result}`);
+			setExportDialogOpen(false);
+			setExportPath("");
+		} catch (error) {
+			console.error("Failed to export database:", error);
+			toast.error(
+				error instanceof Error ? error.message : "Failed to export database",
+			);
+		} finally {
+			setExporting(false);
 		}
 	};
 
@@ -240,8 +284,12 @@ export default function SettingsPage() {
 							System
 						</MenubarTrigger>
 						<MenubarContent>
-							<MenubarItem
-								onClick={() => setActiveSection("dangerZone")}
+							<MenubarItem							onClick={() => setExportDialogOpen(true)}
+							className="cursor-pointer"
+						>
+							Export Database
+						</MenubarItem>
+						<MenubarItem								onClick={() => setActiveSection("dangerZone")}
 								className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
 							>
 								Danger Zone
@@ -433,6 +481,15 @@ export default function SettingsPage() {
 								<Database className="h-4 w-4 mr-2" />
 								Reset Database
 							</Button>
+
+							<Button
+								variant="ghost"
+								onClick={() => setExportDialogOpen(true)}
+								className="cursor-pointer ml-2"
+							>
+								<Database className="h-4 w-4 mr-2" />
+								Export Database
+							</Button>
 						</div>
 					</div>
 				</div>
@@ -526,6 +583,57 @@ export default function SettingsPage() {
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
+
+			{/* Export Database Dialog */}
+			<Dialog
+				open={exportDialogOpen}
+				onOpenChange={(open) => {
+					setExportDialogOpen(open);
+					if (!open) setExportPath("");
+				}}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Export Database</DialogTitle>
+						<DialogDescription>
+							Create a zipped backup of the application database.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="py-4 space-y-4">
+						<div className="space-y-2">
+							<Label>Destination Path</Label>
+							<div className="flex gap-2">
+								<div className="flex-1 p-2 border rounded bg-muted text-sm text-muted-foreground break-all">
+									{exportPath || "No file selected"}
+								</div>
+								<Button
+									variant="outline"
+									onClick={handleBrowsePath}
+									className="cursor-pointer"
+								>
+									Browse...
+								</Button>
+							</div>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setExportDialogOpen(false)}
+							className="cursor-pointer"
+						>
+							Cancel
+						</Button>
+						<Button
+							onClick={handleExportDatabase}
+							className="cursor-pointer"
+							disabled={exporting || !exportPath.trim()}
+						>
+							{exporting ? "Exporting..." : "Export Database"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 
 			{/* Reset Database Confirmation Dialog */}
 			<AlertDialog

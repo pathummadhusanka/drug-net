@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 pub type DbConnection = Arc<Mutex<Connection>>;
 
 /// Get the database file path based on environment
-fn get_db_path() -> Result<PathBuf, String> {
+pub fn get_db_path() -> Result<PathBuf, String> {
     // Check if we're in development mode
     let is_dev = cfg!(debug_assertions);
     
